@@ -1,0 +1,172 @@
+version: "3"
+
+volumes:
+  db-data: null
+  db-backups: null
+  minio-data: null
+  qgis-data: null
+
+services:
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    container_name: mailhog
+    ports:
+      - "${MAILHOG_PORT}:8025"
+
+  django:
+    &django
+    build:
+      context: .
+      dockerfile: ./docker/dev/Dockerfile
+    image: gdm_django
+    container_name: django
+    platform: linux/x86_64
+    depends_on:
+      - postgres
+      - redis
+      - minio-mc
+      - mailhog
+    volumes:
+      - .:/app:z
+      - qgis-data:/qgis:z
+    env_file:
+      - .env
+    ports:
+      - "${DJANGO_PORT}:8000"
+    command: /start
+
+  postgres:
+    image: kartoza/postgis:${POSTGRES_MAJOR_VERSION}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_RELEASE}
+    volumes:
+      - db-data:/var/lib/postgresql
+      - db-backups:/backups
+    env_file:
+      - .env
+    # ports:
+    #   - ${POSTGRES_PORT}:5432
+    restart: on-failure
+    healthcheck:
+      test: "exit 0"
+
+  dbbackups:
+    image: kartoza/pg-backup:${POSTGRES_MAJOR_VERSION}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_RELEASE}
+    hostname: pg-backups
+    volumes:
+      - db-backups:/backups
+    environment:
+      - DUMPPREFIX=PG_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASS=${POSTGRES_PASS}
+      - POSTGRES_PORT=${POSTGRES_SERVICE_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DBNAME=${POSTGRES_DBNAME}
+      - REMOVE_BEFORE=30
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:6
+    container_name: redis
+
+  celeryworker:
+    <<: *django
+    image: gdm_celeryworker
+    container_name: celeryworker
+    depends_on:
+      - redis
+      - postgres
+      - mailhog
+    ports: []
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *django
+    image: gdm_celerybeat
+    container_name: celerybeat
+    depends_on:
+      - redis
+      - postgres
+      - mailhog
+      - django
+    ports: []
+    command: /start-celerybeat
+
+  flower:
+    <<: *django
+    image: gdm_flower
+    container_name: gdm_flower
+    depends_on:
+      - celerybeat
+    ports:
+      - "${FLOWER_PORT}:5555"
+    command: /start-flower
+
+  minio:
+    image: quay.io/minio/minio
+    environment:
+      - MINIO_ROOT_USER=${DJANGO_AWS_ACCESS_KEY_ID}
+      - MINIO_ROOT_PASSWORD=${DJANGO_AWS_SECRET_ACCESS_KEY}
+    entrypoint: /bin/bash
+    command: -c 'minio server /data --console-address ":9001"'
+    volumes:
+      - minio-data:/data
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
+
+  minio-mc:
+    image: quay.io/minio/mc
+    entrypoint: /bin/bash
+    command:
+      [
+        "-c",
+        "/usr/bin/mc config host add gdm ${DJANGO_AWS_S3_CUSTOM_DOMAIN} ${DJANGO_AWS_ACCESS_KEY_ID} ${DJANGO_AWS_SECRET_ACCESS_KEY}; /usr/bin/mc mb gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME}; exit 0;"
+      ]
+    depends_on:
+      - minio
+
+  wps:
+    build:
+      context: .
+      dockerfile: ./docker/wps/Dockerfile
+    image: gdm_wps
+    container_name: wps
+    platform: linux/x86_64
+    environment:
+      QGSWPS_SERVER_PARALLELPROCESSES: '2'
+      QGSWPS_SERVER_LOGSTORAGE: REDIS
+      QGSWPS_REDIS_HOST: wpsredis
+      QGSWPS_PROCESSING_PROVIDERS_MODULE_PATH: /processing
+      QGSWPS_CACHE_ROOTDIR: /projects
+      QGSWPS_SERVER_WORKDIR: /srv/data
+      # QGSWPS_USER: 1000:1000
+      QGSRV_SERVER_RESPONSE_TIMEOUT: 1800
+      QGSRV_SERVER_CROSS_ORIGIN: 'yes'
+      QGSWPS_LOGLEVEL: DEBUG
+    volumes:
+      - qgis-data:/data:z
+    ports:
+      - "${QGIS_WPS_PORT}:8080"
+
+  wpsredis:
+    image: redis:5-alpine
+
+  docs:
+    image: gdm_docs
+    container_name: docs
+    platform: linux/x86_64
+    build:
+      context: .
+      dockerfile: ./docker/docs/Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./docs:/docs:z
+      - ./config:/app/config:z
+      - ./geodata_mart:/app/geodata_mart:z
+    ports:
+      - "${DOCS_PORT}:9000"
+    command: /start-docs
