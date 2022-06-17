@@ -60,7 +60,7 @@ services:
       - POSTGRES_PASS=${POSTGRES_PASS}
       - POSTGRES_PORT=${POSTGRES_SERVICE_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_DBNAME=${POSTGRES_DBNAME}
+      - POSTGRES_DBNAME=${POSTGRES_DB}
       - REMOVE_BEFORE=30
     restart: on-failure
     depends_on:
