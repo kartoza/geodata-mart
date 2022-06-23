@@ -7,15 +7,13 @@ volumes:
   qgis-data: null
 
 services:
-
   mailhog:
     image: mailhog/mailhog:v1.0.0
     container_name: mailhog
     ports:
       - "${MAILHOG_PORT}:8025"
 
-  django:
-    &django
+  django: &django
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
@@ -25,11 +23,12 @@ services:
     depends_on:
       - postgres
       - redis
-      - minio-mc
+      - minio-init
+      - django-init
       - mailhog
     volumes:
       - .:/app:z
-      - qgis-data:/qgis:z
+      - qgis-data:/qgis
     env_file:
       - .env
     ports:
@@ -93,6 +92,7 @@ services:
       - django
     ports: []
     command: /start-celerybeat
+    restart: unless-stopped
 
   flower:
     <<: *django
@@ -101,7 +101,7 @@ services:
     depends_on:
       - celerybeat
     ports:
-      - "${FLOWER_PORT}:5555"
+      - "${FLOWER_PORT}:${FLOWER_PORT}"
     command: /start-flower
 
   minio:
@@ -117,17 +117,6 @@ services:
       - "${MINIO_API_PORT}:9000"
       - "${MINIO_CONSOLE_PORT}:9001"
 
-  minio-mc:
-    image: quay.io/minio/mc
-    entrypoint: /bin/bash
-    command:
-      [
-        "-c",
-        "/usr/bin/mc config host add gdm ${DJANGO_AWS_S3_CUSTOM_DOMAIN} ${DJANGO_AWS_ACCESS_KEY_ID} ${DJANGO_AWS_SECRET_ACCESS_KEY}; /usr/bin/mc mb gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME}; exit 0;"
-      ]
-    depends_on:
-      - minio
-
   wps:
     build:
       context: .
@@ -136,7 +125,7 @@ services:
     container_name: wps
     platform: linux/x86_64
     environment:
-      QGSWPS_SERVER_PARALLELPROCESSES: '2'
+      QGSWPS_SERVER_PARALLELPROCESSES: "2"
       QGSWPS_SERVER_LOGSTORAGE: REDIS
       QGSWPS_REDIS_HOST: wpsredis
       QGSWPS_PROCESSING_PROVIDERS_MODULE_PATH: /processing
@@ -144,10 +133,10 @@ services:
       QGSWPS_SERVER_WORKDIR: /srv/data
       # QGSWPS_USER: 1000:1000
       QGSRV_SERVER_RESPONSE_TIMEOUT: 1800
-      QGSRV_SERVER_CROSS_ORIGIN: 'yes'
+      QGSRV_SERVER_CROSS_ORIGIN: "yes"
       QGSWPS_LOGLEVEL: DEBUG
     volumes:
-      - qgis-data:/data:z
+      - qgis-data:/data
     ports:
       - "${QGIS_WPS_PORT}:8080"
 
@@ -170,3 +159,44 @@ services:
     ports:
       - "${DOCS_PORT}:9000"
     command: /start-docs
+
+  # Ops - Once off bootstrapping operations for system initialization
+  minio-init:
+    image: quay.io/minio/mc
+    container_name: minio-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - >
+        set -o errexit; set -o nounset;
+        /usr/bin/mc config host add gdm ${DJANGO_AWS_S3_CUSTOM_DOMAIN}
+        ${DJANGO_AWS_ACCESS_KEY_ID} ${DJANGO_AWS_SECRET_ACCESS_KEY};
+        /usr/bin/mc mb gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME};
+        exit 0
+    depends_on:
+      - minio
+
+  django-init:
+    <<: *django
+    container_name: django-init
+    image: gdm_django_init
+    entrypoint: /bin/bash
+    environment:
+      CELERY_BROKER_URL: ${REDIS_URL}"
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_SERVICE_PORT}/${POSTGRES_DB}
+    command:
+      - -c
+      - >
+        set -o errexit; set -o nounset;
+        export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_SERVICE_PORT}/${POSTGRES_DB}";
+        export CELERY_BROKER_URL="${REDIS_URL}";
+        python /app/manage.py makemigrations;
+        python /app/manage.py migrate;
+        python /app/manage.py createsuperuser --noinput --skip-checks;
+        exit 0;
+    depends_on:
+      - postgres
+      - redis
+      - minio-init
+      - mailhog
+    ports: []

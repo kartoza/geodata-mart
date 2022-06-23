@@ -9,7 +9,7 @@ The development stack is managed with Docker Compose.
 Spin up development environment
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
 Bring down the stack
@@ -48,6 +48,10 @@ python -m pip install -e .[dev]
 ### Framework
 
 This application was modified from cookiecutter-django, and the [project docs](https://cookiecutter-django.readthedocs.io/en/latest/) may be helpful to developers.
+
+### Settings
+
+It is desirable to aim for [dev-prod-parity](https://12factor.net/dev-prod-parity). The `production.py` settings exclude many functions from `dev.py`, such as debug and dev tools and a change in email service configuration. The `frontend.py` settings replicate `dev`, but disable white noise and the offline caching of django-compressor to allow more dynamic loading and modification of frontend assets.
 
 ### Running commands
 

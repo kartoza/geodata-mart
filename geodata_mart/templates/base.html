@@ -1,116 +1,172 @@
-{% load static i18n compress%}<!DOCTYPE html>
+{% load static i18n compress %}
+<!DOCTYPE html>
 {% get_current_language as LANGUAGE_CODE %}
 <html lang="{{ LANGUAGE_CODE }}">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>{% block title %}Geodata Mart{% endblock title %}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Search, select, clip, and deliver spatial data sources">
-    <meta name="author" content="Kartoza">
 
-    <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>{% block title %}Geodata Mart{% endblock title %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Search, select, clip, and deliver spatial data sources">
+  <meta name="author" content="Kartoza">
+  <meta name="color-scheme" content="light dark">
 
-    {% block css %}
-    <!-- Latest compiled and minified Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Your stuff: Third-party CSS libraries go here -->
+  <link rel="shortcut icon" href="{% static 'images/favicons/favicon.ico' %}" type="image/x-icon">
+  <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}" type="image/x-icon">
 
-    <!-- This file stores project-specific CSS -->
+  <link rel="apple-touch-icon" sizes="57x57" href="{% static 'images/favicons/apple-icon-57x57.png' %}">
+  <link rel="apple-touch-icon" sizes="60x60" href="{% static 'images/favicons/apple-icon-60x60.png' %}">
+  <link rel="apple-touch-icon" sizes="72x72" href="{% static 'images/favicons/apple-icon-72x72.png' %}">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'images/favicons/apple-icon-76x76.png' %}">
+  <link rel="apple-touch-icon" sizes="114x114" href="{% static 'images/favicons/apple-icon-114x114.png' %}">
+  <link rel="apple-touch-icon" sizes="120x120" href="{% static 'images/favicons/apple-icon-120x120.png' %}">
+  <link rel="apple-touch-icon" sizes="144x144" href="{% static 'images/favicons/apple-icon-144x144.png' %}">
+  <link rel="apple-touch-icon" sizes="152x152" href="{% static 'images/favicons/apple-icon-152x152.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/favicons/apple-icon-180x180.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/favicons/android-icon-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicons/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="96x96" href="{% static 'images/favicons/favicon-96x96.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicons/favicon-16x16.png' %}">
+  <link rel="manifest" href="{% static 'images/favicons/manifest.json' %}">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="{% static 'images/favicons/ms-icon-144x144.png' %}">
+  <meta name="theme-color" content="#ffffff">
+
+  {% block css %}
+  <object id="css-light">
     {% compress css %}
-    <link href="{% static 'css/project.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap/5.1.3/bootstrap.css' %}" rel="stylesheet">
     {% endcompress %}
-    {% endblock %}
-    <!-- Le javascript
-    ================================================== -->
-    {# Placed at the top of the document so pages load faster with defer #}
-    {% block javascript %}
-      <!-- Bootstrap JS -->
-      <script defer src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.min.js" integrity="sha512-OvBgP9A2JBgiRad/mM36mkzXSXaJE9BEIENnVEmeZdITvwT09xnxLtT4twkCa8m/loMbPHsvPl0T8lRGVBwjlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-      <!-- Your stuff: Third-party javascript libraries go here -->
+  </object>
+  <object id="css-dark">
+    {% compress css %}
+    <link href="{% static 'css/bootstrap-dark/5-1.1.3/bootstrap-nightfall.css' %}" media="(prefers-color-scheme: dark)"
+      rel="stylesheet">
+    {% endcompress %}
+  </object>
+  {% compress css %}
+  <link href="{% static 'css/bootstrap-icons/1.8.3/bootstrap-icons.css' %}" rel="stylesheet">
+  {% endcompress %}
+  {% compress css %}
+  <link href="{% static 'css/project.css' %}" rel="stylesheet">
+  {% endcompress %}
+  {% compress css %}
+  <link rel="stylesheet" type="text/x-scss" href="{% static "css/project.scss" %}" />
+  {% endcompress %}
+  {% endblock %}
 
-      <!-- place project specific Javascript in this file -->
-      {% compress js %}
-      <script defer src="{% static 'js/project.js' %}"></script>
-      {% endcompress %}
+  {% block javascript %}
+  {% compress js %}
+  <script defer src="{% static 'js/bootstrap/5.1.3/bootstrap.bundle.js' %}"></script>
+  {% endcompress %}
+  {% compress js %}
+  <script defer src="{% static 'js/alpine/3.10.2/alpine.min.js' %}"></script>
+  {% endcompress %}
+  {% compress js %}
+  <script defer src="{% static 'js/alpine/3.10.2/persist.min.js' %}"></script>
+  {% endcompress %}
+  {% compress js %}
+  <script defer src="{% static 'js/project.js' %}"></script>
+  {% endcompress %}
 
-    {% endblock javascript %}
 
-  </head>
+  {% endblock javascript %}
 
-  <body>
+</head>
 
-    <div class="mb-1">
-      <nav class="navbar navbar-expand-md navbar-light bg-light">
-        <div class="container-fluid">
-          <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <a class="navbar-brand" href="{% url 'home' %}">Geodata Mart</a>
+<body>
 
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-              <li class="nav-item active">
-                <a class="nav-link" href="{% url 'home' %}">Home <span class="visually-hidden">(current)</span></a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'about' %}">About</a>
-              </li>
-              {% if request.user.is_authenticated %}
-                <li class="nav-item">
-                  {# URL provided by django-allauth/account/urls.py #}
-                  <a class="nav-link" href="{% url 'users:detail' request.user.username  %}">{% translate "My Profile" %}</a>
-                </li>
-                <li class="nav-item">
-                  {# URL provided by django-allauth/account/urls.py #}
-                  <a class="nav-link" href="{% url 'account_logout' %}">{% translate "Sign Out" %}</a>
-                </li>
-              {% else %}
-                {% if ACCOUNT_ALLOW_REGISTRATION %}
-              <li class="nav-item">
-                {# URL provided by django-allauth/account/urls.py #}
-                <a id="sign-up-link" class="nav-link" href="{% url 'account_signup' %}">{% translate "Sign Up" %}</a>
-              </li>
-              {% endif %}
-                <li class="nav-item">
-                  {# URL provided by django-allauth/account/urls.py #}
-                  <a id="log-in-link" class="nav-link" href="{% url 'account_login' %}">{% translate "Sign In" %}</a>
-                </li>
-              {% endif %}
-            </ul>
-          </div>
+  {% block navbar %}
+  <div class="mb-1">
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+      <div class="container-fluid">
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+          aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand" href="{% url 'home' %}">
+          <img src="{% static 'images/logo_banner_alt.svg' %}" height="40px" alt="GeoData Mart">
+        </a>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          {% include "components/navbar_left.html" %}
         </div>
-      </nav>
+        {% include "components/navbar_right.html" %}
+      </div>
+    </nav>
 
+  </div>
+  {% endblock navbar %}
+
+  <div class="container">
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+    {% endfor %}
+    {% endif %}
 
-    <div class="container">
+    {% block content %}
+    <p>Use this document as a way to quick start any new project.</p>
+    {% endblock content %}
 
-      {% if messages %}
-        {% for message in messages %}
-          <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
+  </div> <!-- /container -->
 
-      {% block content %}
-        <p>Use this document as a way to quick start any new project.</p>
-      {% endblock content %}
+  {% block modal %}{% endblock modal %}
 
-    </div> <!-- /container -->
+  {% block inline_javascript %}
 
-    {% block modal %}{% endblock modal %}
+  <script>
+    const darkModeBtn = document.getElementById("toggle-darkmode-btn");
 
-    {% block inline_javascript %}
-    {% comment %}
-    Script tags with only code, no src (defer by default). To run
-    with a "defer" so that you run inline code:
-    <script>
-      window.addEventListener('DOMContentLoaded', () => {/* Run whatever you want */});
-    </script>
-    {% endcomment %}
-    {% endblock inline_javascript %}
-  </body>
+    function getInitialDarkModeState() {
+      if (window.matchMedia) {
+        darkModeState = window.matchMedia('(prefers-color-scheme: dark)').matches
+      } else {
+        darkModeState = false
+      }
+      return darkModeState
+    }
+
+    function toggleDarkMode(darkModeState = false) {
+      let lightCss = document.getElementById('css-light')
+      let darkCss = document.getElementById('css-dark')
+      if (darkModeState) {
+        darkCss.firstElementChild.removeAttribute('disabled');
+        document.body.setAttribute('data-color-scheme', 'dark');
+        darkModeBtn.innerHTML = "<i class=\"bi bi-sun-fill nav-link\" alt=\"dark mode\" width=\"32\" height=\"32\"></i>"
+      } else {
+        darkCss.firstElementChild.setAttribute('disabled', 'true');
+        document.body.setAttribute('data-color-scheme', 'light');
+        darkModeBtn.innerHTML =
+          "<i class=\"bi bi-moon-fill nav-link\" alt=\"dark mode\" width=\"32\" height=\"32\"></i>"
+      }
+    }
+
+    document.addEventListener('alpine:init', () => {
+      Alpine.store('darkMode', {
+        //on: (typeof on === 'undefined') ? Alpine.$persist(getInitialDarkModeState()).as('darkMode_on') : Alpine.$persist(false).as('darkMode_on'),
+        on: (typeof on === 'undefined') ? getInitialDarkModeState() : false,
+
+        toggle() {
+          this.on = !this.on
+          toggleDarkMode(this.on)
+        }
+      })
+    })
+
+    window.addEventListener('DOMContentLoaded', () => {
+      toggleDarkMode(Alpine.store('darkMode').on)
+    });
+
+  </script>
+
+  {% endblock inline_javascript %}
+</body>
+
 </html>
