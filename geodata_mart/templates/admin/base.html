@@ -4,7 +4,8 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  /* :root {
+  /* Original values:
+  :root {
     --primary: #79aec8;
     --secondary: #417690;
     --accent: #f5dd5d;
@@ -55,6 +56,15 @@
     --object-tools-bg: var(--close-button-bg);
     --object-tools-hover-bg: var(--close-button-hover-bg);
   } */
+
+  /* Custom values: */
+  :root {
+    --primary: #95D574;
+    --secondary: #77AB5C;
+    --link-fg: #499B44;
+    --link-selected-fg: #64B25B;
+    --accent: #305669;
+  }
 
 </style>
 {% endblock %}
