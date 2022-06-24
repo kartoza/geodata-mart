@@ -1,24 +1,129 @@
 {% extends "base.html" %}
+{% block extrahead %}
+<style>
+  .bd-gallery-img {
+    font-size: 1.25rem;
+    text-anchor: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+
+  @media (min-width: 768px) {
+    .bd-placeholder-img-lg {
+      font-size: 3.5rem;
+    }
+  }
+
+</style>
+{% endblock extrahead %}
+
 {% block content %}
-<h1>Development Stack Components</h1>
-<ul>
-  <li>
-    <a href="/admin/">ADMIN</a>
-  </li>
-  <li>
-    <a href="http://127.0.0.1:9001">MINIO</a>
-  </li>
-  <li>
-    <a href="http://127.0.0.1:9002">MAILHOG</a>
-  </li>
-  <li>
-    <a href="http://127.0.0.1:9003">FLOWER</a>
-  </li>
-  <li>
-    <a href="http://127.0.0.1:9004">DOCS</a>
-  </li>
-  <li>
-    <a href="http://127.0.0.1:9005">WPS</a>
-  </li>
-</ul>
+<main>
+  {% if not request.user.is_authenticated %}
+  <section class="py-5 text-center container">
+    <div class="row py-lg-5">
+      <div class="col-lg-6 col-md-8 mx-auto">
+        <h1 class="fw-light">GeoData Mart</h1>
+        <p class="lead text-muted">Select, clip, and ship collections of geodata quickly and conveniently.</p>
+        <p>
+          <a href="{% url 'account_login' %}" class="btn btn-primary my-2">Sign In</a>
+          <a href="{% url 'account_signup' %}" class="btn btn-secondary my-2">Sign Up</a>
+        </p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="py-5 bg-light">
+    <div class="container">
+
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+        <div class="col">
+          <div class="card shadow-sm">
+            <svg class="bd-gallery-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-label="Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
+              <title>Project Name</title>
+              <rect width="100%" height="100%" fill="#55595c"></rect><text x="50%" y="50%" fill="#eceeef"
+                dy=".3em">Coming Soon</text>
+            </svg>
+
+            <div class="card-body">
+              <p class="card-text">This will link to a map dedicated to clipping data for a specified project.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <a href="{% url 'devapp:map' %}">
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Get Data</button>
+                  </a>
+                </div>
+                <small class="text-muted">Vendor ID</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card shadow-sm">
+            <svg class="bd-gallery-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-label="Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
+              <title>Project Name</title>
+              <rect width="100%" height="100%" fill="#55595c"></rect><text x="50%" y="50%" fill="#eceeef"
+                dy=".3em">Coming Soon</text>
+            </svg>
+
+            <div class="card-body">
+              <p class="card-text">This will link to a map dedicated to clipping data for a specified project.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary">Get Data</button>
+                </div>
+                <small class="text-muted">Vendor ID</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card shadow-sm">
+            <svg class="bd-gallery-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-label="Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
+              <title>Project Name</title>
+              <rect width="100%" height="100%" fill="#55595c"></rect><text x="50%" y="50%" fill="#eceeef"
+                dy=".3em">Coming Soon</text>
+            </svg>
+
+            <div class="card-body">
+              <p class="card-text">This will link to a map dedicated to clipping data for a specified project.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary">Get Data</button>
+                </div>
+                <small class="text-muted">Vendor ID</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</main>
 {% endblock content %}
+
+{% block footer %}
+<footer class="text-muted py-5">
+  <div class="container flex">
+    <a href="#">
+      <div class="d-flex justify-content-center">
+        <p><i class="bi bi-arrow-up-circle-fill"></i></p>
+      </div>
+      <div class="d-flex justify-content-center">
+        <p>Back to top</p>
+      </div>
+    </a>
+    <div class="d-flex justify-content-center">
+      <p class="mb-1">Geodata Mart is developed by <a href="https://kartoza.com">Kartoza</a>.</p>
+    </div>
+  </div>
+</footer>
+{% endblock footer %}

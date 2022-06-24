@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static i18n compress %}
+{% block extrahead %}
+<script src="{% static 'assets/leaflet/leaflet.js' %}"></script>
+<link rel="stylesheet" href="{% static 'assets/leaflet/leaflet.css' %}" />
+<script src="{% static 'assets/leaflet-draw/leaflet.draw.js' %}"></script>
+<link rel="stylesheet" href="{% static 'assets/leaflet-draw/leaflet.draw.css' %}" />
+<script src="{% static 'assets/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
+<link rel="stylesheet" href="{% static 'assets/leaflet-toolbar/leaflet.toolbar.css' %}" />
+<script src="{% static 'assets/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
+<link rel="stylesheet" href="{% static 'assets/leaflet-draw-toolbar/leaflet.draw-toolbar.css' %}" />
+<style>
+  .map-page {
+    height: 80vh;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  #map {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+</style>
+{% endblock extrahead %}
+
+{% block page %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+<div class="map-page">
+  <form>
+    <div class="d-flex flex-row">
+      <div class="d-flex flex-column align-items-stretch flex-shrink-0 col-3" style="overflow: auto;">
+        <ul class="nav nav-tabs">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="#">NGI</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">OSM</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Link</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
+          <div class="d-flex flex-column">
+            <div class="d-flex flex-row text-muted">
+              <img src="{% static 'images/map/map-icon-pure.svg' %}" class="me-2 mt-1" width="30" height="24" />
+              <span class="fs-5 mb-1 fw-semibold">NGI</span>
+            </div>
+            <div class="d-flex flex-row text-muted">
+              <div class="mb-1 ms-0 small">
+                Data from the Chief Directorate: National Geo-spatial
+                Information for the Republic of South Africa.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="list-group list-group-flush border-bottom scrollarea">
+          <div class="list-group-item list-group-item-action py-3 lh-tight row justify-content-between">
+            <label for="layer-id-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="layer-id-1-check" id="layer-id-1" />
+                <label class="form-check-label" for="layer-id-1">
+                  Layer Name
+                </label>
+              </div>
+              <div class="mb-1 small">
+                Layer description, details, and metadata links. Lorem Ipsum
+                dolor sit amet, consectetur adipiscing elit.
+              </div>
+            </label>
+          </div>
+          <div class="list-group-item list-group-item-action py-3 lh-tight row justify-content-between">
+            <label for="layer-id-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="layer-id-2-check" id="layer-id-2" />
+                <label class="form-check-label" for="layer-id-2">
+                  Layer Name
+                </label>
+              </div>
+              <div class="mb-1 small">
+                Layer description, details, and metadata links. Lorem Ipsum
+                dolor sit amet, consectetur adipiscing elit.
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex flex-column align-items-stretch flex-shrink-0 col-9">
+        <main role="main" class="container" style="width: 100%; height: 100%">
+          <div class="form-group row m-2 justify-content-between">
+            <div class="col-sm-4">
+              <label for="clipBuffer" class="col-form-label px-2">Clipping Buffer (kilometers):</label>
+            </div>
+            <div class="col-sm-6">
+              <input class="form-control" type="text" id="clipBuffer" placeholder="1 Kilometer"
+                aria-label="Clip buffer" />
+            </div>
+            <div class="col-sm-2">
+              <button class="btn btn-outline-success" type="submit"
+                onClick="alert(JSON.stringify((drawnItems.getBounds())))" style="width: 100%">
+                Clip & Ship
+                <i class="bi bi-send-fill"></i>
+              </button>
+            </div>
+          </div>
+          <div id="map"></div>
+        </main>
+      </div>
+    </div>
+  </form>
+</div>
+
+{% endblock page %}
+
+{% block footer %}
+{% endblock footer %}
+
+{% block inline_javascript %}
+<script>
+  var map = L.map("map", {
+    zoomControl: false
+  }).setView(
+    [-34.35, 18.48],
+    15
+  );
+  var drawnItems = new L.FeatureGroup().addTo(map),
+    editActions = [
+      L.Toolbar2.EditAction.Popup.Edit,
+      L.Toolbar2.EditAction.Popup.Delete,
+    ];
+
+  new L.Control.Zoom({
+    position: "bottomleft"
+  }).addTo(map);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+  }).addTo(map);
+
+  new L.Control.Draw({
+    position: "topleft",
+    draw: {
+      polyline: false,
+      polygon: false,
+      rectangle: true,
+      circle: false,
+      marker: true,
+      circlemarker: false,
+    },
+  }).addTo(map);
+
+  map.on("draw:created", function (evt) {
+    var type = evt.layerType,
+      layer = evt.layer;
+
+    drawnItems.addLayer(layer);
+
+    layer.on("click", function (event) {
+      new L.Toolbar2.EditToolbar.Popup(event.latlng, {
+        actions: editActions,
+      }).addTo(map, layer);
+    });
+  });
+
+  L.Control.RemoveAll = L.Control.extend({
+    options: {
+      position: "topleft",
+    },
+    onAdd: function (map) {
+      var controlDiv = L.DomUtil.create(
+        "div",
+        "leaflet-draw-toolbar leaflet-bar"
+      );
+      L.DomEvent.addListener(
+          controlDiv,
+          "click",
+          L.DomEvent.stopPropagation
+        )
+        .addListener(controlDiv, "click", L.DomEvent.preventDefault)
+        .addListener(controlDiv, "click", function () {
+          drawnItems.clearLayers();
+        });
+
+      var controlUI = L.DomUtil.create(
+        "a",
+        "leaflet-draw-edit-remove",
+        controlDiv
+      );
+      controlUI.title = "Remove All Polygons";
+      controlUI.href = "#";
+      return controlDiv;
+    },
+  });
+  var removeAllControl = new L.Control.RemoveAll();
+  map.addControl(removeAllControl);
+
+</script>
+
+{% endblock inline_javascript %}

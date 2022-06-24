@@ -70,8 +70,11 @@
   <script defer src="{% static 'js/project.js' %}"></script>
   {% endcompress %}
 
-
   {% endblock javascript %}
+
+
+  {% block extrahead %}
+  {% endblock extrahead %}
 
 </head>
 
@@ -100,6 +103,8 @@
   </div>
   {% endblock navbar %}
 
+  {% block page %}
+
   <div class="container">
 
     {% if messages %}
@@ -115,12 +120,26 @@
     <p>Use this document as a way to quick start any new project.</p>
     {% endblock content %}
 
-  </div> <!-- /container -->
+    {% block footer %}
+    <footer class="text-muted py-5">
+      <div class="container flex">
+        <div class="d-flex justify-content-center">
+          <p class="mb-1">Geodata Mart is developed by <a href="https://kartoza.com">Kartoza</a>.</p>
+        </div>
+      </div>
+    </footer>
+    {% endblock footer %}
+
+  </div>
+
+  {% endblock page %}
 
   {% block modal %}{% endblock modal %}
 
   {% block inline_javascript %}
+  {% endblock inline_javascript %}
 
+  {% compress js %}
   <script>
     const darkModeBtn = document.getElementById("toggle-darkmode-btn");
 
@@ -165,8 +184,7 @@
     });
 
   </script>
-
-  {% endblock inline_javascript %}
+  {% endcompress %}
 </body>
 
 </html>

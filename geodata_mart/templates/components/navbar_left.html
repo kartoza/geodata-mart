@@ -6,4 +6,10 @@
   <li class="nav-item">
     <a class="nav-link" href="{% url 'about' %}">About</a>
   </li>
+  {% if debug %}
+  <li class="nav-item">
+
+    <a class="nav-link" href="{% url 'devapp:dev' %}">Dev</a>
+  </li>
+  {% endif %}
 </ul>

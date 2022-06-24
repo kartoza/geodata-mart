@@ -60,7 +60,10 @@ if settings.DEBUG:
             kwargs={"exception": Exception("Page not Found")},
         ),
         path("500/", default_views.server_error),
+        # Devapp page links
+        path("devapp/", include("geodata_mart.devapp.urls", namespace="devapp")),
     ]
+
     if "debug_toolbar" in settings.INSTALLED_APPS:
         import debug_toolbar
 

@@ -57,12 +57,13 @@
 </li>
 {% else %}
 
-
 <li class="nav-item mx-2">
   <a href="{% url 'account_login' %}" id="log-in-link" class="btn btn-dark nav-link" title="Sign In">
     {# URL provided by django-allauth/account/urls.py #}
-    <i class="bi bi-lock-fill nav-link" alt="sign in" width="32" height="32">
-      <span class="mx-1">{% translate "Sign In" %}</span></i>
+    <span class="mx-1 d-inline-block">
+      <i class="bi d-inline-block bi-person-circle nav-link" alt="sign in" width="32" height="32"></i>
+      <span class="mx-1 d-inline-block">{% translate "Sign In" %}</span>
+    </span>
   </a>
 </li>
 
