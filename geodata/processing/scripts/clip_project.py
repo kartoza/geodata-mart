@@ -127,18 +127,21 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         parameter = QgsProcessingParameterString(
             name=self.PROJECTID,
             description=self.tr("Project"),
+            optional=True,
         )
         self.addParameter(parameter)
         del parameter
         parameter = QgsProcessingParameterString(
             name=self.VENDORID,
             description=self.tr("Vendor"),
+            optional=True,
         )
         self.addParameter(parameter)
         del parameter
         parameter = QgsProcessingParameterString(
             name=self.USERID,
             description=self.tr("User"),
+            optional=True,
         )
         self.addParameter(parameter)
         del parameter
@@ -146,6 +149,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         parameter = QgsProcessingParameterString(
             name=self.JOBID,
             description=self.tr("Job"),
+            optional=True,
         )
         self.addParameter(parameter)
         del parameter
@@ -169,7 +173,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         parameter = QgsProcessingParameterCrs(
             name=self.OUTPUT_CRS,
             description=self.tr("Output CRS"),
-            defaultValue="EPSG:4326",
+            optional=True,
         )
         self.addParameter(parameter)
         del parameter
@@ -296,7 +300,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             )
             sql = (
                 "INSERT INTO __geodatamart__ (user,vendor,project,job,date) VALUES ("
-                + f'\'{parameters["USERID"]}\', \'{parameters["VENDORID"]}\', \'{parameters["PROJECTID"]}\','
+                + f'\'{parameters["USERID"] if "USERID" in parameters else "NULL"}\','
+                + f' \'{parameters["VENDORID"] if "VENDORID" in parameters else "NULL"}\','
+                + f' \'{parameters["PROJECTID"] if "PROJECTID" in parameters else "NULL"}\','
                 + f' \'{self.jobid}\', \'{date.today().strftime("%Y/%m/%d")}\');'
             )
             conn.execSql(sql, feedback)
@@ -310,25 +316,22 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
     def setProjectExtent(self, parameters, context, feedback, layer):
         layer.updateExtents()
-        extent = QgsReferencedRectangle(
-            layer.extent(), QgsCoordinateReferenceSystem(parameters["OUTPUT_CRS"])
-        )
+        extent = QgsReferencedRectangle(layer.extent(), layer.crs())
         QgsProject.instance().viewSettings().setDefaultViewExtent(extent)
         QgsProject.instance().write()
 
     def generateClippingGeometry(self, parameters, context, feedback):
         """
-        Generate the buffered geometry used to clip data, save the
-        geometry layer to file and return the result.
+        Generate the clipping geometry from the supplied WKT definition, save the
+        geometry layer to file, and return the result.
         """
 
         feedback.pushInfo(f"Generating clipping bounds")
 
         try:
             # Generate clipping geometry
-            # Expects single wkt area atm. Should rather iterate over geojson featurecollection and
-            # project individual features, then union everything into the final buffer + clip geom
-            # QgsVectorLayer(GeojsonAsString,"mygeojson","ogr")
+            # To be used with geodjango/ turfjs -
+            # Expects single wkt area supplied by the client/ server process
             wkt_geom = QgsGeometry.fromWkt(parameters["CLIP_GEOM"])
             clip_layer = QgsVectorLayer(
                 "polygon?crs=epsg:4326&field=id:integer&index=yes",
@@ -346,58 +349,19 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             clip_layer.commitChanges(stopEditing=True)
             clip_layer.setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
 
-            projected = processing.run(
-                "native:reprojectlayer",
-                {
-                    "INPUT": clip_layer,
-                    # If we convert clipping geometries to equal earth, this forces
-                    # metric map units for the buffer. Considering the global scope
-                    # and accuracy requirements for a regional data clip, anywhere on earth
-                    # this should be a suitable approach, at least initially. Note that the
-                    # QGIS/ GDAL processes used for clipping have been tested to ensure that
-                    # OTF projection is supported, so this may not be suitable for broader use cases.
-                    # "TARGET_CRS": QgsCoordinateReferenceSystem("EPSG:8857"),
-                    # Fallback due to 3857, as some operations (e.g. raster clipping) are not supported:
-                    # >> PROJ: proj_as_wkt: Unsupported conversion method: Equal Earth
-                    "TARGET_CRS": QgsCoordinateReferenceSystem("EPSG:3857"),
-                    # "TARGET_CRS": QgsCoordinateReferenceSystem(parameters["OUTPUT_CRS"]),
-                    "OPERATION": "+proj=pipeline +step +proj=unitconvert +xy_in=deg +xy_out=rad +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84",
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )["OUTPUT"]
+            if self.output_crs:
+                clipping_geometry = processing.run(
+                    "native:reprojectlayer",
+                    {
+                        "INPUT": clip_layer,
+                        "TARGET_CRS": self.output_crs,
+                        "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                    },
+                )["OUTPUT"]
+            else:
+                clipping_geometry = clip_layer
 
             feedback.setProgress(feedback.progress() + self.increment)
-
-            buffered = processing.run(
-                "native:buffer",
-                {
-                    "INPUT": projected,
-                    "DISTANCE": (float(parameters["BUFFER_DIST_KM"]) * 1000),
-                    "SEGMENTS": 5,
-                    "END_CAP_STYLE": 0,
-                    "JOIN_STYLE": 0,
-                    "MITER_LIMIT": 2,
-                    "DISSOLVE": True,
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )["OUTPUT"]
-
-            feedback.setProgress(feedback.progress() + self.increment)
-
-            clipping_geometry = processing.run(
-                "native:reprojectlayer",
-                {
-                    "INPUT": buffered,
-                    "TARGET_CRS": parameters["OUTPUT_CRS"],
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-                },
-            )["OUTPUT"]
 
             # Store clipping bounds as layer
             clip_file_output = os.path.join(self.output_path, self.jobid + ".gpkg")
@@ -454,27 +418,26 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 },
                 context=context,
                 feedback=feedback,
-                # is_child_algorithm=True,
             )["OUTPUT"]
 
             feedback.setProgress(feedback.progress() + self.increment)
 
-            output_vector = processing.run(
-                "native:reprojectlayer",
-                {
-                    "INPUT": clipped_vector,
-                    "TARGET_CRS": QgsCoordinateReferenceSystem(
-                        parameters["OUTPUT_CRS"]
-                    ),
-                    "OPERATION": "+proj=noop",
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )["OUTPUT"]
+            if self.output_crs:
+                output_vector = processing.run(
+                    "native:reprojectlayer",
+                    {
+                        "INPUT": clipped_vector,
+                        "TARGET_CRS": QgsCoordinateReferenceSystem(self.output_crs),
+                        "OPERATION": "+proj=noop",
+                        "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                    },
+                    context=context,
+                    feedback=feedback,
+                )["OUTPUT"]
 
-            feedback.setProgress(feedback.progress() + self.increment)
+                feedback.setProgress(feedback.progress() + self.increment)
+            else:
+                output_vector = clipped_vector
 
             # Save the clipped layer result to file
             save_vector_options = QgsVectorFileWriter.SaveVectorOptions()
@@ -534,6 +497,11 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         layer_name = layer.name().replace('"', "")
         output_img = os.path.join(self.output_path, f"{layer_name}.tif")
         try:
+
+            if self.output_crs:
+                crs = QgsCoordinateReferenceSystem(self.output_crs)
+            else:
+                crs = None
             clipped_raster = processing.run(
                 "gdal:cliprasterbymasklayer",
                 {
@@ -541,9 +509,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     "MASK": clip_layer,
                     "SOURCE_CRS": None,
                     "TARGET_CRS": None,
-                    "TARGET_EXTENT": QgsCoordinateReferenceSystem(
-                        parameters["OUTPUT_CRS"]
-                    ),
+                    "TARGET_EXTENT": crs,
                     "NODATA": None,
                     "ALPHA_BAND": True,
                     "CROP_TO_CUTLINE": True,
@@ -559,7 +525,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 },
                 context=context,
                 feedback=feedback,
-                # is_child_algorithm=True,
             )["OUTPUT"]
 
             feedback.setProgress(feedback.progress() + self.increment)
@@ -616,6 +581,11 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         """
         Run processing algorithm
         """
+        if "OUTPUT_CRS" in parameters:
+            self.output_crs = parameters["OUTPUT_CRS"]
+        else:
+            self.output_crs = None
+
         # Assess project layers and requested layers
         process_layer_names = parameters["LAYERS"]
         process_layer_names = process_layer_names.split(",")
@@ -639,8 +609,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # Configure MultiStepFeedback
         # note that is_child_algorithm=True removes temporary outputs, so
         # manually setting the feedback progress is done for now
-        additional_steps = 2  # steps for clipping and buffering clipping bounds etc
-        vector_child_alg_steps = 2  # Child processes per vector layer
+        additional_steps = 1  # steps for clipping and buffering clipping bounds etc
+        vector_child_alg_steps = 2 if self.output_crs else 1  # Child processes per vector layer
         raster_child_alg_steps = 1  # Child processes per raster layer
         vector_lyrs = [
             layer
@@ -673,7 +643,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         )
 
         # Set jobid (defines output filenames) and destination path
-        self.jobid = "OUTPUT" if not parameters["JOBID"] else parameters["JOBID"]
+        self.jobid = "OUTPUT" if not "JOBID" in parameters else parameters["JOBID"]
 
         self.output_path = os.path.dirname(os.path.abspath(parameters["OUTPUT"]))
 
@@ -682,7 +652,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 self.output_path,
                 parameters["USERID"],
             )
-            if parameters["USERID"]
+            if "USERID" in parameters
             else self.output_path
         )
         self.output_path = (
@@ -690,7 +660,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 self.output_path,
                 parameters["VENDORID"],
             )
-            if parameters["VENDORID"]
+            if "VENDORID" in parameters
             else self.output_path
         )
         self.output_path = (
@@ -698,7 +668,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 self.output_path,
                 parameters["PROJECTID"],
             )
-            if parameters["PROJECTID"]
+            if "PROJECTID" in parameters
             else self.output_path
         )
 
@@ -715,9 +685,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # Load cloned project
         QgsProject.instance().read(output_uri)
         # Set the project coordinate reference system
-        QgsProject.instance().setCrs(
-            QgsCoordinateReferenceSystem(parameters["OUTPUT_CRS"])
-        )
+        if self.output_crs:
+            QgsProject.instance().setCrs(QgsCoordinateReferenceSystem(self.output_crs))
+
         # Save changes
         QgsProject.instance().write()
 
