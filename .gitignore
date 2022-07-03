@@ -8,27 +8,27 @@
 # maintain directory structure, but exclude contents
 # note that models, scripts, and test data are explicitly added to prevent pollution, remembering
 # that some software (e.g. qgis) may modify files in place or produce auxilliary files, e.g. .qgs~
-./geodata/**
-!./geodata/**/.gitkeep
-./geodata/output/**
-!./geodata/output/
-./geodata/projects/**
-!./geodata/projects/
-./geodata/test/**
-./geodata/test/projects/**
+/geodata/**
+!/geodata/**/.gitkeep
+/geodata/output/**
+!/geodata/output/
+/geodata/projects/**
+!/geodata/projects/
+/geodata/test/**
+/geodata/test/projects/**
 # testdata
-!./geodata/test/projects/dem.tif
-!./geodata/test/projects/sample.qgs
-!./geodata/test/projects/world.geojson
+!/geodata/test/projects/dem.tif
+!/geodata/test/projects/sample.qgs
+!/geodata/test/projects/world.geojson
 
-./geodata/processing/**
-./geodata/processing/models/**
-!./geodata/processing/models/
-./geodata/processing/scripts/**
-!./geodata/processing/scripts/
+/geodata/processing/**
+/geodata/processing/models/**
+!/geodata/processing/models/
+/geodata/processing/scripts/**
+!/geodata/processing/scripts/
 # Models and scripts we want to keep in vcs
-# !./geodata/processing/models/sample.model3
-!./geodata/processing/scripts/clip_project.py
+# !/geodata/processing/models/sample.model3
+!/geodata/processing/scripts/clip_project.py
 
 # exclude venv
 ./env/

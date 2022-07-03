@@ -18,10 +18,10 @@ from qgis.core import (
     QgsProcessing,
     QgsProcessingException,
     QgsProcessingAlgorithm,
-    QgsProcessingUtils,
     QgsProcessingMultiStepFeedback,
     QgsProject,
     QgsFields,
+    QgsField,
     QgsMapLayer,
     QgsDataProvider,
     QgsProviderRegistry,
@@ -34,14 +34,13 @@ from qgis.core import (
     QgsWkbTypes,
     QgsProcessingParameterString,
     QgsProcessingParameterCrs,
-    # QgsProcessingParameterGeometry,
-    # QgsProcessingParameterEnum,
     QgsProcessingParameterNumber,
-    QgsProcessingParameterFileDestination,
-    QgsProcessingDestinationParameter,
 )
+from PyQt5.QtCore import QVariant
 from qgis import processing
 import os
+from pathlib import Path
+from datetime import date
 
 
 class GdmClipProjectLayers(QgsProcessingAlgorithm):
@@ -59,9 +58,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    # PROJECTID = "PROJECTID"
-    # VENDORID = "VENDORID"
-    # USERID = "USERID"
+    PROJECTID = "PROJECTID"
+    VENDORID = "VENDORID"
+    USERID = "USERID"
+    JOBID = "JOBID"
     LAYERS = "LAYERS"
     CLIP_GEOM = "CLIP_GEOM"
     OUTPUT_CRS = "OUTPUT_CRS"
@@ -124,18 +124,31 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         Define input and outputs parameters.
         """
 
-        # User id should probably be used to force the path of the output
-        # so that proper permissions can be configured on web services (django/ s3 etc).
+        parameter = QgsProcessingParameterString(
+            name=self.PROJECTID,
+            description=self.tr("Project"),
+        )
+        self.addParameter(parameter)
+        del parameter
+        parameter = QgsProcessingParameterString(
+            name=self.VENDORID,
+            description=self.tr("Vendor"),
+        )
+        self.addParameter(parameter)
+        del parameter
+        parameter = QgsProcessingParameterString(
+            name=self.USERID,
+            description=self.tr("User"),
+        )
+        self.addParameter(parameter)
+        del parameter
 
-        # User/ vendor/ project id
-        # parameter = QgsProcessingParameterString(
-        #     name=self.USERID,
-        #     description=self.tr("User ID"),
-        #     isOptional=True,
-        #     multiline=False,
-        # )
-        # self.addParameter(parameter)
-        # del(parameter)
+        parameter = QgsProcessingParameterString(
+            name=self.JOBID,
+            description=self.tr("Job"),
+        )
+        self.addParameter(parameter)
+        del parameter
 
         parameter = QgsProcessingParameterString(  # Enum QgsProcessingParameterMapLayer
             name=self.LAYERS,
@@ -161,26 +174,20 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         self.addParameter(parameter)
         del parameter
 
-        # TODO: Integer used for simplicity, but double values should be supported
         parameter = QgsProcessingParameterNumber(
-            self.BUFFER_DIST_KM, "Buffer", type=QgsProcessingParameterNumber.Integer
+            self.BUFFER_DIST_KM, "Buffer", type=QgsProcessingParameterNumber.Double
         )
-        # parameter = QgsProcessingParameterNumber(
-        #     self.BUFFER_DIST_KM, 'Buffer', type=QgsProcessingParameterNumber.Double
-        # )
-        # parameter.setMetadata( {'widget_wrapper':{ 'decimals': 2 }})
+        parameter.setMetadata({"widget_wrapper": {"decimals": 2}})
         self.addParameter(parameter)
         del parameter
 
         # Output geopackage
-        parameter = QgsProcessingParameterFileDestination(
-            # parameter = QgsProcessingDestinationParameter(
-            name=self.OUTPUT,
-            description=self.tr("Output File"),
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.OUTPUT,
+                description=self.tr("Output File"),
+            )
         )
-        parameter.setMetadata({"widget_wrapper": {"dontconfirmoverwrite": True}})
-        self.addParameter(parameter)
-        del parameter
 
     def zipOutputs(self, parameters, context, feedback):
         """
@@ -190,20 +197,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             feedback.pushInfo(f"Adding outputs to archive")
             from zipfile import ZipFile
 
-            file_name = parameters["OUTPUT"] + f".zip"
+            file_name = os.path.join(self.output_path, self.jobid + ".zip")
             file_paths = []
-            output_gpkg = parameters["OUTPUT"] + f".gpkg"
-            outputs_dir = os.path.abspath(os.path.join(output_gpkg, os.pardir))
             max_depth = 1
-            for root, directories, files in os.walk(outputs_dir):
-                if root[len(outputs_dir) :].count(os.sep) < max_depth:
+            for root, directories, files in os.walk(self.output_path):
+                if root[len(self.output_path) :].count(os.sep) < max_depth:
                     for filename in files:
-                        # join the two strings in order to form the full filepath.
                         filepath = os.path.join(root, filename)
                         file_paths.append(filepath)
 
             with ZipFile(file_name, "w") as zip:
-                # writing each file one by one
                 for file in file_paths:
                     zip.write(file, arcname=os.path.basename(file))
 
@@ -222,13 +225,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         try:
             feedback.pushInfo(f"Removing obsolete files")
             file_paths = []
-            output_gpkg = parameters["OUTPUT"] + f".gpkg"
-            outputs_dir = os.path.abspath(os.path.join(output_gpkg, os.pardir))
             max_depth = 1
-            for root, directories, files in os.walk(outputs_dir):
-                if root[len(outputs_dir) :].count(os.sep) < max_depth:
+            for root, directories, files in os.walk(self.output_path):
+                if root[len(self.output_path) :].count(os.sep) < max_depth:
                     for filename in files:
-                        # join the two strings in order to form the full filepath.
                         filepath = os.path.join(root, filename)
                         file_paths.append(filepath)
 
@@ -244,25 +244,34 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         except Exception as e:
             feedback.reportError(str(e), fatalError=False)
 
-    def initializeGpkg(self, parameters, context, feedback):
+    def initializeOutputs(self, parameters, context, feedback):
         """
-        Remove an existing geopackage equivalent to the output gpkg uri,
-        and instantiate a new geopackage with no data (or select metadata)
+        Remove existing zip outputs matching the expected output path,
+        and instantiate a new geopackage with select metadata
 
         Raises:
-            QgsProcessingException: Issues with removal or cretion indicating permissions issues
+            QgsProcessingException: Issues with removal or creation indicating permissions issues
         """
-        # check if the output geopackage exists,
-        # then remove and instantiate it.
-        output_gpkg = parameters["OUTPUT"] + ".gpkg"
-        feedback.pushInfo(f"Generating {output_gpkg}")
+        feedback.pushInfo(f"Initializing Outputs")
+        output_gpkg = os.path.join(self.output_path, self.jobid + ".gpkg")
+        output_zip = os.path.join(self.output_path, self.jobid + ".zip")
         if os.path.exists(output_gpkg):
             try:
                 os.remove(output_gpkg)
                 feedback.pushInfo(f"Existing {output_gpkg} has been removed")
             except OSError:
                 raise QgsProcessingException(
-                    "Unable to remove existing output geopackage. Check permissions and file locks."
+                    "Unable to remove existing target output files. Check permissions and file locks."
+                )
+            except Exception as e:
+                feedback.reportError(str(e), fatalError=True)
+        if os.path.exists(output_zip):
+            try:
+                os.remove(output_zip)
+                feedback.pushInfo(f"Existing {output_zip} has been removed")
+            except OSError:
+                raise QgsProcessingException(
+                    "Unable to remove existing target output files. Check permissions and file locks."
                 )
             except Exception as e:
                 feedback.reportError(str(e), fatalError=True)
@@ -270,18 +279,31 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         try:
             md = QgsProviderRegistry.instance().providerMetadata("ogr")
             conn = md.createConnection(output_gpkg, {})
+            fields = QgsFields()
+            fields.append(QgsField("user", QVariant.String))
+            fields.append(QgsField("vendor", QVariant.String))
+            fields.append(QgsField("project", QVariant.String))
+            fields.append(QgsField("job", QVariant.String))
+            fields.append(QgsField("date", QVariant.Date))
             conn.createVectorTable(
                 "",
                 "__geodatamart__",
-                QgsFields(),
+                fields,
                 QgsWkbTypes.NoGeometry,
                 QgsCoordinateReferenceSystem(),
                 True,
                 {},
             )
+            sql = (
+                "INSERT INTO __geodatamart__ (user,vendor,project,job,date) VALUES ("
+                + f'\'{parameters["USERID"]}\', \'{parameters["VENDORID"]}\', \'{parameters["PROJECTID"]}\','
+                + f' \'{self.jobid}\', \'{date.today().strftime("%Y/%m/%d")}\');'
+            )
+            conn.execSql(sql, feedback)
+
         except Exception as e:
             raise QgsProcessingException(
-                "Unable to create new output geopackage. Check permissions and file locks."
+                f"Unable to create new output geopackage. {str(e)}"
             )
         finally:
             del md, conn
@@ -292,7 +314,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer.extent(), QgsCoordinateReferenceSystem(parameters["OUTPUT_CRS"])
         )
         QgsProject.instance().viewSettings().setDefaultViewExtent(extent)
-        print(f"set extent to {layer.extent()}")
         QgsProject.instance().write()
 
     def generateClippingGeometry(self, parameters, context, feedback):
@@ -375,9 +396,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             )["OUTPUT"]
 
             # Store clipping bounds as layer
-            clip_file_output = parameters["OUTPUT"] + ".gpkg"
+            clip_file_output = os.path.join(self.output_path, self.jobid + ".gpkg")
             save_clip_options = QgsVectorFileWriter.SaveVectorOptions()
-            save_clip_options.layerName = "geodatamart"
+            save_clip_options.layerName = "__aoi__"
             save_clip_options.actionOnExistingFile = (
                 QgsVectorFileWriter.CreateOrOverwriteLayer
             )
@@ -416,11 +437,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer (QgsMapLayer): Input layer to be clipped
             clip_layer (QgsGeometry): Masking geometry to use for clipping
         """
+        layer_name = layer.name().replace('"', "")
+        output_gpkg = os.path.join(self.output_path, self.jobid + ".gpkg")
 
         try:
-            layer_name = layer.name().replace('"', "")
-            uri = parameters["OUTPUT"] + f".gpkg"
-
             clipped_vector = processing.run(
                 "native:clip",
                 {
@@ -457,16 +477,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             save_vector_options.driverName = "GPKG"
             save_vector_options.symbologyExport = QgsVectorFileWriter.FeatureSymbology
             transform_context = QgsProject.instance().transformContext()
-            feedback.pushInfo(f"Saving layer to {uri}")
+            feedback.pushInfo(f"Saving layer to {output_gpkg}")
             filesave_error = QgsVectorFileWriter.writeAsVectorFormatV3(
                 output_vector,
-                uri,
+                output_gpkg,
                 transform_context,
                 save_vector_options,
             )
 
             if filesave_error[0] == QgsVectorFileWriter.NoError:
-                feedback.pushInfo(f"Clipped result saved to {uri}|{layer_name}")
+                feedback.pushInfo(f"Clipped result saved to {output_gpkg}|{layer_name}")
             else:
                 feedback.reportError(str(filesave_error), fatalError=False)
 
@@ -481,13 +501,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             vector_source_options.transformContext = (
                 QgsProject.instance().transformContext()
             )
-            src_uri = parameters["OUTPUT"] + f".gpkg|layername={layer_name}"
+            lyr_uri = os.path.join(
+                self.output_path, self.jobid + f".gpkg|layername={layer_name}"
+            )
             layer.setDataSource(
-                src_uri,
+                lyr_uri,
                 f"{layer_name}",
                 f"ogr",
                 vector_source_options,
             )
+            feedback.pushInfo(f"Set layer datasource to {lyr_uri}")
             layer.reload()
             layer.updateExtents()
 
@@ -500,11 +523,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer (QgsMapLayer): Input layer to be clipped
             clip_layer (QgsGeometry): Masking geometry to use for clipping
         """
-
+        layer_name = layer.name().replace('"', "")
+        output_img = os.path.join(self.output_path, f"{layer_name}.tif")
         try:
-            layer_name = layer.name().replace('"', "")
-            uri = parameters["OUTPUT"] + f".gpkg"
-
             clipped_raster = processing.run(
                 "gdal:cliprasterbymasklayer",
                 {
@@ -512,7 +533,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     "MASK": clip_layer,
                     "SOURCE_CRS": None,
                     "TARGET_CRS": None,
-                    "TARGET_EXTENT": None,
+                    "TARGET_EXTENT": QgsCoordinateReferenceSystem(
+                        parameters["OUTPUT_CRS"]
+                    ),
                     "NODATA": None,
                     "ALPHA_BAND": True,
                     "CROP_TO_CUTLINE": True,
@@ -524,99 +547,12 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     "OPTIONS": "",
                     "DATA_TYPE": 0,
                     "EXTRA": "",
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                    "OUTPUT": output_img,
                 },
                 context=context,
                 feedback=feedback,
                 # is_child_algorithm=True,
             )["OUTPUT"]
-
-            # TODO: Get GPKG Raster Outputs working. For some reason, the behaviour
-            # of these commands change depending on the context, despite being a gdal operation.
-            # The commands that fail with QgsProcessing work when used directly from gdal cli,
-            # and even using the QGIS GUI results in different behaviours (e.g. whether RASTER_TABLE works)
-
-            # extra_options = "-co APPEND_SUBDATASET=YES"
-            # extra_options = (
-            #     extra_options + f" -co RASTER_TABLE={layer_name}"
-            # )  # apparently suported but doesn't work
-            # extra_options = (
-            #     extra_options + f" -co TABLE={layer_name}"
-            # )  # says unsupported but works from gui ¯\_(ツ)_/¯
-            # try:
-            #     projected_raster = processing.run(
-            #         "gdal:warpreproject",
-            #         {
-            #             "INPUT": clipped_raster,
-            #             "SOURCE_CRS": None,
-            #             "TARGET_CRS": QgsCoordinateReferenceSystem(
-            #                 parameters["OUTPUT_CRS"]
-            #             ),
-            #             "RESAMPLING": 0,
-            #             "NODATA": None,
-            #             "TARGET_RESOLUTION": None,
-            #             "OPTIONS": "COMPRESS=DEFLATE|PREDICTOR=2|ZLEVEL=9",
-            #             "DATA_TYPE": 0,
-            #             "TARGET_EXTENT": None,
-            #             "TARGET_EXTENT_CRS": None,
-            #             "MULTITHREADING": False,
-            #             "EXTRA": extra_options,
-            #             # "OUTPUT": uri,
-            #             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            #         },
-            #         context=context,
-            #         feedback=feedback,
-            #         is_child_algorithm=True,
-            #     )["OUTPUT"]
-            # except Exception as e:
-            #     feedback.reportError(str(e), fatalError=False)
-            projected_raster = processing.run(
-                "gdal:warpreproject",
-                {
-                    "INPUT": clipped_raster,
-                    "SOURCE_CRS": None,
-                    "TARGET_CRS": QgsCoordinateReferenceSystem(
-                        parameters["OUTPUT_CRS"]
-                    ),
-                    "RESAMPLING": 0,
-                    "NODATA": None,
-                    "TARGET_RESOLUTION": None,
-                    "OPTIONS": "COMPRESS=DEFLATE|PREDICTOR=2|ZLEVEL=9",
-                    "DATA_TYPE": 0,
-                    "TARGET_EXTENT": None,
-                    "TARGET_EXTENT_CRS": None,
-                    "MULTITHREADING": False,
-                    "EXTRA": "",
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )["OUTPUT"]
-
-            # TODO: translate (and warp) should be unnecessary. We should be
-            # able to just use the clip tool with TARGET_CRS, but this is broken atm
-
-            # output_uri = f"{layer_name}.tif"
-            output_gpkg = parameters["OUTPUT"] + f".gpkg"
-            output_dir = os.path.abspath(os.path.join(output_gpkg, os.pardir))
-            output_uri = os.path.join(output_dir, f"{layer_name}.tif")
-            processing.run(
-                "gdal:translate",
-                {
-                    "INPUT": projected_raster,
-                    "TARGET_CRS": None,
-                    "NODATA": None,
-                    "COPY_SUBDATASETS": False,
-                    "OPTIONS": "",
-                    "EXTRA": "",
-                    "DATA_TYPE": 0,
-                    "OUTPUT": output_uri,
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=False,  # skip this one in the feedback
-            )
 
         except Exception as e:
             feedback.reportError(str(e), fatalError=False)
@@ -627,22 +563,14 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             raster_source_options.transformContext = (
                 QgsProject.instance().transformContext()
             )
-            # src_uri = parameters["OUTPUT"] + f".gpkg|layername={layer_name}"
-            # src_uri = f"{layer_name}.tif"
-            output_gpkg = parameters["OUTPUT"] + f".gpkg"
-            output_dir = os.path.abspath(os.path.join(output_gpkg, os.pardir))
-            # TODO: Assuming tif output is NOT recommended. This should be
-            # inferred from the input layer attributes, which is not managed
-            # currently as gpkg raster outputs have their own requirements
-            src_uri = os.path.join(output_dir, f"{layer_name}.tif")
             layer.setDataSource(
-                src_uri,
+                output_img,
                 f"{layer_name}",
                 f"gdal",
                 raster_source_options,
             )
+            feedback.pushInfo(f"Set layer datasource to {output_img}")
             layer.reload()
-            # layer.updateExtents()
 
     def clipLayer(self, parameters, context, feedback, layer, clip_layer):
         """
@@ -678,7 +606,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         """
         Run processing algorithm
         """
-
+        # Assess project layers and requested layers
         process_layer_names = parameters["LAYERS"]
         process_layer_names = process_layer_names.split(",")
         process_layer_names = [
@@ -698,18 +626,76 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 self.invalidSourceError(parameters, self.LAYERS)
             )
 
-        # # Configure MultiStepFeedback
-        # additional_steps = 2  # steps for clipping and buffering
-        #                       # input clipping bounds etc
-        # child_alg_steps = 2  # Child processes per layer
-        # child_processes = (len(QgsProject.instance().mapLayers())*child_alg_steps)+additional_steps
-        # feedback = QgsProcessingMultiStepFeedback(child_processes, model_feedback)
+        # Configure MultiStepFeedback
+        # additional_steps = 2  # steps for clipping and buffering clipping bounds etc
+        # vector_child_alg_steps = 2  # Child processes per vector layer
+        # raster_child_alg_steps = 1  # Child processes per raster layer
+        # vector_lyrs = [
+        #     layer
+        #     for layer in QgsProject.instance().mapLayers().values()
+        #     if layer.type() == QgsMapLayer.VectorLayer
+        # ]
+        # rasters_lyrs = [
+        #     layer
+        #     for layer in QgsProject.instance().mapLayers().values()
+        #     if layer.type() == QgsMapLayer.RasterLayer
+        # ]
 
-        self.initializeGpkg(parameters, context, feedback)
+        # child_processes = (
+        #     (len(vector_lyrs) * vector_child_alg_steps)
+        #     + (len(rasters_lyrs) * raster_child_alg_steps)
+        #     + additional_steps
+        # )
+
+        # feedback = QgsProcessingMultiStepFeedback(child_processes, model_feedback)
+        # del (
+        #     child_processes,
+        #     additional_steps,
+        #     vector_child_alg_steps,
+        #     raster_child_alg_steps,
+        #     vector_lyrs,
+        #     rasters_lyrs,
+        # )
+
+        # Set jobid (defines output filenames) and destination path
+        self.jobid = "OUTPUT" if not parameters["JOBID"] else parameters["JOBID"]
+
+        self.output_path = os.path.dirname(os.path.abspath(parameters["OUTPUT"]))
+
+        self.output_path = (
+            os.path.join(
+                self.output_path,
+                parameters["USERID"],
+            )
+            if parameters["USERID"]
+            else self.output_path
+        )
+        self.output_path = (
+            os.path.join(
+                self.output_path,
+                parameters["VENDORID"],
+            )
+            if parameters["VENDORID"]
+            else self.output_path
+        )
+        self.output_path = (
+            os.path.join(
+                self.output_path,
+                parameters["PROJECTID"],
+            )
+            if parameters["PROJECTID"]
+            else self.output_path
+        )
+
+        Path(self.output_path).mkdir(parents=True, exist_ok=True)
+
+        self.initializeOutputs(parameters, context, feedback)
 
         # Save a copy of the project
         # TODO replace projectName with reasonable vendor-project identifier
-        output_uri = "geopackage:" + parameters["OUTPUT"] + ".gpkg?projectName=geodata"
+        output_uri = "geopackage:" + os.path.join(
+            self.output_path, self.jobid + ".gpkg?projectName=geodata"
+        )
         QgsProject.instance().write(output_uri)
         # Load cloned project
         QgsProject.instance().read(output_uri)
