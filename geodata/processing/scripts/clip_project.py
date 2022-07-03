@@ -369,6 +369,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 # is_child_algorithm=True,
             )["OUTPUT"]
 
+            feedback.setProgress(feedback.progress() + self.increment)
+
             buffered = processing.run(
                 "native:buffer",
                 {
@@ -385,6 +387,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 feedback=feedback,
                 # is_child_algorithm=True,
             )["OUTPUT"]
+
+            feedback.setProgress(feedback.progress() + self.increment)
 
             clipping_geometry = processing.run(
                 "native:reprojectlayer",
@@ -453,6 +457,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 # is_child_algorithm=True,
             )["OUTPUT"]
 
+            feedback.setProgress(feedback.progress() + self.increment)
+
             output_vector = processing.run(
                 "native:reprojectlayer",
                 {
@@ -467,6 +473,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 feedback=feedback,
                 # is_child_algorithm=True,
             )["OUTPUT"]
+
+            feedback.setProgress(feedback.progress() + self.increment)
 
             # Save the clipped layer result to file
             save_vector_options = QgsVectorFileWriter.SaveVectorOptions()
@@ -554,6 +562,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 # is_child_algorithm=True,
             )["OUTPUT"]
 
+            feedback.setProgress(feedback.progress() + self.increment)
+
         except Exception as e:
             feedback.reportError(str(e), fatalError=False)
 
@@ -627,35 +637,40 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             )
 
         # Configure MultiStepFeedback
-        # additional_steps = 2  # steps for clipping and buffering clipping bounds etc
-        # vector_child_alg_steps = 2  # Child processes per vector layer
-        # raster_child_alg_steps = 1  # Child processes per raster layer
-        # vector_lyrs = [
-        #     layer
-        #     for layer in QgsProject.instance().mapLayers().values()
-        #     if layer.type() == QgsMapLayer.VectorLayer
-        # ]
-        # rasters_lyrs = [
-        #     layer
-        #     for layer in QgsProject.instance().mapLayers().values()
-        #     if layer.type() == QgsMapLayer.RasterLayer
-        # ]
+        # note that is_child_algorithm=True removes temporary outputs, so
+        # manually setting the feedback progress is done for now
+        additional_steps = 2  # steps for clipping and buffering clipping bounds etc
+        vector_child_alg_steps = 2  # Child processes per vector layer
+        raster_child_alg_steps = 1  # Child processes per raster layer
+        vector_lyrs = [
+            layer
+            for layer in QgsProject.instance().mapLayers().values()
+            if layer.type() == QgsMapLayer.VectorLayer
+        ]
+        rasters_lyrs = [
+            layer
+            for layer in QgsProject.instance().mapLayers().values()
+            if layer.type() == QgsMapLayer.RasterLayer
+        ]
 
-        # child_processes = (
-        #     (len(vector_lyrs) * vector_child_alg_steps)
-        #     + (len(rasters_lyrs) * raster_child_alg_steps)
-        #     + additional_steps
-        # )
+        child_processes = (
+            (len(vector_lyrs) * vector_child_alg_steps)
+            + (len(rasters_lyrs) * raster_child_alg_steps)
+            + additional_steps
+        )
 
-        # feedback = QgsProcessingMultiStepFeedback(child_processes, model_feedback)
-        # del (
-        #     child_processes,
-        #     additional_steps,
-        #     vector_child_alg_steps,
-        #     raster_child_alg_steps,
-        #     vector_lyrs,
-        #     rasters_lyrs,
-        # )
+        self.increment = 100.0 / child_processes
+        feedback.setProgress(0.0)
+
+        # feedback = QgsProcessingMultiStepFeedback(child_processes, feedback)
+        del (
+            child_processes,
+            additional_steps,
+            vector_child_alg_steps,
+            raster_child_alg_steps,
+            vector_lyrs,
+            rasters_lyrs,
+        )
 
         # Set jobid (defines output filenames) and destination path
         self.jobid = "OUTPUT" if not parameters["JOBID"] else parameters["JOBID"]
