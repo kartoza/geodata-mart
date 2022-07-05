@@ -42,7 +42,7 @@ class MetaTags(models.Model):
     abstract = models.CharField(_("Abstract"), max_length=255)
     description = models.TextField(verbose_name=_("Description"), blank=True, null=True)
     comment = models.TextField(verbose_name=_("Comments"), blank=True, null=True)
-    related = models.ManyToManyField("self", blank=True, null=True)
+    related = models.ManyToManyField("self", blank=True)
 
     class Meta:
         verbose_name = _("Tag")
@@ -364,8 +364,8 @@ class Project(gismodels.Model):
         null=True,
         blank=True,
     )
-    siblings = models.ManyToManyField("self", blank=True, null=True)
-    tags = models.ManyToManyField(MetaTags, blank=True, null=True)
+    siblings = models.ManyToManyField("self", blank=True)
+    tags = models.ManyToManyField(MetaTags, blank=True)
 
     class Meta:
         ordering = [
@@ -450,8 +450,8 @@ class Layer(models.Model):
     lyr_type = models.IntegerField(
         choices=LayerType.choices, default=LayerType.UNSPECIFIED
     )
-    siblings = models.ManyToManyField("self", blank=True, null=True)
-    tags = models.ManyToManyField(MetaTags, blank=True, null=True)
+    siblings = models.ManyToManyField("self", blank=True)
+    tags = models.ManyToManyField(MetaTags, blank=True)
 
     class Meta:
         verbose_name = _("Project Layer")
@@ -508,12 +508,7 @@ class Job(models.Model):
         null=False,
         blank=False,
     )
-    layers = models.ManyToManyField(
-        Layer,
-        verbose_name=_("Map Layers"),
-        blank=True,
-        null=True
-    )
+    layers = models.ManyToManyField(Layer, verbose_name=_("Map Layers"), blank=True)
     state = models.IntegerField(
         choices=JobStateChoices.choices, default=JobStateChoices.UNSPECIFIED
     )

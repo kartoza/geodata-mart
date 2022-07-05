@@ -11,14 +11,13 @@ class VendorAdmin(admin.ModelAdmin):
         "name",
         "abstract",
         "description",
-        "image",
         "users",
         "staff",
         "admins",
         "created_date",
         "updated_date",
     )
-    list_display_links = ("id", "name", "image")
+    list_display_links = ("id", "name")
     list_filter = (
         "name",
         "users",
@@ -31,7 +30,6 @@ class VendorAdmin(admin.ModelAdmin):
         "name",
         "abstract",
         "description",
-        "image",
         "users",
         "staff",
         "admins",
