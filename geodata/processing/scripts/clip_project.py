@@ -125,82 +125,75 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         Define input and outputs parameters.
         """
 
-        parameter = QgsProcessingParameterString(
-            name=self.PROJECTID,
-            description=self.tr("Project"),
-            optional=True,
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.PROJECTID,
+                description=self.tr("Project"),
+                optional=True,
+            )
         )
-        self.addParameter(parameter)
-        del parameter
-        parameter = QgsProcessingParameterString(
-            name=self.VENDORID,
-            description=self.tr("Vendor"),
-            optional=True,
-        )
-        self.addParameter(parameter)
-        del parameter
-        parameter = QgsProcessingParameterString(
-            name=self.USERID,
-            description=self.tr("User"),
-            optional=True,
-        )
-        self.addParameter(parameter)
-        del parameter
 
-        parameter = QgsProcessingParameterString(
-            name=self.JOBID,
-            description=self.tr("Job"),
-            optional=True,
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.VENDORID,
+                description=self.tr("Vendor"),
+                optional=True,
+            )
         )
-        self.addParameter(parameter)
-        del parameter
 
-        parameter = QgsProcessingParameterString(  # Enum QgsProcessingParameterMapLayer
-            name=self.LAYERS,
-            description=self.tr("Map Layers"),
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.USERID,
+                description=self.tr("User"),
+                optional=True,
+            )
         )
-        self.addParameter(parameter)
-        del parameter
 
-        parameter = QgsProcessingParameterString(
-            name=self.EXCLUDES,
-            description=self.tr("Excluded Layers"),
-            optional=True,
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.JOBID,
+                description=self.tr("Job"),
+                optional=True,
+            )
         )
-        self.addParameter(parameter)
-        del parameter
 
-        # TODO: This should probably support input feature collections in geojson format
-        # Currently expects WKT definition of an area feature
-        parameter = QgsProcessingParameterString(  # QgsProcessingParameterGeometry
-            name=self.CLIP_GEOM,
-            description=self.tr("Clip Geometry"),
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.LAYERS,
+                description=self.tr("Map Layers"),
+            )
         )
-        self.addParameter(parameter)
-        del parameter
 
-        parameter = QgsProcessingParameterCrs(
-            name=self.OUTPUT_CRS,
-            description=self.tr("Output CRS"),
-            optional=True,
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.EXCLUDES,
+                description=self.tr("Excluded Layers"),
+                optional=True,
+            )
         )
-        self.addParameter(parameter)
-        del parameter
 
-        parameter = QgsProcessingParameterCrs(
-            name=self.PROJECT_CRS,
-            description=self.tr("Project CRS"),
-            optional=True,
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.CLIP_GEOM,
+                description=self.tr("Clip Geometry"),
+            )
         )
-        self.addParameter(parameter)
-        del parameter
 
-        parameter = QgsProcessingParameterNumber(
-            self.BUFFER_DIST_KM, "Buffer", type=QgsProcessingParameterNumber.Double
+        self.addParameter(
+            QgsProcessingParameterCrs(
+                name=self.OUTPUT_CRS,
+                description=self.tr("Output CRS"),
+                optional=True,
+            )
         )
-        parameter.setMetadata({"widget_wrapper": {"decimals": 2}})
-        self.addParameter(parameter)
-        del parameter
+
+        self.addParameter(
+            QgsProcessingParameterCrs(
+                name=self.PROJECT_CRS,
+                description=self.tr("Project CRS"),
+                optional=True,
+            )
+        )
 
         # Output geopackage
         self.addParameter(
