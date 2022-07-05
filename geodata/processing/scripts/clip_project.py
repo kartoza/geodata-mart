@@ -165,6 +165,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         parameter = QgsProcessingParameterString(
             name=self.EXCLUDES,
             description=self.tr("Excluded Layers"),
+            optional=True,
         )
         self.addParameter(parameter)
         del parameter
@@ -237,7 +238,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         except Exception as e:
             feedback.reportError(str(e), fatalError=False)
 
-    def removeOutputs(self, parameters, context, feedback, extensions: list[str]):
+    def removeOutputs(self, parameters, context, feedback, extensions):
         """
         Walk through the parent directory for the output geopackage and remove
         all the outputs matching a particular set of extensions.
@@ -444,7 +445,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     {
                         "INPUT": clipped_vector,
                         "TARGET_CRS": QgsCoordinateReferenceSystem(self.output_crs),
-                        "OPERATION": "+proj=noop",
                         "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
                     },
                     context=context,
