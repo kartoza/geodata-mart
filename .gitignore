@@ -33,6 +33,7 @@
 # exclude venv
 ./env/
 ./venv/
+*.venv/
 
 .pytest_cache/
 .ipython/

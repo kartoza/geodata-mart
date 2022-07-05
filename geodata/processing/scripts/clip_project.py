@@ -11,7 +11,6 @@
 ***************************************************************************
 """
 
-# from uuid import uuid4  # output_id = uuid4()
 from inspect import Parameter
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
@@ -63,8 +62,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
     USERID = "USERID"
     JOBID = "JOBID"
     LAYERS = "LAYERS"
+    EXCLUDES = "EXCLUDES"
     CLIP_GEOM = "CLIP_GEOM"
     OUTPUT_CRS = "OUTPUT_CRS"
+    PROJECT_CRS = "PROJECT_CRS"
     BUFFER_DIST_KM = "BUFFER_DIST_KM"
     OUTPUT = "OUTPUT"
 
@@ -161,6 +162,13 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         self.addParameter(parameter)
         del parameter
 
+        parameter = QgsProcessingParameterString(
+            name=self.EXCLUDES,
+            description=self.tr("Excluded Layers"),
+        )
+        self.addParameter(parameter)
+        del parameter
+
         # TODO: This should probably support input feature collections in geojson format
         # Currently expects WKT definition of an area feature
         parameter = QgsProcessingParameterString(  # QgsProcessingParameterGeometry
@@ -173,6 +181,14 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         parameter = QgsProcessingParameterCrs(
             name=self.OUTPUT_CRS,
             description=self.tr("Output CRS"),
+            optional=True,
+        )
+        self.addParameter(parameter)
+        del parameter
+
+        parameter = QgsProcessingParameterCrs(
+            name=self.PROJECT_CRS,
+            description=self.tr("Project CRS"),
             optional=True,
         )
         self.addParameter(parameter)
@@ -585,6 +601,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             self.output_crs = parameters["OUTPUT_CRS"]
         else:
             self.output_crs = None
+        if "PROJECT_CRS" in parameters:
+            self.project_crs = parameters["PROJECT_CRS"]
+        else:
+            self.project_crs = None
 
         # Assess project layers and requested layers
         process_layer_names = parameters["LAYERS"]
@@ -595,10 +615,28 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             if (a.strip() != " ") and a.strip() != ""
         ]
         # Exclude layers from project that aren't pertinent to operation
+        map_layers = [
+            layer.name() for layer in QgsProject.instance().mapLayers().values()
+        ]
+        map_layers += [
+            layer.source() for layer in QgsProject.instance().mapLayers().values()
+        ]
+
+        exclude_layers = []
+        if "EXCLUDES" in parameters:
+            # Identify layers to be excluded from processing,
+            # ensuring that they remain available as a default
+            exclude_layers = parameters["EXCLUDES"]
+            exclude_layers = exclude_layers.split(",")
+            exclude_layers = [
+                a.strip()
+                for a in exclude_layers
+                if (a.strip() != " ") and a.strip() != ""
+            ]
+            map_layers += [layer for layer in exclude_layers]
+
         for layer in QgsProject.instance().mapLayers().values():
-            if not layer.name() in process_layer_names and (
-                not layer.source() in process_layer_names
-            ):
+            if not layer.name() in map_layers and (not layer.source() in map_layers):
                 QgsProject.instance().removeMapLayer(layer.id())
 
         if len(QgsProject.instance().mapLayers()) < 1:
@@ -610,7 +648,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # note that is_child_algorithm=True removes temporary outputs, so
         # manually setting the feedback progress is done for now
         additional_steps = 1  # steps for clipping and buffering clipping bounds etc
-        vector_child_alg_steps = 2 if self.output_crs else 1  # Child processes per vector layer
+        vector_child_alg_steps = (
+            2 if self.output_crs else 1
+        )  # Child processes per vector layer
         raster_child_alg_steps = 1  # Child processes per raster layer
         vector_lyrs = [
             layer
@@ -685,9 +725,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # Load cloned project
         QgsProject.instance().read(output_uri)
         # Set the project coordinate reference system
-        if self.output_crs:
-            QgsProject.instance().setCrs(QgsCoordinateReferenceSystem(self.output_crs))
-
+        if self.project_crs:
+            QgsProject.instance().setCrs(QgsCoordinateReferenceSystem(self.project_crs))
         # Save changes
         QgsProject.instance().write()
 
@@ -696,14 +735,17 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         self.setProjectExtent(parameters, context, feedback, clipping_geometry)
 
         for layer in QgsProject.instance().mapLayers().values():
-            feedback.pushInfo(f"Processing Layer {layer.name()}")
-            self.clipLayer(
-                parameters,
-                context,
-                feedback,
-                layer,
-                clipping_geometry,
-            )
+            if not layer.name() in exclude_layers and (
+                not layer.source() in exclude_layers
+            ):
+                feedback.pushInfo(f"Processing Layer {layer.name()}")
+                self.clipLayer(
+                    parameters,
+                    context,
+                    feedback,
+                    layer,
+                    clipping_geometry,
+                )
             if feedback.isCanceled():
                 break
 
