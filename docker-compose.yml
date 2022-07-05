@@ -4,7 +4,6 @@ volumes:
   db-data: null
   db-backups: null
   minio-data: null
-  qgis-data: null
 
 services:
   mailhog:
@@ -28,7 +27,7 @@ services:
       - mailhog
     volumes:
       - .:/app:z
-      - qgis-data:/qgis
+      - ./geodata:/qgis:z
     env_file:
       - .env
     ports:
@@ -116,32 +115,6 @@ services:
     ports:
       - "${MINIO_API_PORT}:9000"
       - "${MINIO_CONSOLE_PORT}:9001"
-
-  wps:
-    build:
-      context: .
-      dockerfile: ./docker/wps/Dockerfile
-    image: gdm_wps
-    container_name: wps
-    platform: linux/x86_64
-    environment:
-      QGSWPS_SERVER_PARALLELPROCESSES: "2"
-      QGSWPS_SERVER_LOGSTORAGE: REDIS
-      QGSWPS_REDIS_HOST: wpsredis
-      QGSWPS_PROCESSING_PROVIDERS_MODULE_PATH: /processing
-      QGSWPS_CACHE_ROOTDIR: /projects
-      QGSWPS_SERVER_WORKDIR: /srv/data
-      # QGSWPS_USER: 1000:1000
-      QGSRV_SERVER_RESPONSE_TIMEOUT: 1800
-      QGSRV_SERVER_CROSS_ORIGIN: "yes"
-      QGSWPS_LOGLEVEL: DEBUG
-    volumes:
-      - qgis-data:/data
-    ports:
-      - "${QGIS_WPS_PORT}:8080"
-
-  wpsredis:
-    image: redis:5-alpine
 
   docs:
     image: gdm_docs

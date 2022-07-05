@@ -1,7 +1,17 @@
-ARG PYTHON_VERSION=3.9-slim-bullseye
+# ARG PYTHON_VERSION=3.9-slim-bullseye
 
-# define an alias for the specfic python version used in this file.
-FROM python:${PYTHON_VERSION} as python
+# # define an alias for the specfic python version used in this file.
+# FROM python:${PYTHON_VERSION} as python
+
+FROM qgis/qgis:final-3_22_8 as python
+
+# Alias the python command with the interpreter used with qgis
+# note RUN alias python="/usr/bin/python3" will not work between build steps
+# https://github.com/docker-library/python/blob/master/Dockerfile-linux.template#L278
+# https://stackoverflow.com/questions/60383262/setting-alias-in-dockerfile-not-working-command-not-found#60383287
+RUN cd "$(dirname $(which python3))" \
+  && ln -s python3 python \
+  && ln -s python3-config python-config
 
 # Python build stage
 FROM python as python-build-stage
@@ -19,7 +29,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 COPY ./requirements .
 
 # Create Python Dependency and Sub-Dependency Wheels.
-RUN pip wheel --wheel-dir /usr/src/app/wheels  \
+RUN python -m pip wheel --wheel-dir /usr/src/app/wheels  \
   -r ${BUILD_ENVIRONMENT}.txt
 
 
@@ -50,7 +60,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 COPY --from=python-build-stage /usr/src/app/wheels  /wheels/
 
 # use wheels to install python dependencies
-RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
+RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
   && rm -rf /wheels/
 
 COPY ./docker/production/entrypoint /entrypoint
