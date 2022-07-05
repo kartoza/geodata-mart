@@ -5,6 +5,8 @@ from pathlib import Path
 
 import environ
 
+QGIS_DATA_ROOT = "/qgis"
+
 ROOT_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # geodata_mart/
 APPS_DIR = ROOT_DIR / "geodata_mart"
@@ -46,6 +48,7 @@ LANGUAGES = [
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {"default": env.db("DATABASE_URL")}
+DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -69,6 +72,7 @@ DJANGO_APPS = [
     # "django.contrib.humanize", # Handy template tags
     "django.contrib.admin",
     "django.forms",
+    "django.contrib.gis",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",
@@ -81,11 +85,14 @@ THIRD_PARTY_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "drf_spectacular",
+    "django_htmx",
 ]
 
 LOCAL_APPS = [
     "geodata_mart.users",
-    # Your stuff: custom apps go here
+    "geodata_mart.vendors",
+    "geodata_mart.maps",
+    "geodata_mart.credits",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -144,6 +151,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.common.BrokenLinkEmailsMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 # STATIC
@@ -328,7 +336,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Geodata Mart API",
     "DESCRIPTION": "Documentation of API endpoints of Geodata Mart",
     "VERSION": "1.0.0",
-    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "SERVERS": [
         {"url": "http://127.0.0.1:8000", "description": "Local Development server"},
         {"url": "https://geodata.kartoza.com", "description": "Production server"},
