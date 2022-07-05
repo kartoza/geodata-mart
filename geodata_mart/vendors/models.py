@@ -8,22 +8,14 @@ class Vendor(models.Model):
     Model for data vendors on Geodata Mart.
     """
 
-    def getImageUploadPath(instance, filename):
-        """Get the organizations upload path as a callable
-
-        Return the upload path using the current instance detail.
-
-        Returns:
-            string: path to output file for image field
-        """
-        return f"images/vendors/{instance.name}/{filename}"
-
     name = models.CharField(_("Vendor Name"), blank=False, null=False, max_length=255)
-    abstract = models.CharField(_("Vendor Abstract"), blank=True, null=True, max_length=255)
+    abstract = models.CharField(
+        _("Vendor Abstract"), blank=True, null=True, max_length=255
+    )
     description = models.TextField(
         verbose_name="Vendor Description", blank=True, null=True
     )
-    image = models.ImageField(upload_to=getImageUploadPath, blank=True, null=True)
+    # image = models.ImageField(upload_to=getImageUploadPath, blank=True, null=True)
     created_date = models.DateTimeField(
         auto_now_add=True, verbose_name=_("Created Date")
     )
