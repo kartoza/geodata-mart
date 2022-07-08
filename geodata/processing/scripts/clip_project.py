@@ -17,7 +17,6 @@ from qgis.core import (
     QgsProcessing,
     QgsProcessingException,
     QgsProcessingAlgorithm,
-    QgsProcessingMultiStepFeedback,
     QgsProject,
     QgsFields,
     QgsField,
@@ -33,7 +32,6 @@ from qgis.core import (
     QgsWkbTypes,
     QgsProcessingParameterString,
     QgsProcessingParameterCrs,
-    QgsProcessingParameterNumber,
 )
 from PyQt5.QtCore import QVariant
 from qgis import processing
@@ -224,7 +222,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 for file in file_paths:
                     zip.write(file, arcname=os.path.basename(file))
 
-            zip = ZipFile(file_name, "r")
+            zip = ZipFile(file_name, "rb")
 
             return zip
 
@@ -749,4 +747,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # Remove obsolete files
         self.removeOutputs(parameters, context, feedback, [".gpkg", ".tif"])
 
-        return {self.OUTPUT: zip}
+        # return {self.OUTPUT: zip}  # return file object
+
+        # Return the output path rather than the content
+        output_zip_path = str(os.path.join(self.output_path, self.jobid + ".zip"))
+        zip.close()
+
+        return {self.OUTPUT: output_zip_path}
