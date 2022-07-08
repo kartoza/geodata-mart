@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static i18n %}
 {% block extrahead %}
 <style>
   .bd-gallery-img {
@@ -20,22 +21,9 @@
 
 {% block content %}
 <main>
-  {% if not request.user.is_authenticated %}
-  <section class="py-5 text-center container">
-    <div class="row py-lg-5">
-      <div class="col-lg-6 col-md-8 mx-auto">
-        <h1 class="fw-light">GeoData Mart</h1>
-        <p class="lead text-muted">Select, clip, and ship collections of geodata quickly and conveniently.</p>
-        <p>
-          <a href="{% url 'account_login' %}" class="btn btn-primary my-2">Sign In</a>
-          <a href="{% url 'account_signup' %}" class="btn btn-secondary my-2">Sign Up</a>
-        </p>
-      </div>
-    </div>
-  </section>
-  {% endif %}
+  {% include "components/_authenticate.html" %}
 
-  <div class="py-5 bg-light">
+  <div class="py-5">
     <div class="container">
 
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">

@@ -1,29 +1,16 @@
 {% extends "base.html" %}
-
+{% load static i18n %}
 {% block title %}Forbidden (403){% endblock %}
 
 {% block content %}
 <section class="py-5 text-center container">
-  <h1>Forbidden (403)</h1>
+  <h1> {% translate "Forbidden" %} (403)</h1>
 
   <p class="lead text-muted">{% if exception %}{{ exception }}{% else %}You're not allowed to access this
     page.{% endif %}</p>
 
 </section>
 
-{% if not request.user.is_authenticated %}
-<section class="py-5 text-center container">
-  <div class="row py-lg-5">
-    <div class="col-lg-6 col-md-8 mx-auto">
-      <h1 class="fw-light">GeoData Mart</h1>
-      <p class="lead text-muted">Select, clip, and ship collections of geodata quickly and conveniently.</p>
-      <p>
-        <a href="{% url 'account_login' %}" class="btn btn-primary my-2">Sign In</a>
-        <a href="{% url 'account_signup' %}" class="btn btn-secondary my-2">Sign Up</a>
-      </p>
-    </div>
-  </div>
-</section>
-{% endif %}
+{% include "components/_authenticate.html" %}
 
 {% endblock content %}

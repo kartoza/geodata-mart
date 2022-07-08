@@ -47,31 +47,31 @@
   </object>
   {% compress css %}
   <link href="{% static 'css/bootstrap-icons/1.8.3/bootstrap-icons.css' %}" rel="stylesheet">
-  {% endcompress %}
-  {% compress css %}
   <link href="{% static 'css/project.css' %}" rel="stylesheet">
-  {% endcompress %}
-  {% compress css %}
   <link rel="stylesheet" type="text/x-scss" href="{% static "css/project.scss" %}" />
   {% endcompress %}
+  <style>
+    .leaflet-control-geocoder-form input {
+      color: black
+    }
+
+    .uneditable-input {
+      width: 100%;
+    }
+
+  </style>
   {% endblock %}
 
   {% block javascript %}
   {% compress js %}
+  <script src="{% static 'js/htmx/1.7.0/htmx.min.js' %}"></script>
   <script defer src="{% static 'js/bootstrap/5.1.3/bootstrap.bundle.js' %}"></script>
-  {% endcompress %}
-  {% compress js %}
   <script defer src="{% static 'js/alpine/3.10.2/alpine.min.js' %}"></script>
-  {% endcompress %}
-  {% compress js %}
   <script defer src="{% static 'js/alpine/3.10.2/persist.min.js' %}"></script>
-  {% endcompress %}
-  {% compress js %}
   <script defer src="{% static 'js/project.js' %}"></script>
   {% endcompress %}
 
   {% endblock javascript %}
-
 
   {% block extrahead %}
   {% endblock extrahead %}
@@ -89,7 +89,7 @@
           aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
-        <a class="navbar-brand" href="{% url 'home' %}">
+        <a class="navbar-brand" href="{% url 'gallery' %}">
           <img src="{% static 'images/logo_banner_alt.svg' %}" height="40px" alt="GeoData Mart">
         </a>
 
@@ -117,7 +117,8 @@
     {% endif %}
 
     {% block content %}
-    <p>Use this document as a way to quick start any new project.</p>
+    {% translate "Welcome to the GeoData Mart." as welcome_msg %}
+    <p>{{ welcome_msg }}</p>
     {% endblock content %}
 
     {% block footer %}
@@ -134,7 +135,8 @@
 
   {% endblock page %}
 
-  {% block modal %}{% endblock modal %}
+  {% block modal %}
+  {% endblock modal %}
 
   {% block inline_javascript %}
   {% endblock inline_javascript %}
