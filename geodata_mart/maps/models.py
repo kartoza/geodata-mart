@@ -2,6 +2,8 @@ from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.db import models
 from django.contrib.gis.db import models as gismodels
+from django.contrib.gis.utils import LayerMapping
+from django.contrib.gis.gdal import DataSource
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from geodata_mart.vendors.models import Vendor
@@ -489,11 +491,11 @@ class Job(models.Model):
         STALE = 8, _("Stale")
         OTHER = 9, _("Other")
 
-    job_id = models.CharField(
+    job_id = models.UUIDField(
         _("Job ID"),
-        unique=True,
-        max_length=32,
-        default=uuid.uuid4().hex,
+        primary_key=False,
+        default=uuid.uuid4,
+        editable=True,
         blank=True,
         null=True,
     )
@@ -552,6 +554,7 @@ class Job(models.Model):
             #         tasks.append((el.name, el.value_to_string(self)))
             #     fields.append(("tasks", tasks))
         return fields
+
 
 class ResultFile(ManagedFileObject):
     """Processing Job Result File Model
