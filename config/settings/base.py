@@ -6,6 +6,8 @@ from pathlib import Path
 import environ
 
 QGIS_DATA_ROOT = "/qgis"
+MEDIA_URL_1 = "/geodata/assets/"
+MEDIA_ROOT_1 = QGIS_DATA_ROOT
 
 ROOT_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # geodata_mart/
@@ -284,12 +286,10 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_serializer
 CELERY_RESULT_SERIALIZER = "json"
-# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
-# TODO: set to whatever value is adequate in your circumstances
-CELERY_TASK_TIME_LIMIT = 5 * 60
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
-# TODO: set to whatever value is adequate in your circumstances
-CELERY_TASK_SOFT_TIME_LIMIT = 60
+CELERY_TASK_SOFT_TIME_LIMIT = 15 * 60
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
+CELERY_TASK_TIME_LIMIT = CELERY_TASK_SOFT_TIME_LIMIT + (3 * 60)
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#beat-scheduler
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # django-allauth

@@ -58,8 +58,15 @@ It is desirable to aim for [dev-prod-parity](https://12factor.net/dev-prod-parit
 Because the django app is run within an isolated docker container and may not have access to the declared environment variables for the project, to run commands it is required to run a temporary instance of the django container. This will initiate the environment variable with the docker entrypoint (rather than a typical command operation), e.g.
 
 ```bash
-$ docker compose run --rm django python manage.py migrate
-$ docker compose run --rm django python manage.py createsuperuser
+docker compose run --rm django python manage.py migrate
+docker compose run --rm django python manage.py createsuperuser
+```
+
+From within a container a helper script to configure the environment is provided:
+
+```bash
+source ./setenv.sh
+python ./manage.py seed
 ```
 
 The [docs](https://cookiecutter-django.readthedocs.io/en/latest/developing-locally-docker.html#execute-management-commands) have more information on this process. Note that trying to exec into a running django instance will require you to declare relevant environment variables, e.g.:

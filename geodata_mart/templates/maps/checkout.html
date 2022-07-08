@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <div class="py-5">
+    <div class="container">
+      <form action="{% url 'maps:checkout' job.job_id %}" class="form-horizontal" method="post">
+        {% csrf_token %}
+        <div class="row py-lg-5">
+          <div class="col-lg-6 col-md-8 mx-auto">
+            <legend>Processing Job {{ job.job_id }}</legend>
+            <a href="{% url 'maps:checkout' job.job_id %}">
+              <button class="btn btn-secondary m-2 p-4" type="button" name="" value="{% translate 'Cancel' %}"
+                class></button>
+            </a>
+            <button class="btn btn-success m-2 p-4" type="submit" name="" value="{% translate 'Process' %}"
+              class></button>
+          </div>
+        </div>
+        <fieldset disabled>
+          {% for field in form %}
+          <div class="mb-3">
+            <label for="FormControlInput{{ forloop.counter }}" class="form-label">{{ field.label_tag }}</label>
+            <input type="text" class="form-control" id="FormControlInput{{ forloop.counter }}"
+              placeholder="{{ field }}">
+            {% if field.errors %}
+            <div class="invalid-feedback">{{ field.errors }}</div>
+            {% endif %}
+          </div>
+        </fieldset>
+        {% endfor %}
+      </form>
+    </div>
+  </div>
+
+</main>
+{% endblock content %}

@@ -149,6 +149,7 @@ class JobAdmin(admin.ModelAdmin):
         "project_id",
         "state",
         "parameters",
+        "tasks",
         "comment",
         "created_date",
         "updated_date",
@@ -164,6 +165,7 @@ class JobAdmin(admin.ModelAdmin):
         "state",
         "layers",
         "parameters",
+        "tasks",
         "comment",
     ]
     actions = [

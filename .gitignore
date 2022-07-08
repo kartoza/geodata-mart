@@ -8,6 +8,7 @@
 # maintain directory structure, but exclude contents
 # note that models, scripts, and test data are explicitly added to prevent pollution, remembering
 # that some software (e.g. qgis) may modify files in place or produce auxilliary files, e.g. .qgs~
+# DO NOT COMMIT PROJECT FILES WITH EMBEDDED CREDENTIALS HERE
 /geodata/**
 !/geodata/**/.gitkeep
 /geodata/output/**

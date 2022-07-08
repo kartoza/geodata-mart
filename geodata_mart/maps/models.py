@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from geodata_mart.vendors.models import Vendor
 from geodata_mart.users.models import User
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import ArrayField
 import uuid
 import logging
 
@@ -285,7 +285,6 @@ class QgisProjectFile(ManagedFileObject):
     class Meta(ManagedFileObject.Meta):
         verbose_name = _("QGIS Project File")
         verbose_name_plural = _("QGIS Project Files")
-        unique_together = ("file_name", "version")
 
 
 class Project(gismodels.Model):
@@ -377,10 +376,10 @@ class Project(gismodels.Model):
         ]
 
     def __str__(self):
-        return self.short_name
+        return self.project_name
 
     def __unicode__(self):
-        return self.short_name
+        return self.project_name
 
     def preview(self):
         return self.comment[:100]
@@ -416,7 +415,7 @@ class Layer(models.Model):
         TABLE = 8, _("Table")
         OTHER = 9, _("Other")
 
-    short_name = models.CharField(_("Layer Short Name"), max_length=20)
+    short_name = models.CharField(_("Layer Short Name"), max_length=80)
     layer_name = models.CharField(_("Layer Name"), max_length=255)
     abstract = models.CharField(_("Layer Abstract"), max_length=255)
     created_date = models.DateTimeField(
@@ -456,6 +455,7 @@ class Layer(models.Model):
     class Meta:
         verbose_name = _("Project Layer")
         verbose_name_plural = _("Project Layers")
+        unique_together = ("short_name", "project_id")
 
     def __str__(self):
         return self.short_name
@@ -489,7 +489,14 @@ class Job(models.Model):
         STALE = 8, _("Stale")
         OTHER = 9, _("Other")
 
-    job_id = models.CharField(_("Job ID"), max_length=32, default=uuid.uuid4().hex)
+    job_id = models.CharField(
+        _("Job ID"),
+        unique=True,
+        max_length=32,
+        default=uuid.uuid4().hex,
+        blank=True,
+        null=True,
+    )
     created_date = models.DateTimeField(
         auto_now_add=True, verbose_name=_("Created Date")
     )
@@ -510,9 +517,13 @@ class Job(models.Model):
     )
     layers = models.ManyToManyField(Layer, verbose_name=_("Map Layers"), blank=True)
     state = models.IntegerField(
-        choices=JobStateChoices.choices, default=JobStateChoices.UNSPECIFIED
+        choices=JobStateChoices.choices,
+        default=JobStateChoices.UNSPECIFIED,
+        blank=True,
+        null=True,
     )
-    parameters = models.JSONField(_("Request Parameters"))
+    parameters = models.JSONField(_("Request Parameters"), blank=True, null=True)
+    tasks = ArrayField(models.CharField(max_length=36), blank=True, null=True)
     comment = models.TextField(verbose_name=_("Comments"), blank=True, null=True)
 
     class Meta:
@@ -528,6 +539,19 @@ class Job(models.Model):
     def preview(self):
         return self.comment[:100]
 
+    def get_fields(self):
+        # return [(field.name, field.value_to_string(self)) for field in Job._meta.fields]
+        fields = []
+        for field in Job._meta.fields:
+            if not field.get_internal_type() == "ArrayField":
+                # if not field.name == "tasks":
+                fields.append((field.name, field.value_to_string(self)))
+            # elif field.name == "tasks" and field:
+            #     tasks = []
+            #     for el in field.items():  # how to iterate?
+            #         tasks.append((el.name, el.value_to_string(self)))
+            #     fields.append(("tasks", tasks))
+        return fields
 
 class ResultFile(ManagedFileObject):
     """Processing Job Result File Model
@@ -547,8 +571,8 @@ class ResultFile(ManagedFileObject):
         Job,
         on_delete=models.DO_NOTHING,
         verbose_name=_("Job"),
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
     )
 
     class Meta(ManagedFileObject.Meta):

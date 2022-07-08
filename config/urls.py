@@ -2,15 +2,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.i18n import i18n_patterns
 
+from geodata_mart.maps import views as map_views
+from geodata_mart.views import geodata as geodata_view
+
 urlpatterns = i18n_patterns(
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
+    path("", map_views.gallery, name="gallery"),
+    # path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(
         "about/", TemplateView.as_view(template_name="pages/about.html"), name="about"
     ),
@@ -19,7 +23,10 @@ urlpatterns = i18n_patterns(
     # User management
     path("users/", include("geodata_mart.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
-    # Your stuff: custom urls includes go here
+    # App url includes
+    path("maps/", include("geodata_mart.maps.urls", namespace="maps")),
+    # path("geodata/assets/<str:file_uri>", geodata_view, name="geodata"),
+    re_path(r"geodata/assets/(?P<path>.*)$", geodata_view, name="geodata"),
 )
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
