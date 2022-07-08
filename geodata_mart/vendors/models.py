@@ -8,7 +8,9 @@ class Vendor(models.Model):
     Model for data vendors on Geodata Mart.
     """
 
-    name = models.CharField(_("Vendor Name"), blank=False, null=False, max_length=255)
+    name = models.CharField(
+        _("Vendor Name"), unique=True, blank=False, null=False, max_length=255
+    )
     abstract = models.CharField(
         _("Vendor Abstract"), blank=True, null=True, max_length=255
     )
