@@ -17,19 +17,21 @@
 !/geodata/projects/
 /geodata/test/**
 /geodata/test/projects/**
-# testdata
+# seed data
+/geodata/seed/**
+!/geodata/seed/
+!/geodata/seed/clip_project.py
+# test data
 !/geodata/test/projects/dem.tif
 !/geodata/test/projects/sample.qgs
 !/geodata/test/projects/world.geojson
-
+# processing data
 /geodata/processing/**
+!/geodata/processing/
 /geodata/processing/models/**
 !/geodata/processing/models/
 /geodata/processing/scripts/**
 !/geodata/processing/scripts/
-# Models and scripts we want to keep in vcs
-# !/geodata/processing/models/sample.model3
-!/geodata/processing/scripts/clip_project.py
 
 # exclude venv
 ./env/
