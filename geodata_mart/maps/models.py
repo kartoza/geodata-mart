@@ -334,8 +334,8 @@ class Project(gismodels.Model):
         QgisProjectFile,
         on_delete=models.CASCADE,
         verbose_name=_("Project File"),
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
     )
     vendor_id = models.ForeignKey(
         Vendor,
