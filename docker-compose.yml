@@ -166,6 +166,7 @@ services:
         python /app/manage.py makemigrations;
         python /app/manage.py migrate;
         python /app/manage.py createsuperuser --noinput --skip-checks;
+        python /app/manage.py seed;
         exit 0;
     depends_on:
       - postgres

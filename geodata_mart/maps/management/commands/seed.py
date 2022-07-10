@@ -168,4 +168,16 @@ class Command(BaseCommand):
                     project_id=ngi_project,
                 )
 
+        self.stdout.write("load processing script...")
+        script_file = "seed/clip_project.py"
+        if not project_storage.exists(script_file):
+            raise Exception(f"{project_storage.path(script_file)} not found")
+        script_record = ProcessingScriptFile.objects.create(
+            file_name="script:gdmclip",
+        )
+
+        script_record.file_object.save(
+            basename(script_file), project_storage.open(script_file), save=True
+        )
+
         self.stdout.write("time to party...")
