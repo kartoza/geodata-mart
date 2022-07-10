@@ -533,10 +533,10 @@ class Job(models.Model):
         verbose_name_plural = _("Geodata Mart Processing Jobs")
 
     def __str__(self):
-        return self.job_id
+        return str(self.job_id)
 
     def __unicode__(self):
-        return self.job_id
+        return str(self.job_id)
 
     def preview(self):
         return self.comment[:100]
