@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n maps_extras %}
 {% block extrahead %}
 <style>
   .bd-gallery-img {
@@ -72,9 +72,43 @@
       </div>
       {% endfor %}
 
-    </div>
 
+    </div>
   </div>
+  <div class="py-5">
+    <div class="container">
+      <div class="row align-items-center">
+
+        {% if projects.has_other_pages %}
+        <div class="btn-group" role="group" aria-label="Item pagination">
+          {% if projects.has_previous %}
+          <a href="?page=1" class="btn btn-outline-primary">&lsaquo;</a>
+          <a href="?page={{ projects.previous_page_number }}" class="btn btn-outline-primary">&laquo;</a>
+          {% endif %}
+
+          {% for page_number in projects.paginator.page_range %}
+          {% if projects.number == page_number %}
+          <button class="btn btn-outline-primary active">
+            <span>{{ page_number }}<span class="visually-hidden">(current)</span></span>
+          </button>
+          {% elif page_number >= projects.number|subtract:"3" and page_number >= 1 and page_number <= projects.number|add:"3" and page_number <= projects.paginator.num_pages %}
+          <a href="?page={{ page_number }}" class="btn btn-outline-primary">
+            {{ page_number }}
+          </a>
+          {% endif %}
+          {% endfor %}
+
+          {% if projects.has_next %}
+          <a href="?page={{ projects.next_page_number }}" class="btn btn-outline-primary">&raquo;</a>
+          <a href="?page={{ projects.paginator.num_pages }}" class="btn btn-outline-primary">&rsaquo;</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
   </div>
 
 </main>

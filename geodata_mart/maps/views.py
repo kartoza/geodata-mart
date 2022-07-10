@@ -5,6 +5,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Func, F, Value
 
+from django.core.paginator import (
+    Paginator,
+    EmptyPage,
+    PageNotAnInteger,
+)
+
 from geodata_mart.maps.forms import JobForm
 from geodata_mart.maps.tasks import process_job_gdmclip
 from geodata_mart.maps.models import Project, Layer, Job, ResultFile
@@ -15,8 +21,20 @@ logger = logging.getLogger(__name__)
 
 
 def gallery(request):
+    default_page = 1
+    page = request.GET.get('page', default_page)
     projects_list = Project.objects.order_by("id")
-    context = {"projects": projects_list}
+    items_per_page = 10
+    paginator = Paginator(projects_list, items_per_page)
+
+    try:
+        projects_page = paginator.page(page)
+    except PageNotAnInteger:
+        projects_page = paginator.page(default_page)
+    except EmptyPage:
+        projects_page = paginator.page(paginator.num_pages)
+
+    context = {"projects": projects_page}
     return render(request, "maps/gallery.html", context)
 
 

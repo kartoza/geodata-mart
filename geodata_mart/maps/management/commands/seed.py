@@ -180,4 +180,15 @@ class Command(BaseCommand):
             basename(script_file), project_storage.open(script_file), save=True
         )
 
+        self.stdout.write("create placeholder projects...")
+
+        for i in range(900):
+            Project.objects.create(
+                project_name="Blank" + str(i + 2),
+                state=StateChoices.ACTIVE,
+                vendor_id=kartoza,
+                comment="Blank project spec for testing gallery view, number: "
+                + str(i+2),
+            )
+
         self.stdout.write("time to party...")
