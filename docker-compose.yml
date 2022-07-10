@@ -16,7 +16,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
-    image: gdm_django
+    image: django
     container_name: django
     platform: linux/x86_64
     depends_on:
@@ -71,7 +71,7 @@ services:
 
   celeryworker:
     <<: *django
-    image: gdm_celeryworker
+    image: celeryworker
     container_name: celeryworker
     depends_on:
       - redis
@@ -82,7 +82,7 @@ services:
 
   celerybeat:
     <<: *django
-    image: gdm_celerybeat
+    image: celerybeat
     container_name: celerybeat
     depends_on:
       - redis
@@ -95,8 +95,8 @@ services:
 
   flower:
     <<: *django
-    image: gdm_flower
-    container_name: gdm_flower
+    image: flower
+    container_name: flower
     depends_on:
       - celerybeat
     ports:
@@ -117,7 +117,7 @@ services:
       - "${MINIO_CONSOLE_PORT}:9001"
 
   docs:
-    image: gdm_docs
+    image: docs
     container_name: docs
     platform: linux/x86_64
     build:
@@ -135,8 +135,8 @@ services:
 
   # Ops - Once off bootstrapping operations for system initialization
   minio-init:
-    image: quay.io/minio/mc
     container_name: minio-init
+    image: quay.io/minio/mc
     entrypoint: /bin/bash
     command:
       - -c
@@ -152,7 +152,7 @@ services:
   django-init:
     <<: *django
     container_name: django-init
-    image: gdm_django_init
+    image: django-init
     entrypoint: /bin/bash
     environment:
       CELERY_BROKER_URL: ${REDIS_URL}"
