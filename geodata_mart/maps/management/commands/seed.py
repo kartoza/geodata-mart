@@ -11,11 +11,8 @@ from geodata_mart.maps.models import (
 )
 from django.conf import settings
 from geodata_mart.vendors.models import Vendor
-from django.core.files import File
-import tempfile
 from django.conf import settings
-
-from django.core.files.storage import FileSystemStorage
+from os.path import basename
 
 
 class Command(BaseCommand):
@@ -24,6 +21,7 @@ class Command(BaseCommand):
     def transformLabels(self, label):
         mapping = {
             "_exp": "",
+            "exp_": "",
             "_exp_": "_",
             "lclu_": "",
             "landform_artific": "Artificial Landform",
@@ -36,6 +34,8 @@ class Command(BaseCommand):
             "point": "Points",
             "areal": "Areas",
             "educational": "Education",
+            "_": " ",
+            "-": " ",
             "  ": " ",  # replace any double spaces
             "  ": " ",
             "  ": " ",
@@ -71,38 +71,36 @@ class Command(BaseCommand):
             kartoza = Vendor.objects.create(
                 name="Kartoza",
                 abstract="Open Source GeoSpatial Solutions",
-                description="""Formed by a merger between Linfiniti and AfriSpatial,
-            Kartoza is an industry leading Open Source GeoSpatial solutions provider for Africa,
-            providing a range of services related to consulting, development, training, and support for customers across the globe.
-            """,
+                description=(
+                    "Formed by a merger between Linfiniti and AfriSpatial,"
+                    + " Kartoza is an industry leading Open Source GeoSpatial solutions"
+                    + " provider for Africa, providing a range of services related to"
+                    + " consulting, development, training, and support for customers across the globe."
+                ),
             )
+        else:
+            kartoza = kartoza.first()
 
-        # CREATE THIS FILE MANUALLY BECAUSE THE MANAGEMENT COMMAND RETURNS SuspiciousFileOperation
-        # self.stdout.write("create default project file...")
-        # project_file = "projects/ngi_sample.qgs"
-        # if not project_storage.exists(project_file):
-        #     raise Exception(f"{project_storage.path(project_file)} not found")
-        # project_file = project_storage.open(project_file, "rb")
-        # temp_file = tempfile.NamedTemporaryFile(
-        #     dir=settings.STATIC_ROOT
-        # )  # try bypass SuspiciousFileOperation
-        # # project_file_object = File(project_file)
-        # temp_file.write(project_file.read())
-        # project_file_object = File(temp_file)
-        # ngi_project_file = QgisProjectFile.objects.create(
-        #     file_name="NGI Project File",
-        #     file_object=project_file_object,
-        #     state=StateChoices.OTHER,
-        # )
-        # project_file.close()
-        # project_file_object.close()
+        # cleanup
+        # Project.objects.all().delete()
+        # QgisProjectFile.objects.all().delete()
+        # Layer.objects.all().delete()
 
-        ngi_project_file = QgisProjectFile.objects.filter(
-            file_name="NGI Project File"
-        ).first()
+        self.stdout.write("create default project file...")
+        project_file = "seed/ngi_sample.qgs"
+        if not project_storage.exists(project_file):
+            raise Exception(f"{project_storage.path(project_file)} not found")
+        ngi_project_file = QgisProjectFile.objects.create(
+            file_name="NGI Project File",
+            state=StateChoices.OTHER,
+        )
+
+        ngi_project_file.file_object.save(
+            basename(project_file), project_storage.open(project_file), save=True
+        )
 
         self.stdout.write("create default project object...")
-        ngi_project = Project.objects.filter(project_name="NGI")
+        ngi_project = Project.objects.filter(project_name="NGI").first()
         if not ngi_project:
             ngi_project = Project.objects.create(
                 project_name="NGI",
@@ -169,18 +167,5 @@ class Command(BaseCommand):
                     abstract=value,
                     project_id=ngi_project,
                 )
-
-        # CREATE THIS FILE MANUALLY BECAUSE THE MANAGEMENT COMMAND RETURNS SuspiciousFileOperation
-        # script_file = "processing/scripts/clip_project.py"
-        # if not project_storage.exists(script_file):
-        #     raise Exception(f"{project_storage.path(script_file)} not found")
-        # script_file = project_storage.open(script_file, "rb")
-        # script_file_object = File(script_file)
-        # ProcessingScriptFile.objects.create(
-        #     file_name="Clip QGIS Project",
-        #     file_object=script_file_object,
-        #     state=StateChoices.OTHER,
-        # )
-        # script_file_object.close()
 
         self.stdout.write("time to party...")
