@@ -46,3 +46,12 @@ class Vendor(models.Model):
         blank=True,
         related_name="admins",
     )
+
+    def __str__(self):
+        return self.name
+
+    def __unicode__(self):
+        return self.name
+
+    def preview(self):
+        return self.description[:100]
