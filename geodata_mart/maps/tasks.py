@@ -2,6 +2,7 @@ from config import celery_app
 from celery.utils.log import get_task_logger
 from celery.exceptions import SoftTimeLimitExceeded
 
+from PyQt5 import *
 from qgis.core import *
 
 # from qgis.core import (
@@ -19,6 +20,7 @@ import processing
 
 from time import sleep
 from os.path import join
+from os import environ
 
 from django.core.files import File
 
@@ -26,22 +28,27 @@ from django.core.files import File
 from geodata_mart.maps.models import project_storage
 from geodata_mart.maps.models import Job, ResultFile
 
+from geodata_mart.utils.qgis import migrateProcessingScripts
+
 logger = get_task_logger(__name__)
+
+import shutil
+from processing.core.Processing import Processing
 
 
 def run_gdmclip_processing_script(
-    process_feedback,
-    process_context,
+    LAYERS,
+    CLIP_GEOM,
+    OUTPUT,
+    EXCLUDES,
+    OUTPUT_CRS,
+    PROJECT_CRS,
     PROJECTID,
     VENDORID,
     USERID,
     JOBID,
-    LAYERS,
-    EXCLUDES,
-    CLIP_GEOM,
-    OUTPUT_CRS,
-    PROJECT_CRS,
-    OUTPUT,
+    process_feedback,
+    process_context,
 ):
     """Run the default generic processing script"""
 
@@ -74,50 +81,92 @@ def run_gdmclip_processing_script(
 
 @celery_app.task()
 def process_job_gdmclip(job_id):
-    QgsApplication.setPrefixPath("/usr/bin/qgis", True)
-    qgs = QgsApplication([], False)  # nogui
-    qgs.initQgis()
-    qgs.exitQgis()
     job = Job.objects.filter(job_id=job_id).first()
-    logger.info(f"Processing Job: {job}")
+    if not job:
+        raise ValueError(f"Processing Job {job_id} not found")
+    else:
+        logger.info(f"Processing Job: {job_id}")
+
+    logger.info(f"Updating processing script availability")
+
+    migrateProcessingScripts()
+
+    # manually force script availability
+    # shutil.copy2(
+    #     "/qgis/processing/scripts/clip_project.py",
+    #     "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
+    # )
+    shutil.copy2(
+        "/qgis/processing/scripts/clip_project.py",
+        "/root/.local/share/profiles/default/processing/scripts/",
+    )
+
+    logger.info(f"Configuring environment")
     parameters = job.parameters
+    environ[
+        "QT_QPA_PLATFORM"
+    ] = "offscreen"  # https://gis.stackexchange.com/questions/379131/qgis-linux-qt-qpa-plugin-could-not-load-the-qt-platform-plugin-xcb-in-eve
+
+    QgsApplication.setPrefixPath("/usr/bin/qgis", useDefaultPaths=True)
+
+    qgs = QgsApplication(
+        argv=[],
+        GUIenabled=False,
+        # profileFolder="profile/path",
+        platformName="external",
+        # platformName="qgis_process",
+    )
+    logger.info("Configuring QGIS")
+    registry = (
+        qgs.processingRegistry()
+    )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
+    # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
+    qgs.setMaxThreads(1)
+    qgs.initQgis()
+
     feedback = QgsProcessingFeedback()
     context = QgsProcessingContext()
+
     map_file = job.project_id.project_file.file_object.path
-    # logger.info("nnnnnn")
-    # # canvas = QgsMapCanvas()
-    # logger.info("---")
-    # bridge = QgsLayerTreeMapCanvasBridge(
-    #     QgsProject.instance().layerTreeRoot(), QgsMapCanvas()
-    # )
+
     readflags = QgsProject.ReadFlags()
-    readflags |= QgsProject.FlagDontResolveLayers
-    logger.info("***")
-    project = QgsProject.instance().read(map_file, readflags)
+    readflags |= (
+        QgsProject.FlagDontResolveLayers
+        | QgsProject.FlagDontResolveLayers
+        | QgsProject.FlagDontLoadLayouts
+        | QgsProject.FlagTrustLayerMetadata
+    )
+    project = QgsProject()
+    project.read(map_file, readflags)
     context.setProject(project)
-    logger.info("####")
-    output_path = join(project_storage.path, "output", job.job_id)
+    output_path = join(project_storage.location, "output", str(job.job_id))
+    logger.info("Executing processing command")
+
+    Processing.initialize()
+    if registry.providerById("script"):
+        registry.providerById("script").refreshAlgorithms()
+
     try:
-        logger.info("aaaaaaaaaaaaaaaaaaaaa")
         task = run_gdmclip_processing_script(
-            process_feedback=feedback,
-            process_context=context,
+            LAYERS=parameters["LAYERS"],
+            CLIP_GEOM=parameters["CLIP_GEOM"],
+            OUTPUT=output_path,
+            EXCLUDES=parameters["EXCLUDES"],
+            OUTPUT_CRS=parameters["OUTPUT_CRS"],
+            PROJECT_CRS=parameters["PROJECT_CRS"],
             PROJECTID=parameters["PROJECTID"],
             VENDORID=parameters["VENDORID"],
             USERID=parameters["USERID"],
-            JOBID=job.job_id,
-            LAYERS=parameters["LAYERS"],
-            EXCLUDES=parameters["EXCLUDES"],
-            CLIP_GEOM=parameters["CLIP_GEOM"],
-            OUTPUT_CRS=parameters["OUTPUT_CRS"],
-            PROJECT_CRS=parameters["PROJECT_CRS"],
-            OUTPUT=output_path,
+            JOBID=str(job.job_id),
+            process_feedback=feedback,
+            process_context=context,
         )
-        logger.info("bbbbbbbbbbbbbbbbbbbbbbbb")
+        logger.info("Waiting for process to complete...")
         # Wait for procesing script to run
         while (
             not task.finished()
         ):  # https://qgis.org/pyqgis/master/core/QgsTask.html#qgis.core.QgsTask.finished
+            logger.info(task.progress())
             sleep(5)  # 5 seconds is fine
 
         logger.info(task["OUTPUT"])
@@ -133,7 +182,9 @@ def process_job_gdmclip(job_id):
             file_object=results_file_object,
             job_id=job,
         )
-        results_file_object.close()
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
+
+    finally:
+        qgs.exitQgis()

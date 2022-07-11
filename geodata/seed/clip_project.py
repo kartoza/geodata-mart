@@ -201,6 +201,32 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             )
         )
 
+    def getParameterValue(self, parameters, parameter_name):
+        """Test whether an input parameter is available and truthy,
+        then return the retrieved paramter value"""
+        if parameter_name in parameters:
+            if bool(parameters[parameter_name]):
+                return_value = parameters[parameter_name]
+            else:
+                return_value = None
+        else:
+            return_value = None
+        return return_value
+
+    def getCleanListFromCsvString(self, input_string):
+        """Convert an input comma separated string into a list of clean values"""
+        output_list = input_string.split(", ")
+        output_list = [
+            a.replace(",", "").strip() for a in output_list if bool(a.strip())
+        ]
+        output_list = [
+            a.replace("'", "").strip() for a in output_list if bool(a.strip())
+        ]
+        output_list = [
+            a.replace('"', "").strip() for a in output_list if bool(a.strip())
+        ]
+        return output_list
+
     def zipOutputs(self, parameters, context, feedback):
         """
         Compile the outputs from the processing tool into a single zip file
@@ -308,9 +334,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             )
             sql = (
                 "INSERT INTO __geodatamart__ (user,vendor,project,job,date) VALUES ("
-                + f'\'{parameters["USERID"] if "USERID" in parameters else "NULL"}\','
-                + f' \'{parameters["VENDORID"] if "VENDORID" in parameters else "NULL"}\','
-                + f' \'{parameters["PROJECTID"] if "PROJECTID" in parameters else "NULL"}\','
+                + f'\'{parameters["USERID"] if self.getParameterValue(parameters, "USERID") else "NULL"}\','
+                + f' \'{parameters["VENDORID"] if self.getParameterValue(parameters, "VENDORID") else "NULL"}\','
+                + f' \'{parameters["PROJECTID"] if self.getParameterValue(parameters, "PROJECTID") else "NULL"}\','
                 + f' \'{self.jobid}\', \'{date.today().strftime("%Y/%m/%d")}\');'
             )
             conn.execSql(sql, feedback)
@@ -588,46 +614,30 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         """
         Run processing algorithm
         """
-        if "OUTPUT_CRS" in parameters:
-            self.output_crs = parameters["OUTPUT_CRS"]
-        else:
-            self.output_crs = None
-        if "PROJECT_CRS" in parameters:
-            self.project_crs = parameters["PROJECT_CRS"]
-        else:
-            self.project_crs = None
+
+        self.output_crs = self.getParameterValue(parameters, "OUTPUT_CRS")
+        self.project_crs = self.getParameterValue(parameters, "PROJECT_CRS")
 
         # Assess project layers and requested layers
-        process_layer_names = parameters["LAYERS"]
-        process_layer_names = process_layer_names.split(",")
-        process_layer_names = [
-            a.strip()
-            for a in process_layer_names
-            if (a.strip() != " ") and a.strip() != ""
-        ]
-        # Exclude layers from project that aren't pertinent to operation
-        map_layers = [
-            layer.name() for layer in QgsProject.instance().mapLayers().values()
-        ]
-        map_layers += [
-            layer.source() for layer in QgsProject.instance().mapLayers().values()
-        ]
+        map_layers = self.getCleanListFromCsvString(parameters["LAYERS"])
 
         exclude_layers = []
-        if "EXCLUDES" in parameters:
+        if self.getParameterValue(parameters, "EXCLUDES"):
             # Identify layers to be excluded from processing,
             # ensuring that they remain available as a default
-            exclude_layers = parameters["EXCLUDES"]
-            exclude_layers = exclude_layers.split(",")
-            exclude_layers = [
-                a.strip()
-                for a in exclude_layers
-                if (a.strip() != " ") and a.strip() != ""
-            ]
+            exclude_layers = self.getCleanListFromCsvString(
+                self.getParameterValue(parameters, "EXCLUDES")
+            )
             map_layers += [layer for layer in exclude_layers]
 
+        # Exclude layers from project that aren't pertinent to operation
+
         for layer in QgsProject.instance().mapLayers().values():
-            if not layer.name() in map_layers and (not layer.source() in map_layers):
+            if (
+                (not layer.shortName() in map_layers)
+                and (not layer.name() in map_layers)
+                and (not layer.source() in map_layers)
+            ):
                 QgsProject.instance().removeMapLayer(layer.id())
 
         if len(QgsProject.instance().mapLayers()) < 1:
@@ -674,32 +684,36 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         )
 
         # Set jobid (defines output filenames) and destination path
-        self.jobid = "OUTPUT" if not "JOBID" in parameters else parameters["JOBID"]
+        self.jobid = (
+            "OUTPUT"
+            if not self.getParameterValue(parameters, "JOBID")
+            else str(parameters["JOBID"])
+        )
 
         self.output_path = os.path.dirname(os.path.abspath(parameters["OUTPUT"]))
 
         self.output_path = (
             os.path.join(
                 self.output_path,
-                parameters["USERID"],
+                str(parameters["USERID"]),
             )
-            if "USERID" in parameters
+            if self.getParameterValue(parameters, "USERID")
             else self.output_path
         )
         self.output_path = (
             os.path.join(
                 self.output_path,
-                parameters["VENDORID"],
+                str(parameters["VENDORID"]),
             )
-            if "VENDORID" in parameters
+            if self.getParameterValue(parameters, "VENDORID")
             else self.output_path
         )
         self.output_path = (
             os.path.join(
                 self.output_path,
-                parameters["PROJECTID"],
+                str(parameters["PROJECTID"]),
             )
-            if "PROJECTID" in parameters
+            if self.getParameterValue(parameters, "PROJECTID")
             else self.output_path
         )
 

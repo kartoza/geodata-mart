@@ -78,6 +78,8 @@ services:
       - postgres
       - mailhog
     ports: []
+    volumes:
+      - ./geodata:/qgis:z
     command: /start-celeryworker
 
   celerybeat:
