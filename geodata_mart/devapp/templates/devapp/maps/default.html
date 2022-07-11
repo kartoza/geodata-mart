@@ -1,16 +1,32 @@
 {% extends "base.html" %}
 {% load static i18n compress %}
 {% block extrahead %}
-<script src="{% static 'assets/leaflet/leaflet.js' %}"></script>
-<link rel="stylesheet" href="{% static 'assets/leaflet/leaflet.css' %}" />
-<script src="{% static 'assets/leaflet-draw/leaflet.draw.js' %}"></script>
-<link rel="stylesheet" href="{% static 'assets/leaflet-draw/leaflet.draw.css' %}" />
-<script src="{% static 'assets/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
-<link rel="stylesheet" href="{% static 'assets/leaflet-toolbar/leaflet.toolbar.css' %}" />
-<script src="{% static 'assets/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
-<link rel="stylesheet" href="{% static 'assets/leaflet-draw-toolbar/leaflet.draw-toolbar.css' %}" />
+{% compress css %}
+<link rel="stylesheet" href="{% static 'leaflet/leaflet/leaflet.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/leaflet-draw/leaflet.draw.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.css' %}" />
+{% endcompress %}
+
+{% compress js %}
+<script src="{% static 'leaflet/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-draw/leaflet.draw.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.js' %}"></script>
+<script src="{% static 'js/turf.min.js' %}"></script>
+{% endcompress %}
+
 <style>
   .map-page {
+    height: 90vh;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  .map-container {
     height: 80vh;
     justify-content: center;
     align-items: center;
@@ -103,7 +119,8 @@
         <main role="main" class="container" style="width: 100%; height: 100%">
           <div class="form-group row m-2 justify-content-between">
             <div class="col-sm-4">
-              <label for="clipBuffer" class="col-form-label px-2">Clipping Buffer (kilometers):</label>
+              <label for="clipBuffer" class="col-form-label px-2">{% translate "Clipping Buffer" %}</label>
+              <i class="bi bi-info-fill"></i>
             </div>
             <div class="col-sm-6">
               <input class="form-control" type="text" id="clipBuffer" placeholder="1 Kilometer"
@@ -117,7 +134,9 @@
               </button>
             </div>
           </div>
-          <div id="map"></div>
+          <div class="map-container">
+            <div id="map"></div>
+          </div>
         </main>
       </div>
     </div>
@@ -132,11 +151,13 @@
 {% block inline_javascript %}
 <script>
   var map = L.map("map", {
-    zoomControl: false
+    zoomControl: false,
+    minZoom: 12,
   }).setView(
     [-34.35, 18.48],
     15
   );
+  L.Control.geocoder().addTo(map);
   var drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
       L.Toolbar2.EditAction.Popup.Edit,

@@ -23,10 +23,14 @@
               <label for="form-project_id" class="form-label">Project</label>
               <input type="text" id="form-project_id" name="project_id">
             </div>
-            <div class="mb-3">
+            <div class="mb-3" x-data="$store.mapLayers">
               <label for="form-map_layers" class="form-label">Layers</label>
-              <input type="text" id="form-map_layers" name="map_layers">
-            </div>
+              <select name="layers" class="uneditable-input selectmultiple" readonly="True"
+              id="form-map_layers" name="map_layers" multiple="" x-model="$store.selectedLayers">
+                <template x-for="layer in $store.mapLayers" :key="layer.id">
+                <option :value="layer.id" x-text="layer.name" selected="true"></option>
+              </template>
+            </select>
             <div class="mb-3">
               <label for="form-parameters" class="form-label">Parameters</label>
               <textarea type="textarea" id="form-parameters" name="parameters"></textarea>
@@ -52,9 +56,8 @@
   let formData = {
       user_id: {{ request.user.id }},
       project_id: {{ project.id }},
-      map_layers: [1, 2, 3],
       parameters: {
-        'PROJECTID': 'EPSG:9221',
+        'PROJECTID': '{{ project.id }}',
         'VENDORID': '{{ project.vendor_id.name }}',
         'USERID': '{{ request.user.username }}',
         'LAYERS': 'roads, cult_educational_exp_point, lclu_landuse_exp',
@@ -65,11 +68,18 @@
       },
       comment: "Generated with nomap form"
     }
-    document.getElementById("form-user_id").value = formData.user_id
-    document.getElementById("form-project_id").value = formData.project_id
-    document.getElementById("form-map_layers").value = '['+formData.map_layers+']'
-    document.getElementById("form-parameters").value = JSON.stringify(formData.parameters)
-    document.getElementById("form-comment").value = formData.comment
   
+  document.getElementById("form-user_id").value = formData.user_id
+  document.getElementById("form-project_id").value = formData.project_id
+  document.getElementById("form-parameters").value = JSON.stringify(formData.parameters)
+  document.getElementById("form-comment").value = formData.comment
+  
+  document.addEventListener('alpine:init', () => {
+  Alpine.store('mapLayers', [
+  { id: 1, name: 'roads' },
+  { id: 2, name: 'cult_educational_exp_point' },
+  { id: 3, name: 'lclu_landuse_exp' },
+  ])
+  })
 </script>
 {% endblock inline_javascript %}

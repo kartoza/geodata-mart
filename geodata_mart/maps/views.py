@@ -44,21 +44,9 @@ def map(request, project_id):
     context = {
         "project": project,
         "layers": Layer.objects.filter(project_id=project),
-        "excludes_class_list": [2, 3],
+        "excludes_class_list": [Layer.LayerClass.BASE, Layer.LayerClass.EXCLUDE],
     }
     return render(request, "maps/map.html", context)
-
-
-@login_required
-def nomap(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
-    context = {
-        "project": project,
-        "layers": Layer.objects.filter(project_id=project),
-        "excludes_class_list": [2, 3],
-    }
-    return render(request, "maps/nomap.html", context)
-
 
 @login_required
 def cancel_job(request, job_id):
