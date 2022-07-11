@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 def gallery(request):
     default_page = 1
-    page = request.GET.get('page', default_page)
+    page = request.GET.get("page", default_page)
     projects_list = Project.objects.order_by("id")
-    items_per_page = 10
+    items_per_page = 9
     paginator = Paginator(projects_list, items_per_page)
 
     try:
@@ -47,6 +47,7 @@ def map(request, project_id):
         "excludes_class_list": [Layer.LayerClass.BASE, Layer.LayerClass.EXCLUDE],
     }
     return render(request, "maps/map.html", context)
+
 
 @login_required
 def cancel_job(request, job_id):

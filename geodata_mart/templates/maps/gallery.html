@@ -82,8 +82,12 @@
         {% if projects.has_other_pages %}
         <div class="btn-group" role="group" aria-label="Item pagination">
           {% if projects.has_previous %}
-          <a href="?page=1" class="btn btn-outline-primary">&lsaquo;</a>
-          <a href="?page={{ projects.previous_page_number }}" class="btn btn-outline-primary">&laquo;</a>
+          <a href="?page=1" class="btn btn-outline-primary" title="{% translate "First" %}">&lsaquo;</a>
+          <a href="?page={{ projects.previous_page_number }}" class="btn btn-outline-primary"
+            title="{% translate "Previous" %}">&laquo;</a>
+          {% else %}
+          <a class="btn btn-outline-gray-500 disabled" title="{% translate "First" %}">&lsaquo;</a>
+          <a class="btn btn-outline-gray-500 disabled" title="{% translate "Previous" %}">&laquo;</a>
           {% endif %}
 
           {% for page_number in projects.paginator.page_range %}
@@ -91,7 +95,19 @@
           <button class="btn btn-outline-primary active">
             <span>{{ page_number }}<span class="visually-hidden">(current)</span></span>
           </button>
+          {% elif projects.paginator.num_pages < 7 %}
+          <a href="?page={{ page_number }}" class="btn btn-outline-primary">
+            {{ page_number }}
+          </a>
           {% elif page_number >= projects.number|subtract:"3" and page_number >= 1 and page_number <= projects.number|add:"3" and page_number <= projects.paginator.num_pages %}
+          <a href="?page={{ page_number }}" class="btn btn-outline-primary">
+            {{ page_number }}
+          </a>
+          {% elif page_number < 8 and projects.number < 5 %}
+          <a href="?page={{ page_number }}" class="btn btn-outline-primary">
+            {{ page_number }}
+          </a>
+          {% elif projects.number > projects.paginator.num_pages|subtract:4 and page_number > projects.paginator.num_pages|subtract:7 %}
           <a href="?page={{ page_number }}" class="btn btn-outline-primary">
             {{ page_number }}
           </a>
@@ -99,8 +115,13 @@
           {% endfor %}
 
           {% if projects.has_next %}
-          <a href="?page={{ projects.next_page_number }}" class="btn btn-outline-primary">&raquo;</a>
-          <a href="?page={{ projects.paginator.num_pages }}" class="btn btn-outline-primary">&rsaquo;</a>
+          <a href="?page={{ projects.next_page_number }}" class="btn btn-outline-primary"
+            title="{% translate "Next" %}">&raquo;</a>
+          <a href="?page={{ projects.paginator.num_pages }}" class="btn btn-outline-primary"
+            title="{% translate "Last" %}">&rsaquo;</a>
+          {% else %}
+          <a class="btn btn-outline-gray-500 disabled" title="{% translate "Next" %}">&raquo;</a>
+          <a class="btn btn-outline-gray-500 disabled" title="{% translate "Last" %}">&rsaquo;</a>
           {% endif %}
         </div>
         {% endif %}

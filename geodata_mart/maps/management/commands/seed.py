@@ -182,7 +182,7 @@ class Command(BaseCommand):
 
         self.stdout.write("create placeholder projects...")
 
-        for i in range(900):
+        for i in range(26):
             Project.objects.create(
                 project_name="Blank" + str(i + 2),
                 state=StateChoices.ACTIVE,
