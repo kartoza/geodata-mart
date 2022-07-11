@@ -1,14 +1,15 @@
 import os.path
 import shutil
 import glob
+from pathlib import Path
 from qgis.core import QgsApplication
 from processing.script import ScriptUtils
-
 
 def migrateProcessingScripts():
     project_scripts_dir = "/qgis/processing/scripts/"
     count = 0
     qgis_scripts_dir = ScriptUtils.defaultScriptsFolder()
+    Path(qgis_scripts_dir).mkdir(parents=True, exist_ok=True)
 
     # Copy scripts from your script dir to QGIS script dir
     for filename in glob.glob(os.path.join(project_scripts_dir, "*.py")):

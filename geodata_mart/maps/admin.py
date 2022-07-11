@@ -376,18 +376,18 @@ class ProjectAdmin(admin.ModelAdmin):
         "set_state_3",
     ]
 
-    @admin.action(description="Set selected file status to Unspecified")
+    @admin.action(description="Set selected project type to Unspecified")
     def set_state_0(self, request, queryset):
         queryset.update(state=0)
 
-    @admin.action(description="Set selected file status to Other")
+    @admin.action(description="Set selected project type to Other")
     def set_state_1(self, request, queryset):
         queryset.update(state=1)
 
-    @admin.action(description="Set selected file status to QGIS")
+    @admin.action(description="Set selected project type to QGIS")
     def set_state_2(self, request, queryset):
         queryset.update(state=2)
 
-    @admin.action(description="Set selected file status to PostGIS")
+    @admin.action(description="Set selected project type to PostGIS")
     def set_state_3(self, request, queryset):
         queryset.update(state=3)

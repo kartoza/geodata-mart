@@ -15,13 +15,15 @@
 !/geodata/output/
 /geodata/projects/**
 !/geodata/projects/
-/geodata/test/**
-/geodata/test/projects/**
+/geodata/results/**
+!/geodata/results/
 # seed data
 /geodata/seed/**
 !/geodata/seed/
 !/geodata/seed/clip_project.py
 # test data
+/geodata/test/**
+/geodata/test/projects/**
 !/geodata/test/projects/dem.tif
 !/geodata/test/projects/sample.qgs
 !/geodata/test/projects/world.geojson

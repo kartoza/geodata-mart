@@ -227,7 +227,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         ]
         return output_list
 
-    def zipOutputs(self, parameters, context, feedback):
+    def zipOutputs(self, parameters, context, feedback, file_name):
         """
         Compile the outputs from the processing tool into a single zip file
         """
@@ -235,7 +235,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             feedback.pushInfo(f"Adding outputs to archive")
             from zipfile import ZipFile
 
-            file_name = os.path.join(self.output_path, self.jobid + ".zip")
             file_paths = []
             max_depth = 1
             for root, directories, files in os.walk(self.output_path):
@@ -248,9 +247,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 for file in file_paths:
                     zip.write(file, arcname=os.path.basename(file))
 
-            zip = ZipFile(file_name, "rb")
+            # zip = ZipFile(file_name, "rb")
 
-            return zip
+            # return zip.read()
 
         except Exception as e:
             feedback.reportError(str(e), fatalError=False)
@@ -621,6 +620,11 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # Assess project layers and requested layers
         map_layers = self.getCleanListFromCsvString(parameters["LAYERS"])
 
+        if not map_layers:
+            raise QgsProcessingException(
+                self.invalidSourceError(parameters, self.LAYERS)
+            )
+
         exclude_layers = []
         if self.getParameterValue(parameters, "EXCLUDES"):
             # Identify layers to be excluded from processing,
@@ -716,6 +720,14 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             if self.getParameterValue(parameters, "PROJECTID")
             else self.output_path
         )
+        self.output_path = (
+            os.path.join(
+                self.output_path,
+                str(parameters["JOBID"]),
+            )
+            if self.getParameterValue(parameters, "JOBID")
+            else self.output_path
+        )
 
         Path(self.output_path).mkdir(parents=True, exist_ok=True)
 
@@ -757,14 +769,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         # Close the project to prevent write locks and permissions issues
         QgsProject.instance().clear()
         # Package the outputs
-        zip = self.zipOutputs(parameters, context, feedback)
+        output_zip_path = str(os.path.join(self.output_path, self.jobid + ".zip"))
+        zip = self.zipOutputs(parameters, context, feedback, output_zip_path)
         # Remove obsolete files
         self.removeOutputs(parameters, context, feedback, [".gpkg", ".tif"])
-
-        # return {self.OUTPUT: zip}  # return file object
-
-        # Return the output path rather than the content
-        output_zip_path = str(os.path.join(self.output_path, self.jobid + ".zip"))
-        zip.close()
 
         return {self.OUTPUT: output_zip_path}

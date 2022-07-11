@@ -5,22 +5,12 @@ from celery.exceptions import SoftTimeLimitExceeded
 from PyQt5 import *
 from qgis.core import *
 
-# from qgis.core import (
-#     QgsProject,
-#     QgsPathResolver,
-#     QgsProcessingContext,
-#     QgsProcessingFeedback,
-#     QgsCoordinateReferenceSystem,
-# )
-from qgis.gui import (
-    QgsLayerTreeMapCanvasBridge,
-    QgsMapCanvas,
-)
 import processing
 
 from time import sleep
-from os.path import join
-from os import environ
+from os.path import join, basename
+from os import environ, stat
+from pathlib import Path
 
 from django.core.files import File
 
@@ -92,13 +82,12 @@ def process_job_gdmclip(job_id):
     migrateProcessingScripts()
 
     # manually force script availability
-    # shutil.copy2(
-    #     "/qgis/processing/scripts/clip_project.py",
-    #     "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
-    # )
+    Path("/root/.local/share/profiles/default/processing/scripts/").mkdir(
+        parents=True, exist_ok=True
+    )
     shutil.copy2(
         "/qgis/processing/scripts/clip_project.py",
-        "/root/.local/share/profiles/default/processing/scripts/",
+        "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
     )
 
     logger.info(f"Configuring environment")
@@ -128,6 +117,7 @@ def process_job_gdmclip(job_id):
     context = QgsProcessingContext()
 
     map_file = job.project_id.project_file.file_object.path
+    logger.info(f"Processing project file: {map_file}")
 
     readflags = QgsProject.ReadFlags()
     readflags |= (
@@ -137,7 +127,7 @@ def process_job_gdmclip(job_id):
         | QgsProject.FlagTrustLayerMetadata
     )
     project = QgsProject()
-    project.read(map_file, readflags)
+    project.instance().read(map_file, readflags)
     context.setProject(project)
     output_path = join(project_storage.location, "output", str(job.job_id))
     logger.info("Executing processing command")
@@ -163,25 +153,30 @@ def process_job_gdmclip(job_id):
         )
         logger.info("Waiting for process to complete...")
         # Wait for procesing script to run
-        while (
-            not task.finished()
-        ):  # https://qgis.org/pyqgis/master/core/QgsTask.html#qgis.core.QgsTask.finished
-            logger.info(task.progress())
-            sleep(5)  # 5 seconds is fine
+        # while (
+        #     not task.finished()
+        # ):  # https://qgis.org/pyqgis/master/core/QgsTask.html#qgis.core.QgsTask.finished
+        #     logger.info(task.progress())
+        #     sleep(5)  # 5 seconds is fine
 
-        logger.info(task["OUTPUT"])
+        logger.info(f'Processed output: {task["OUTPUT"]}')
 
         # create new results file from this object
         results_file = task["OUTPUT"]
         if not project_storage.exists(results_file):
             raise Exception(f"{project_storage.path(results_file)} not found")
-        results_file = project_storage.open(results_file, "rb")
-        results_file_object = File(results_file)
-        results_file = ResultFile.objects.create(
+        results_file_record = ResultFile.objects.create(
             file_name=job.job_id,
-            file_object=results_file_object,
             job_id=job,
         )
+        results_file_record.file_object.save(
+            basename(results_file), project_storage.open(results_file), save=True
+        )
+
+        statinfo = stat(results_file)  # get stats on the results file that was uploaded
+
+        with project_storage.open(results_file, 'w') as f:
+            f.write(statinfo)  # replace actual file (now duplicate) with file stats
 
     except SoftTimeLimitExceeded:
         feedback.cancel()

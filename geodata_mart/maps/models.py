@@ -332,35 +332,35 @@ class Project(gismodels.Model):
     updated_date = models.DateTimeField(auto_now=True, verbose_name=_("Updated Date"))
     project_file = models.ForeignKey(
         QgisProjectFile,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("Project File"),
         null=True,
         blank=True,
     )
     vendor_id = models.ForeignKey(
         Vendor,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("Data Vendor"),
         null=False,
         blank=False,
     )
     config_pgservice = models.ForeignKey(
         PgServiceFile,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("PG Service File"),
         null=True,
         blank=True,
     )
     config_qgis = models.ForeignKey(
         QgisIniFile,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("QGIS Configuration File"),
         null=True,
         blank=True,
     )
     config_auth = models.ForeignKey(
         AuthDbFile,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("QGIS Auth DB"),
         null=True,
         blank=True,
@@ -563,7 +563,7 @@ class ResultFile(ManagedFileObject):
 
     file_name = models.CharField(_("File Name"), max_length=255)
     file_object = models.FileField(
-        upload_to="./output",
+        upload_to="./results",
         storage=project_storage,
         help_text=_("Resulting output file from processing jobs"),
         verbose_name=_("Results File"),
