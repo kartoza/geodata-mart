@@ -60,29 +60,14 @@
 {% endfor %}
 {% endif %}
 
-{% comment %} <div class="d-flex align-items-center justify-content-center page-loader"
-     x-show="$store.loading"
-     x-transition:enter.duration.1200ms
-     x-transition:leave.duration.1200ms
-     x-transition.delay.1000ms>
-  <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem;"
-       role="status">
-    <span class="visually-hidden">Loading...</span>
-  </div>
-</div> {% endcomment %}
-
-{% comment %} <div class="map-page" x-show="!$store.loading" x-data="$store.pageData" 
-x-cloak x-transition:enter.duration.2000ms x-transition:leave.duration.2000ms 
-x-transition.delay.1200ms> {% endcomment %}
-
-<div class="map-page" x-data="$store.pageData" >
-  {% comment %} <form @submit.prevent="!$store.pageData.getInvalidExtents" action="{% url 'maps:create_job' %}" method="post"> {% endcomment %}
+<div class="map-page" x-data>
+  {% comment %} <form @submit.prevent="!$store.pageData.invalidExtents()" action="{% url 'maps:create_job' %}" method="post"> {% endcomment %}
   <form action="{% url 'maps:create_job' %}" method="post">
     {% csrf_token %}
-    <input type="hidden" id="user_id" name="user_id" x-model="$store.pageData.user_id">
-    <input type="hidden" id="project_id" name="project_id" x-model="$store.pageData.project_id">
-    <input type="hidden" id="parameters" name="parameters" x-model="$store.pageData.parameters">
-    <input type="hidden" id="comment" name="comment" x-model="$store.pageData.comment">
+    <input type="hidden" id="user_id" name="user_id" :value="$store.pageData.user_id">
+    <input type="hidden" id="project_id" name="project_id" :value="$store.pageData.project_id">
+    <input type="hidden" id="parameters" name="parameters" :value="$store.pageData.parameters">
+    <input type="hidden" id="comment" name="comment" :value="$store.pageData.comment">
 
     <div class="d-flex flex-row">
       <div id="map-sidebar" class="d-flex flex-column align-items-stretch flex-shrink-0 col-3" style="overflow: auto;">
@@ -162,9 +147,7 @@ x-transition.delay.1200ms> {% endcomment %}
           <div class="form-group row m-2 justify-content-between">
             <div class="w-100">
               <button class="btn btn-outline-success rounded-pill w-100"
-                {% comment %} This is not working as a reactive item,
-                              so it has been inverted to ensure it stays active {% endcomment %}
-                {% comment %} Maybe it needs some rendition of x-init="$nextTick(() => {$store.pageData.invalidExtents()})" {% endcomment %}
+                {% comment %} https://github.com/alpinejs/alpine/discussions/2681 {% endcomment %}
                 :class="$store.pageData.getInvalidExtents ? '' : 'disabled'" type="submit">
                 {% translate "Clip & Ship" %}
                 <i class="bi bi-send-fill"></i>
@@ -177,11 +160,15 @@ x-transition.delay.1200ms> {% endcomment %}
         </main>
       </div>
     </div>
-</div>
-</form>
+  </form>
 
-{% comment %} Apparently these values don't render without an x-init {% endcomment %}
-<ul x-init="$nextTick(() => {})">
+<ul>
+  <li>
+    <span x-text="$store.pageData.getInvalidExtents ? '' : 'disabled'"></span>
+  </li>
+  <li>
+    <span x-text="$store.pageData.getInvalidExtents"></span>
+  </li>
   <li>
     <span x-text="$store.pageData.user_id"></span>
   </li>
@@ -195,6 +182,8 @@ x-transition.delay.1200ms> {% endcomment %}
     <span x-text="$store.pageData.comment"></span>
   </li>
 </ul>
+
+</div>
 
 </div>
 {% endblock page %}
@@ -316,7 +305,32 @@ x-transition.delay.1200ms> {% endcomment %}
   map.addControl(removeAllControl)
 
   document.addEventListener('alpine:init', () => {
+    Alpine.store('refresh', {
+      refresh () {
+        /* AlpineJS reactivity will only update bound components
+          when dependent data changes. Using Getters with Stores,
+          and then modifying the underlying data with external calls
+          will not update the dom components directly. Resetting the
+          underlying data elements for the getters seems to fix it. */
+        const pageData = Alpine.store('pageData')
+        //for (const key in pageData) {
+        //  if (pageData.hasOwnProperty(key)) {
+        //      pageData.key = pageData[key]
+        //  }
+        //}
+        this.trigger
+        let state = pageData['parameters']
+        pageData.parameters = null
+        pageData.parameters = state
+        pageData.trigger = true
+        pageData.trigger = null
+      }
+    })
+  })
+
+  document.addEventListener('alpine:init', () => {
     Alpine.store('pageData', {
+      trigger: null,  // see "refresh" store for more info
       tab: 'layers',
       user_id: {{ request.user.id }},
       project_id: {{ project.id }},
@@ -368,12 +382,35 @@ x-transition.delay.1200ms> {% endcomment %}
         }
       },
 
-      getDrawnGeom(items) {
-        let geometry = turf.envelope(items.toGeoJSON())
+      getDrawnGeom() {
+        let geometry = turf.envelope(drawnItems.toGeoJSON())
         if (!this.checkExtentIsValid(geometry.bbox)) {
           alert("{% translate "Supplied extent is not valid" %}")
         }
         return geometry
+      },
+
+      getBufferedGeom() {
+        let geometry = this.getDrawnGeom()
+        let buffered_geom = turf.buffer(geometry, this.buffer_distance, {
+          units: 'kilometers'
+        })
+        return buffered_geom
+      },
+
+      get getBufferedGeomWKT() {
+        if (Object.keys(drawnItems._layers).length === 0) {
+          return ''
+        } else {
+          let enveloped = turf.envelope(this.getBufferedGeom())
+          let wkt_bounds = 'POLYGON(' +
+            enveloped.geometry.coordinates.map(function (ring) {
+              return '(' + ring.map(function (p) {
+                return p[0] + ' ' + p[1]
+              }).join(', ') + ')'
+            }).join(', ') + ')'
+          return wkt_bounds
+        }
       },
 
       checkExtentIsValid(extent) {
@@ -388,23 +425,22 @@ x-transition.delay.1200ms> {% endcomment %}
       },
 
       get getInvalidExtents() {
+        nullValue = this.trigger  // see "refresh" store for more info
         value = this.invalidExtents()
         return value
       },
 
       invalidExtents() {
+        nullValue = this.trigger  // see the "refresh" store for more info
         if (Object.keys(drawnItems._layers).length === 0) {
           return true
         } else {
-          geometry = this.getDrawnGeom(drawnItems)
-          let buffered_geom = turf.buffer(geometry, this.buffer_distance, {
-            units: 'kilometers'
-          })
+          let buffered_geom = this.getBufferedGeom()
           let buffered_area = turf.area(buffered_geom)
           buffered_area = buffered_area / 1000 / 1000
       
           if (typeof buffered_area == 'undefined') {
-            return false
+            return true
           } else if (buffered_area > {{project.max_area}}) {
             return true
           } else {
@@ -413,22 +449,7 @@ x-transition.delay.1200ms> {% endcomment %}
         }
       },
 
-      get parameters() {
-        params = {
-          'PROJECTID': '{{ project.project_name }}',
-          'VENDORID': '{{ project.vendor_id.name }}',
-          'USERID': '{{ request.user.username }}',
-          'LAYERS': this.getCheckedLayers,
-          'EXCLUDES': 'rsaortho',
-          'CLIP_GEOM': 'POLYGON ((29.5 -28.0, 29.5 -28.1, 29.6 -28.1, 29.6 -28.0, 29.5 -28.0))',
-          'OUTPUT_CRS': 'EPSG:9221',
-          'PROJECT_CRS': 'EPSG:9221',
-          'COMMENT': this.comment
-        }
-        return JSON.stringify(params)
-        },
-      
-      get getCheckedLayers() {
+      get getCheckedLayerNames() {
         let checkedLayerItems = this.mapLayers.filter((obj) => {
             return this.checkedLayers.indexOf(obj.id) > -1;
           })
@@ -436,17 +457,62 @@ x-transition.delay.1200ms> {% endcomment %}
           .filter((value) => {
             return value !== undefined;
           })
-        return JSON.stringify(checkedLayerNames)
+        let results = checkedLayerNames.toString()
+        return results
+      },
+      
+      get getCheckedBaseNames() {
+        let checkedBaseItems = this.mapLayers.filter((obj) => {
+            return this.checkedBases.indexOf(obj.id) > -1;
+          })
+        let checkedBaseNames = checkedBaseItems.map((obj) => obj.short_name)
+          .filter((value) => {
+            return value !== undefined;
+          })
+        return JSON.stringify(checkedBaseNames)
+      },
+      
+      get getCheckedExcludedNames() {
+        let checkedExcludeItems = this.mapLayers.filter((obj) => {
+            return this.checkedExcludes.indexOf(obj.id) > -1;
+          })
+        let checkedExcludeNames = checkedExcludeItems.map((obj) => obj.short_name)
+          .filter((value) => {
+            return value !== undefined;
+          })
+        return JSON.stringify(checkedExcludeNames)
       },
 
-      reDrawEdit(event) {
-        let layers = event.layers;
-        layers.eachLayer(function (layer) {
-          /*do nothing*/
-        })
-        this.reDraw()
+      get excludesParameterValue() {
+        if (Object.keys(this.checkedBases).length === 0 && Object.keys(this.checkedExcludes).length === 0) {
+          return ''
+        } else if (Object.keys(this.checkedBases).length === 0) {
+          return this.getCheckedExcludedNames
+        } else if (Object.keys(this.checkedExcludes).length === 0) {
+        return this.getCheckedBaseNames
+        } else {
+          let basenames = this.getCheckedBaseNames
+          let exclnames = this.getCheckedExcludedNames
+          result = basenames + ", " + exclnames
+          return result
+        }
       },
 
+      get parameters() {
+        params = {
+          'PROJECTID': '{{ project.project_name }}',
+          'VENDORID': '{{ project.vendor_id.name }}',
+          'USERID': '{{ request.user.username }}',
+          'LAYERS': this.getCheckedLayerNames,
+          'EXCLUDES': this.excludesParameterValue,
+          'CLIP_GEOM': this.getBufferedGeomWKT,
+          'OUTPUT_CRS': 'EPSG:9221',
+          'PROJECT_CRS': 'EPSG:9221',
+          'COMMENT': this.comment
+        }
+        return JSON.stringify(params)
+        },
+      
       get minimalBufferDist() {
         let buffer = 0.01
         if (this.buffer_distance > 0) {
@@ -455,6 +521,14 @@ x-transition.delay.1200ms> {% endcomment %}
           buffer = this.buffer_distance/20
         }
         return buffer
+      },
+
+      reDrawEdit(event) {
+        let layers = event.layers;
+        layers.eachLayer(function (layer) {
+          /*do nothing*/
+        })
+        this.reDraw()
       },
 
       reDrawCreate(event) {
@@ -492,6 +566,8 @@ x-transition.delay.1200ms> {% endcomment %}
             "opacity": 0.65
           })
         }
+        // refresh reactive data values
+        Alpine.store('refresh').refresh()
       }
     })
   })
