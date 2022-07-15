@@ -3,6 +3,31 @@ from django.contrib import messages
 from geodata_mart.maps import models
 
 
+@admin.register(models.MetaTags)
+class MetaTagsAdmin(admin.ModelAdmin):
+    """Manage metadata tags."""
+
+    list_display = (
+        "id",
+        "short_name",
+        "full_name",
+        "abstract",
+        "description",
+        "comment",
+    )
+    list_display_links = ("id", "short_name")
+    list_filter = ("short_name",)
+    search_fields = ("short_name", "abstract", "description", "comment")
+    ordering = ("id",)
+    fields = [
+        "short_name",
+        "full_name",
+        "abstract",
+        "description",
+        "comment",
+    ]
+
+
 @admin.register(models.ResultFile)
 class ResultFileAdmin(admin.ModelAdmin):
     """Upload, review, manage, and process Result Files"""
@@ -233,6 +258,7 @@ class LayerAdmin(admin.ModelAdmin):
         "state",
         "layer_name",
         "abstract",
+        "is_default",
         "cost",
         "cost_modifier",
         "description",
@@ -265,8 +291,12 @@ class LayerAdmin(admin.ModelAdmin):
         "short_name",
         "layer_name",
         "state",
+        "is_default",
         "cost",
         "cost_modifier",
+        "lyr_group",
+        "lyr_type",
+        "lyr_class",
         "comment",
         "siblings",
         "tags",
@@ -364,6 +394,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "cost",
         "max_area",
         "type",
+        "coverage",
         "state",
         "comment",
         "siblings",

@@ -47,9 +47,6 @@
 
 </style>
 
-<script>
-  invalidExtent: false
-</script>
 {% endblock extrahead %}
 
 {% block page %}
@@ -63,25 +60,40 @@
 {% endfor %}
 {% endif %}
 
-<div class="map-page" x-data="{tab: 'layers'}">
-  <form @submit.prevent="invalidExtent" action="{% url 'maps:create_job' %}" method="post">
+{% comment %} <div class="d-flex align-items-center justify-content-center page-loader"
+     x-show="$store.loading"
+     x-transition:enter.duration.1200ms
+     x-transition:leave.duration.1200ms
+     x-transition.delay.1000ms>
+  <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem;"
+       role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div> {% endcomment %}
+
+{% comment %} <div class="map-page" x-show="!$store.loading" x-data="$store.pageData" 
+x-cloak x-transition:enter.duration.2000ms x-transition:leave.duration.2000ms 
+x-transition.delay.1200ms> {% endcomment %}
+
+<div class="map-page" x-data="$store.pageData" >
+  {% comment %} <form @submit.prevent="!$store.pageData.getInvalidExtents" action="{% url 'maps:create_job' %}" method="post"> {% endcomment %}
+  <form action="{% url 'maps:create_job' %}" method="post">
     {% csrf_token %}
-    {% comment %} <input type="hidden" id="user_id" name="user_id" x-model="pageData.user_id">
-    <input type="hidden" id="project_id" name="project_id" x-model="formData.project_id">
-    <input type="hidden" id="map_layers" name="map_layers" x-model="formData.map_layers">
-    <input type="hidden" id="parameters" name="parameters" x-model="formData.parameters">
-    <input type="hidden" id="comment" name="comment" x-model="formData.comment"> {% endcomment %}
+    <input type="hidden" id="user_id" name="user_id" x-model="$store.pageData.user_id">
+    <input type="hidden" id="project_id" name="project_id" x-model="$store.pageData.project_id">
+    <input type="hidden" id="parameters" name="parameters" x-model="$store.pageData.parameters">
+    <input type="hidden" id="comment" name="comment" x-model="$store.pageData.comment">
 
     <div class="d-flex flex-row">
       <div id="map-sidebar" class="d-flex flex-column align-items-stretch flex-shrink-0 col-3" style="overflow: auto;">
         <ul class="nav nav-tabs">
           <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': tab === 'layers' }" @click.prevent="tab = 'layers'"
-              href="#">{{ project.vendor_id.name }}</a>
+            <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'layers' }"
+              @click.prevent="$store.pageData.tab = 'layers'" href="#">{{ project.vendor_id.name }}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': tab === 'settings' }" @click.prevent="tab = 'settings'"
-              href="#">{% translate "Settings" %}</a>
+            <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'settings' }"
+              @click.prevent="$store.pageData.tab = 'settings'" href="#">{% translate "Settings" %}</a>
           </li>
         </ul>
         <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
@@ -98,59 +110,50 @@
           </div>
         </div>
         <div id="map-sidebar-legend" class="list-group list-group-flush border-bottom scrollarea">
-          <div x-show="tab === 'layers'">
-              {% for layer in layers %}
-                {% if not layer.lyr_class in excludes_class_list %}
-                <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between" x-data="{checkedLayers: []}">
-                  <label for="{{ layer.short_name }}">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="{{ layer.short_name }}"
-                        id="{{ layer.short_name }}" x-model="checkedLayers" />
-                      <label class="form-check-label" for="{{ layer.short_name }}">
-                        {{ layer.layer_name }}
-                      </label>
-                    </div>
-                    <div class="mb-1 small">
-                      {{ layer.abstract }}
-                    </div>
-                  </label>
-                </div>
-                {% endif %}
-              {% endfor %}
+          <div x-show="$store.pageData.tab === 'layers'">
+            <template x-for="layer in $store.pageData.mapLayers" :key="layer.id">
+              <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+                <label :for="layer.short_name">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                      :id="layer.short_name"
+                      :checked="$store.pageData.layerChecked(layer.id)"
+                      @click="$store.pageData.toggleCheckedLayer(layer.id)"
+                      />
+                    <label class="form-check-label" x-text="layer.layer_name"></label>
+                  </div>
+                  <div class="mb-1 small" x-text="layer.abstract"></div>
+                </label>
+              </div>
+            </template>
           </div>
-          <div x-show="tab === 'settings'">
+          <div x-show="$store.pageData.tab === 'settings'">
             <div class="d-flex flex-row text-muted">
-              <div class="w-100" x-data="{buffer_distance: 5}">
-                <div class="text-center w-100 text-muted fs-4" x-text="buffer_distance"></div>
-                <input class="form-range mr-2 px-2" type="range" min="0" max="15" step="0.5" id="clipBuffer" x-model="buffer_distance"
-                aria-label="Clip buffer" />
+              <div class="w-100">
+                <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
+                <input class="form-range mr-2 px-2" type="range" min="0" max="15" step="0.5" id="clipBuffer"
+                  x-model="$store.pageData.buffer_distance" aria-label="Clip buffer" />
                 <label for="clipBuffer" class="col-form-label px-2">
-                  <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal" data-bs-target="#bufferInfoModal">
+                  <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
+                      data-bs-target="#bufferInfoModal">
                       <i class="bi bi-info rounded-circle"></i>
-                    </button>  {% translate "Clipping Buffer (km)" %}</span>
-                  </label>
+                    </button> {% translate "Clipping Buffer (km)" %}</span>
+                </label>
               </div>
             </div>
-            {% comment %} <div x-data="layerExclusions()"> {% endcomment %}
-              {% for layer in layers %}
-                {% if layer.lyr_class in excludes_class_list %}
-                <div class="list-group-item list-group-item-action py-3 lh-tight row justify-content-between">
-                  <label for="{{ layer.short_name }}">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="{{ layer.short_name }}"
-                        id="{{ layer.short_name }}" x-model="excludedLayers" />
-                      <label class="form-check-label" for="{{ layer.short_name }}">
-                        {{ layer.layer_name }}
-                      </label>
-                    </div>
-                    <div class="mb-1 small">
-                      {{ layer.abstract }}
-                    </div>
-                  </label>
-                </div>
-                {% endif %}
-              {% endfor %}
-            {% comment %} </div> {% endcomment %}
+            <div class="list-group-item list-group-item-action mx-0 y-3 lh-tight row justify-content-between">
+              <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
+                <label :for="layer.short_name">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                      :id="layer.short_name" x-model="$store.pageData.excludedLayers" />
+                    <label class="form-check-label" x-text="layer.layer_name"
+                    x-model="$store.pageData.excludedLayers"></label>
+                  </div>
+                  <div class="mb-1 small" x-text="layer.abstract"></div>
+                </label>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -158,10 +161,11 @@
         <main role="main" class="container" style="width: 100%; height: 100%">
           <div class="form-group row m-2 justify-content-between">
             <div class="w-100">
-              {% comment %} <button class="btn btn-outline-success rounded-pill" :class="invalidExtent ? 'disabled' : ''"
-                type="submit" style="width: 100%"> {% endcomment %}
-                <button class="btn btn-outline-success rounded-pill"
-                  type="submit" style="width: 100%">
+              <button class="btn btn-outline-success rounded-pill w-100"
+                {% comment %} This is not working as a reactive item,
+                              so it has been inverted to ensure it stays active {% endcomment %}
+                {% comment %} Maybe it needs some rendition of x-init="$nextTick(() => {$store.pageData.invalidExtents()})" {% endcomment %}
+                :class="$store.pageData.getInvalidExtents ? '' : 'disabled'" type="submit">
                 {% translate "Clip & Ship" %}
                 <i class="bi bi-send-fill"></i>
               </button>
@@ -173,7 +177,25 @@
         </main>
       </div>
     </div>
-  </form>
+</div>
+</form>
+
+{% comment %} Apparently these values don't render without an x-init {% endcomment %}
+<ul x-init="$nextTick(() => {})">
+  <li>
+    <span x-text="$store.pageData.user_id"></span>
+  </li>
+  <li>
+    <span x-text="$store.pageData.project_id"></span>
+  </li>
+  <li>
+    <span x-text="$store.pageData.parameters"></span>
+  </li>
+  <li>
+    <span x-text="$store.pageData.comment"></span>
+  </li>
+</ul>
+
 </div>
 {% endblock page %}
 
@@ -186,15 +208,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>The buffer value is a numeric representation for the number of squared kilometers the drawn region or point
-          will be expanded for the final clipping of the area of interest.</p>
+        <p>{% blocktranslate %}The buffer value is a numeric representation for the number of squared kilometers the drawn region or point
+          will be expanded for the final clipping of the area of interest.{% endblocktranslate %}</p>
         <p>
-          Please note that the total requested area may not exceed <strong>{{ project.max_area }}km²<strong>.
+          {% translate "Please note that the total requested area may not exceed" %} <strong>{{ project.max_area }}km²<strong>.
         </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Close" %}</button>
-        {% comment %} <button type="button" class="btn btn-primary">Save changes</button> {% endcomment %}
       </div>
     </div>
   </div>
@@ -204,157 +225,277 @@
 <!-- prettier-ignore -->
 {% block inline_javascript %}
 <script>
+  {% if coverage %}
+  const map = L.map("map", {
+    zoomControl: false,
+  }).setView(
+    [-34.35, 18.48],
+    15
+  )
+  let bounds = turf.bbox({{ coverage }})
+  map.fitBounds(
+    L.latLngBounds(
+      L.latLng(bounds[0], bounds[1]),
+      L.latLng(bounds[2], bounds[3])
+    )
+  )
+  {% else %}
+  const map = L.map("map", {
+    zoomControl: false,
+  }).setView(
+    [-34.35, 18.48],
+    15
+  )
+  {% endif %}
 
-    function getDrawnGeom(drawnItems) {
-      return turf.envelope(drawnItems.toGeoJSON());
-    }
-  
-    function invalidExtents(drawnItems) {
-      geom = getDrawnGeom(drawnItems)
-      //buffered_geom = turf.buffer(geom, buffer_distance, {units: 'kilometers'})
-      buffered_geom = turf.buffer(geom, 5, {units: 'kilometers'})
-      buffered_area = turf.area(buffered_geom)
-      buffered_area = buffered_area/1000/1000
-      console.log('buffered area: ' + buffered_area)
-      console.log('max area: ' + {{ project.max_area }})
-  
-      if (buffered_area > {{ project.max_area }}) {
-        console.log('too big')
-        return true
-      } else {
-        console.log('too small')
-        return false
-      }
-    }
-  
-    const map = L.map("map", {
-      zoomControl: false,
-      minZoom: 10,
-    }).setView(
-      [-34.35, 18.48],
-      15
-    );
-    L.Control.geocoder().addTo(map);
-    let drawnItems = new L.FeatureGroup().addTo(map),
-      editActions = [
-        L.Toolbar2.EditAction.Popup.Edit,
-        L.Toolbar2.EditAction.Popup.Delete,
-      ];
+  L.Control.geocoder().addTo(map)
+  let drawnItems = new L.FeatureGroup().addTo(map),
+    editActions = [
+      L.Toolbar2.EditAction.Popup.Edit,
+      L.Toolbar2.EditAction.Popup.Delete,
+    ]
 
-    new L.Control.Zoom({
-      position: "bottomleft"
-    }).addTo(map);
+  new L.Control.Zoom({
+    position: "bottomleft"
+  }).addTo(map)
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
-    }).addTo(map);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+  }).addTo(map)
 
-    new L.Control.Draw({
+  new L.Control.Draw({
+    position: "topleft",
+    draw: {
+      polyline: true,
+      polygon: true,
+      rectangle: true,
+      circle: false,
+      marker: true,
+      circlemarker: false,
+    },
+  }).addTo(map)
+
+  map.on("draw:created", (e) => {
+    Alpine.store('pageData').reDrawCreate(e)
+  })
+
+  map.on("draw:edited", (e) => {
+    Alpine.store('pageData').reDrawEdit(e)
+  })
+
+  L.Control.RemoveAll = L.Control.extend({
+    options: {
       position: "topleft",
-      draw: {
-        polyline: false,
-        polygon: false,
-        rectangle: true,
-        circle: false,
-        marker: true,
-        circlemarker: false,
-      },
-    }).addTo(map);
-    
-    map.on("draw:created", (e) => {
-      let type = e.layerType,
-        layer = e.layer;
+    },
+    onAdd: function (map) {
+      const controlDiv = L.DomUtil.create(
+        "div",
+        "leaflet-draw-toolbar leaflet-bar"
+      )
+      L.DomEvent.addListener(
+          controlDiv,
+          "click",
+          L.DomEvent.stopPropagation
+        )
+        .addListener(controlDiv, "click", L.DomEvent.preventDefault)
+        .addListener(controlDiv, "click", function () {
+          drawnItems.clearLayers()
+        })
 
-      drawnItems.addLayer(layer);
-      newdata = getDrawnGeom(drawnItems)
-      drawnItems.clearLayers()
-      L.geoJson(newdata, {
-        onEachFeature: function (feature, layer) {
-          drawnItems.addLayer(layer);
-          layer.on("click", function (event) {
-            new L.Toolbar2.EditToolbar.Popup(event.latlng, {
-              actions: editActions,
-            }).addTo(map, layer);
-          });
+      var controlUI = L.DomUtil.create(
+        "a",
+        "leaflet-draw-edit-remove",
+        controlDiv
+      )
+      controlUI.title = '{% translate "Clear Clipping Region" %}'
+      controlUI.href = "#"
+      return controlDiv
+    },
+  })
+  let removeAllControl = new L.Control.RemoveAll()
+  map.addControl(removeAllControl)
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.store('pageData', {
+      tab: 'layers',
+      user_id: {{ request.user.id }},
+      project_id: {{ project.id }},
+      comment: 'Generated by GeoData Mart Map Tool',
+      mode:'user',
+      modes: ['user', 'feature', 'layer'],
+      checkedLayers: [{% for layer in map_layers %}
+      {% if layer.is_default %}{{ layer.id }},{% endif %}
+      {% endfor %}],
+      checkedBases: [],
+      checkedExcludes: [],
+      mapLayers: [
+        {% for layer in map_layers %}
+        {id: {{ layer.id }},
+        short_name: '{{ layer.short_name }}',
+        layer_name: '{{ layer.layer_name }}',
+        abstract: '{{ layer.abstract }}'},
+        {% endfor %}],
+      baseLayers: [{% for layer in base_layers %}
+        {id: {{ layer.id }},
+        short_name: '{{ layer.short_name }}',
+        layer_name: '{{ layer.layer_name }}',
+        abstract: '{{ layer.abstract }}'},
+        {% endfor %}
+      ],
+      excludedLayers: [{% for layer in excluded_layers %}
+        {id: {{ layer.id }},
+        short_name: '{{ layer.short_name }}',
+        layer_name: '{{ layer.layer_name }}',
+        abstract: '{{ layer.abstract }}'},
+        {% endfor %}
+      ],
+      buffer_distance: 5,
+
+      toggleCheckedLayer(id) {
+        if (this.layerChecked(id)) {
+          this.checkedLayers = this.checkedLayers.filter(h => h !== id)
+        } else {
+            this.checkedLayers.push(id)
         }
-      });
-      drawnItems.setStyle()
-      if (invalidExtents(drawnItems)) {
-        drawnItems.setStyle({"color": "#ff7800","weight": 5,"opacity": 0.65})
-      }
-    });
-
-    map.on("draw:edited", (e) => {
-      layers = e.layers;
-      layers.eachLayer(function (layer) { /*do nothing*/ });
-      newdata = getDrawnGeom(drawnItems)
-      drawnItems.clearLayers()
-      L.geoJson(newdata, {
-        onEachFeature: function (feature, layer) {
-          drawnItems.addLayer(layer);
-          layer.on("click", function (event) {
-            new L.Toolbar2.EditToolbar.Popup(event.latlng, {
-              actions: editActions,
-            }).addTo(map, layer);
-          });
-        }
-      });
-      drawnItems.setStyle()
-      if (invalidExtents(drawnItems)) {
-        drawnItems.setStyle({"color": "#ff7800","weight": 5,"opacity": 0.65})
-      }
-    });
-    /*map.on("draw:editstop", (e) => {
-      newdata = getDrawnGeom(drawnItems)
-      drawnItems.clearLayers()
-      L.geoJson(newdata, {
-        onEachFeature: function (feature, layer) {
-          drawnItems.addLayer(layer);
-          layer.on("click", function (event) {
-            new L.Toolbar2.EditToolbar.Popup(event.latlng, {
-              actions: editActions,
-            }).addTo(map, layer);
-          });
-        }
-      });
-      drawnItems.setStyle()
-      if (invalidExtents(drawnItems)) {
-        drawnItems.setStyle({"color": "#ff7800","weight": 5,"opacity": 0.65})
-      }
-    });*/
-
-    L.Control.RemoveAll = L.Control.extend({
-      options: {
-        position: "topleft",
+        console.log(JSON.stringify(this.checkedLayers))
       },
-      onAdd: function (map) {
-        const controlDiv = L.DomUtil.create(
-          "div",
-          "leaflet-draw-toolbar leaflet-bar"
-        );
-        L.DomEvent.addListener(
-            controlDiv,
-            "click",
-            L.DomEvent.stopPropagation
-          )
-          .addListener(controlDiv, "click", L.DomEvent.preventDefault)
-          .addListener(controlDiv, "click", function () {
-            drawnItems.clearLayers();
-          });
 
-        var controlUI = L.DomUtil.create(
-          "a",
-          "leaflet-draw-edit-remove",
-          controlDiv
-        );
-        controlUI.title = '{% translate "Clear Clipping Region" %}';
-        controlUI.href = "#";
-        return controlDiv;
+      layerChecked(id) {
+        if (this.checkedLayers.indexOf(id) > -1) {
+          return "checked"
+        } else {
+          return false
+        }
       },
-    });
-    let removeAllControl = new L.Control.RemoveAll();
-    map.addControl(removeAllControl);
+
+      getDrawnGeom(items) {
+        let geometry = turf.envelope(items.toGeoJSON())
+        if (!this.checkExtentIsValid(geometry.bbox)) {
+          alert("{% translate "Supplied extent is not valid" %}")
+        }
+        return geometry
+      },
+
+      checkExtentIsValid(extent) {
+        let valid = true
+        for (let i = 0; i < extent.length; i++) {
+          if (typeof i != "number") {
+            valid = false
+            break
+          }
+        }
+        return valid
+      },
+
+      get getInvalidExtents() {
+        value = this.invalidExtents()
+        return value
+      },
+
+      invalidExtents() {
+        if (Object.keys(drawnItems._layers).length === 0) {
+          return true
+        } else {
+          geometry = this.getDrawnGeom(drawnItems)
+          let buffered_geom = turf.buffer(geometry, this.buffer_distance, {
+            units: 'kilometers'
+          })
+          let buffered_area = turf.area(buffered_geom)
+          buffered_area = buffered_area / 1000 / 1000
+      
+          if (typeof buffered_area == 'undefined') {
+            return false
+          } else if (buffered_area > {{project.max_area}}) {
+            return true
+          } else {
+            return false
+          }
+        }
+      },
+
+      get parameters() {
+        params = {
+          'PROJECTID': '{{ project.project_name }}',
+          'VENDORID': '{{ project.vendor_id.name }}',
+          'USERID': '{{ request.user.username }}',
+          'LAYERS': this.getCheckedLayers,
+          'EXCLUDES': 'rsaortho',
+          'CLIP_GEOM': 'POLYGON ((29.5 -28.0, 29.5 -28.1, 29.6 -28.1, 29.6 -28.0, 29.5 -28.0))',
+          'OUTPUT_CRS': 'EPSG:9221',
+          'PROJECT_CRS': 'EPSG:9221',
+          'COMMENT': this.comment
+        }
+        return JSON.stringify(params)
+        },
+      
+      get getCheckedLayers() {
+        let checkedLayerItems = this.mapLayers.filter((obj) => {
+            return this.checkedLayers.indexOf(obj.id) > -1;
+          })
+        let checkedLayerNames = checkedLayerItems.map((obj) => obj.short_name)
+          .filter((value) => {
+            return value !== undefined;
+          })
+        return JSON.stringify(checkedLayerNames)
+      },
+
+      reDrawEdit(event) {
+        let layers = event.layers;
+        layers.eachLayer(function (layer) {
+          /*do nothing*/
+        })
+        this.reDraw()
+      },
+
+      get minimalBufferDist() {
+        let buffer = 0.01
+        if (this.buffer_distance > 0) {
+          buffer = this.buffer_distance/20
+        } else if (this.buffer_distance == undefined) {
+          buffer = this.buffer_distance/20
+        }
+        return buffer
+      },
+
+      reDrawCreate(event) {
+        let type = event.layerType,
+          layer = event.layer
+        if (Object.keys(drawnItems._layers).length === 0 && type == "marker") {
+          // buffer the point if it is the first drawn item
+          drawnItems.addLayer(L.geoJson(turf.buffer(turf.point([layer._latlng.lng, layer._latlng.lat]),
+          this.minimalBufferDist, {
+              units: 'kilometers'
+          })))
+        }
+        drawnItems.addLayer(layer)
+        this.reDraw()
+      },
+
+      reDraw() {
+        newdata = this.getDrawnGeom(drawnItems)
+        drawnItems.clearLayers()
+        L.geoJson(newdata, {
+          onEachFeature: function (feature, layer) {
+            drawnItems.addLayer(layer)
+            layer.on("click", function (event) {
+              new L.Toolbar2.EditToolbar.Popup(event.latlng, {
+                actions: editActions,
+              }).addTo(map, layer)
+            })
+          }
+        })
+        drawnItems.setStyle()
+        if (this.invalidExtents()) {
+          drawnItems.setStyle({
+            "color": "#ff7800",
+            "weight": 5,
+            "opacity": 0.65
+          })
+        }
+      }
+    })
+  })
 
 </script>
 
-  {% endblock inline_javascript %}
+{% endblock inline_javascript %}

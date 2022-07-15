@@ -42,13 +42,19 @@ def run_gdmclip_processing_script(
 ):
     """Run the default generic processing script"""
 
-    layers_param = ",".join(map(str, LAYERS)) if LAYERS else None
-    output_crs_param = QgsCoordinateReferenceSystem(OUTPUT_CRS) if OUTPUT_CRS else None
-    project_crs_param = (
-        QgsCoordinateReferenceSystem(PROJECT_CRS) if PROJECT_CRS else None
+    LAYERS = LAYERS if bool(LAYERS) else None  # If nullish, make nonetype
+    layers_param = ",".join(map(str, LAYERS)) if type(LAYERS) == list else LAYERS
+    EXCLUDES = LAYERS if bool(EXCLUDES) else None  # If nullish, make nonetype
+    excludes_param = (
+        ",".join(map(str, EXCLUDES)) if type(EXCLUDES) == list else EXCLUDES
     )
-    excludes_param = ",".join(map(str, EXCLUDES)) if EXCLUDES else None
-
+    output_crs_param = (
+        QgsCoordinateReferenceSystem(OUTPUT_CRS) if bool(OUTPUT_CRS) else None
+    )
+    project_crs_param = (
+        QgsCoordinateReferenceSystem(PROJECT_CRS) if bool(PROJECT_CRS) else None
+    )
+    # TODO Get QgsTask object
     result = processing.run(
         "script:gdmclip",
         {
@@ -110,6 +116,9 @@ def process_job_gdmclip(job_id):
         qgs.processingRegistry()
     )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
     # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
+
+    registry.addProvider(GdalAlgorithmProvider)
+    
     qgs.setMaxThreads(1)
     qgs.initQgis()
 
@@ -152,7 +161,7 @@ def process_job_gdmclip(job_id):
             process_context=context,
         )
         logger.info("Waiting for process to complete...")
-        # Wait for procesing script to run
+        # Wait for processing script to run
         # while (
         #     not task.finished()
         # ):  # https://qgis.org/pyqgis/master/core/QgsTask.html#qgis.core.QgsTask.finished
@@ -169,13 +178,14 @@ def process_job_gdmclip(job_id):
             file_name=job.job_id,
             job_id=job,
         )
+        # add results file object to results file record (upload_to=results)
         results_file_record.file_object.save(
             basename(results_file), project_storage.open(results_file), save=True
         )
 
-        statinfo = stat(results_file)  # get stats on the results file that was uploaded
+        statinfo = stat(results_file)  # get stats on the output file
 
-        with project_storage.open(results_file, 'w') as f:
+        with project_storage.open(results_file, "w") as f:
             f.write(statinfo)  # replace actual file (now duplicate) with file stats
 
     except SoftTimeLimitExceeded:

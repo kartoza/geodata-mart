@@ -41,10 +41,26 @@ def gallery(request):
 @login_required
 def map(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
+    project_layers = Layer.objects.filter(project_id=project)
+    std_classes = [
+        Layer.LayerClass.UNSPECIFIED,
+        Layer.LayerClass.STANDARD,
+        Layer.LayerClass.OTHER,
+    ]
+    map_layers = [layer for layer in project_layers if layer.lyr_class in std_classes]
+    base_layers = [
+        layer for layer in project_layers if layer.lyr_class == Layer.LayerClass.BASE
+    ]
+    excluded_layers = [
+        layer for layer in project_layers if layer.lyr_class == Layer.LayerClass.EXCLUDE
+    ]
+    coverage = project.coverage.geojson if project.coverage else None
     context = {
         "project": project,
-        "layers": Layer.objects.filter(project_id=project),
-        "excludes_class_list": [Layer.LayerClass.BASE, Layer.LayerClass.EXCLUDE],
+        "coverage": coverage,
+        "map_layers": map_layers,
+        "base_layers": base_layers,
+        "excluded_layers": excluded_layers,
     }
     return render(request, "maps/map.html", context)
 

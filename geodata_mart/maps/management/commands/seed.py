@@ -108,7 +108,7 @@ class Command(BaseCommand):
                 max_area=400,  # 20x20 square kilometers
                 project_file=ngi_project_file,
                 vendor_id=kartoza,
-                comment="The RSA NGI Project with relevant Topo Data",
+                comment="Sample project with topographic data from the National Geospatial Information Catalog for the Republic of South Africa",
             )
 
             self.stdout.write("add project layers...")
@@ -166,7 +166,34 @@ class Command(BaseCommand):
                     layer_name=self.transformLabels(key),
                     abstract=value,
                     project_id=ngi_project,
+                    lyr_class=Layer.LayerClass.STANDARD,
                 )
+
+            # add ngi project base layers
+            Layer.objects.create(
+                short_name="rsaortho",
+                layer_name="OSM-NGI-Ortho",
+                abstract="NGI Imagery Mosaic generated and hosted as a WMS by the OpenStreetMap Team",
+                project_id=ngi_project,
+                lyr_class=Layer.LayerClass.BASE,
+                lyr_type=Layer.LayerType.WMS,
+            )
+            Layer.objects.create(
+                short_name="osm",
+                layer_name="OpenStreetMap",
+                abstract="OpenStreetMap Basic Global XYZ Tile Layer",
+                project_id=ngi_project,
+                lyr_class=Layer.LayerClass.EXCLUDE,
+                lyr_type=Layer.LayerType.XYZ,
+            )
+            Layer.objects.create(
+                short_name="worlddem",
+                layer_name="Mapzen Global Terrain",
+                abstract="Mapzen Global Terrain, hosted by Amazon Web Services",
+                project_id=ngi_project,
+                lyr_class=Layer.LayerClass.OTHER,
+                lyr_type=Layer.LayerType.XYZ,
+            )
 
         self.stdout.write("load processing script...")
         script_file = "seed/clip_project.py"
@@ -188,7 +215,7 @@ class Command(BaseCommand):
                 state=StateChoices.ACTIVE,
                 vendor_id=kartoza,
                 comment="Blank project spec for testing gallery view, number: "
-                + str(i+2),
+                + str(i + 2),
             )
 
         self.stdout.write("time to party...")

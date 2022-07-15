@@ -51,10 +51,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
     as a response, or provided as a dynamic service accordingly.
     """
 
-    # Constants used to refer to parameters and outputs. They will be
-    # used when calling the algorithm from another algorithm, or when
-    # calling from the QGIS console.
-
     PROJECTID = "PROJECTID"
     VENDORID = "VENDORID"
     USERID = "USERID"
@@ -110,13 +106,26 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         """
         return "geodatamart"
 
+    def helpString(self):
+        """
+        Returns a localised help string for the algorithm.
+        """
+        return self.tr(
+            "Clip and publish a QGIS Project file with GeoData Mart," +
+            " returning the path to the output zip file." +
+            "\nThis is not intended for use with QGIS Desktop Applications."
+        )
+
     def shortHelpString(self):
         """
         Returns a localised short helper string for the algorithm. This string
         should provide a basic description about what the algorithm does and the
-        parameters and outputs associated with it..
+        parameters and outputs associated with it.
         """
-        return self.tr("Clip and publish QGIS Project layers with GeoData Mart")
+        return self.tr(
+            "Clip and publish a QGIS Project file with GeoData Mart," +
+            " returning the path to the output zip file."
+        )
 
     def initAlgorithm(self, config=None):
         """
@@ -362,9 +371,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         feedback.pushInfo(f"Generating clipping bounds")
 
         try:
-            # Generate clipping geometry
-            # To be used with geodjango/ turfjs -
-            # Expects single wkt area supplied by the client/ server process
+            # Expects single wkt polygon/ area feature
             wkt_geom = QgsGeometry.fromWkt(parameters["CLIP_GEOM"])
             clip_layer = QgsVectorLayer(
                 "polygon?crs=epsg:4326&field=id:integer&index=yes",

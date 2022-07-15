@@ -1,4 +1,4 @@
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django.db import models
 from django.contrib.gis.db import models as gismodels
@@ -321,6 +321,8 @@ class Project(gismodels.Model):
     coverage = gismodels.MultiPolygonField(
         default=None,
         verbose_name=_("Project Coverage Region"),
+        srid=4326,
+        geography=True,
         null=True,
         blank=True,
     )
@@ -419,6 +421,11 @@ class Layer(models.Model):
 
     short_name = models.CharField(_("Layer Short Name"), max_length=80)
     layer_name = models.CharField(_("Layer Name"), max_length=255)
+    is_default = models.BooleanField(
+        _("Default"),
+        help_text=_("Define whether this layer should be checked by default"),
+        default=True,
+    )
     abstract = models.CharField(_("Layer Abstract"), max_length=255)
     created_date = models.DateTimeField(
         auto_now_add=True, verbose_name=_("Created Date")
@@ -444,7 +451,7 @@ class Layer(models.Model):
     state = models.IntegerField(
         choices=StateChoices.choices, default=StateChoices.UNSPECIFIED
     )
-    lyr_group = models.CharField(_("Layer Group"), max_length=20)
+    lyr_group = models.CharField(_("Layer Group"), max_length=20, blank=True, null=True)
     lyr_class = models.IntegerField(
         choices=LayerClass.choices, default=LayerClass.UNSPECIFIED
     )
