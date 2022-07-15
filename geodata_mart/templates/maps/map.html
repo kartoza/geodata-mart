@@ -61,8 +61,7 @@
 {% endif %}
 
 <div class="map-page" x-data>
-  {% comment %} <form @submit.prevent="!$store.pageData.invalidExtents()" action="{% url 'maps:create_job' %}" method="post"> {% endcomment %}
-  <form action="{% url 'maps:create_job' %}" method="post">
+  <form @submit.prevent="!$store.pageData.getInvalidExtents" action="{% url 'maps:create_job' %}" method="post">
     {% csrf_token %}
     <input type="hidden" id="user_id" name="user_id" :value="$store.pageData.user_id">
     <input type="hidden" id="project_id" name="project_id" :value="$store.pageData.project_id">
@@ -148,7 +147,7 @@
             <div class="w-100">
               <button class="btn btn-outline-success rounded-pill w-100"
                 {% comment %} https://github.com/alpinejs/alpine/discussions/2681 {% endcomment %}
-                :class="$store.pageData.getInvalidExtents ? '' : 'disabled'" type="submit">
+                :class="$store.pageData.getInvalidExtents ? 'disabled' : ''" type="submit">
                 {% translate "Clip & Ship" %}
                 <i class="bi bi-send-fill"></i>
               </button>
@@ -161,31 +160,8 @@
       </div>
     </div>
   </form>
-
-<ul>
-  <li>
-    <span x-text="$store.pageData.getInvalidExtents ? '' : 'disabled'"></span>
-  </li>
-  <li>
-    <span x-text="$store.pageData.getInvalidExtents"></span>
-  </li>
-  <li>
-    <span x-text="$store.pageData.user_id"></span>
-  </li>
-  <li>
-    <span x-text="$store.pageData.project_id"></span>
-  </li>
-  <li>
-    <span x-text="$store.pageData.parameters"></span>
-  </li>
-  <li>
-    <span x-text="$store.pageData.comment"></span>
-  </li>
-</ul>
-
 </div>
 
-</div>
 {% endblock page %}
 
 {% block modal %}
@@ -289,6 +265,7 @@
         .addListener(controlDiv, "click", L.DomEvent.preventDefault)
         .addListener(controlDiv, "click", function () {
           drawnItems.clearLayers()
+          Alpine.store('refresh').refresh()
         })
 
       var controlUI = L.DomUtil.create(
@@ -307,11 +284,13 @@
   document.addEventListener('alpine:init', () => {
     Alpine.store('refresh', {
       refresh () {
-        /* AlpineJS reactivity will only update bound components
+      /*  AlpineJS reactivity will only update bound components
           when dependent data changes. Using Getters with Stores,
           and then modifying the underlying data with external calls
           will not update the dom components directly. Resetting the
-          underlying data elements for the getters seems to fix it. */
+          underlying data elements for the getters seems to fix it.
+          
+          https://github.com/alpinejs/alpine/discussions/2681 */
         const pageData = Alpine.store('pageData')
         //for (const key in pageData) {
         //  if (pageData.hasOwnProperty(key)) {
@@ -371,7 +350,6 @@
         } else {
             this.checkedLayers.push(id)
         }
-        console.log(JSON.stringify(this.checkedLayers))
       },
 
       layerChecked(id) {
