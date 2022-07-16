@@ -61,12 +61,17 @@
 {% endif %}
 
 <div class="map-page" x-data>
-  <form @submit.prevent="!$store.pageData.getInvalidExtents" action="{% url 'maps:create_job' %}" method="post">
+  <form action="{% url 'maps:create_job' %}" method="post">
     {% csrf_token %}
     <input type="hidden" id="user_id" name="user_id" :value="$store.pageData.user_id">
     <input type="hidden" id="project_id" name="project_id" :value="$store.pageData.project_id">
     <input type="hidden" id="parameters" name="parameters" :value="$store.pageData.parameters">
     <input type="hidden" id="comment" name="comment" :value="$store.pageData.comment">
+    <select id="checked-layers" name="checked-layers" style="display: none;" class="w-100 selectmultiple" readonly="true" multiple="true">
+      <template x-for="i in $store.pageData.checkedLayers" :key="i">
+        <option :value="i" selected="true"></option>
+      </template>
+    </select>
 
     <div class="d-flex flex-row">
       <div id="map-sidebar" class="d-flex flex-column align-items-stretch flex-shrink-0 col-3" style="overflow: auto;">
@@ -116,7 +121,8 @@
               <div class="w-100">
                 <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
                 <input class="form-range mr-2 px-2" type="range" min="0" max="15" step="0.5" id="clipBuffer"
-                  x-model="$store.pageData.buffer_distance" aria-label="Clip buffer" />
+                  x-model="$store.pageData.buffer_distance" aria-label="Clip buffer"
+                  x-init="$watch('$store.pageData.buffer_distance', value => $store.pageData.reDraw())" />
                 <label for="clipBuffer" class="col-form-label px-2">
                   <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
                       data-bs-target="#bufferInfoModal">
@@ -524,28 +530,31 @@
       },
 
       reDraw() {
-        newdata = this.getDrawnGeom(drawnItems)
-        drawnItems.clearLayers()
-        L.geoJson(newdata, {
-          onEachFeature: function (feature, layer) {
-            drawnItems.addLayer(layer)
-            layer.on("click", function (event) {
-              new L.Toolbar2.EditToolbar.Popup(event.latlng, {
-                actions: editActions,
-              }).addTo(map, layer)
+        if (Object.keys(drawnItems._layers).length > 0) {
+          console.log(this.buffer_distance)
+          newdata = this.getDrawnGeom(drawnItems)
+          drawnItems.clearLayers()
+          L.geoJson(newdata, {
+            onEachFeature: function (feature, layer) {
+              drawnItems.addLayer(layer)
+              layer.on("click", function (event) {
+                new L.Toolbar2.EditToolbar.Popup(event.latlng, {
+                  actions: editActions,
+                }).addTo(map, layer)
+              })
+            }
+          })
+          drawnItems.setStyle()
+          if (this.invalidExtents()) {
+            drawnItems.setStyle({
+              "color": "#ff7800",
+              "weight": 5,
+              "opacity": 0.65
             })
           }
-        })
-        drawnItems.setStyle()
-        if (this.invalidExtents()) {
-          drawnItems.setStyle({
-            "color": "#ff7800",
-            "weight": 5,
-            "opacity": 0.65
-          })
+          // refresh reactive data values
+          Alpine.store('refresh').refresh()
         }
-        // refresh reactive data values
-        Alpine.store('refresh').refresh()
       }
     })
   })
