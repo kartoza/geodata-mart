@@ -13,6 +13,7 @@
 {% compress js %}
 <script src="{% static 'leaflet/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-draw/leaflet.draw.js' %}"></script>
+{% comment %} <script src="{% static 'leaflet/leaflet-draw-drag/Leaflet.draw.drag.js' %}"></script> {% endcomment %}
 <script src="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.js' %}"></script>
@@ -227,7 +228,6 @@
   let drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
       L.Toolbar2.EditAction.Popup.Edit,
-      L.Toolbar2.EditAction.Popup.Delete,
     ]
 
   new L.Control.Zoom({
@@ -547,7 +547,7 @@
             // display max extent
             let max_extent = turf.envelope(turf.buffer(
               turf.centroid(this.getBufferedGeom()), 
-                Math.sqrt({{ project.max_area }}),
+                Math.sqrt({{ project.max_area }})/2,
                 {units: 'kilometers'}
               ))
             L.geoJson(max_extent, {
