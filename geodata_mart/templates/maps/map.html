@@ -220,6 +220,10 @@
   {% endif %}
 
   L.Control.geocoder().addTo(map)
+
+  let annotationItems = new L.FeatureGroup().addTo(map)
+  let errorItems = new L.FeatureGroup().addTo(map)
+  
   let drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
       L.Toolbar2.EditAction.Popup.Edit,
@@ -271,6 +275,8 @@
         .addListener(controlDiv, "click", L.DomEvent.preventDefault)
         .addListener(controlDiv, "click", function () {
           drawnItems.clearLayers()
+          errorItems.clearLayers()
+          annotationItems.clearLayers()
           Alpine.store('refresh').refresh()
         })
 
@@ -348,7 +354,7 @@
         abstract: '{{ layer.abstract }}'},
         {% endfor %}
       ],
-      buffer_distance: 5,
+      buffer_distance: 2,
 
       toggleCheckedLayer(id) {
         if (this.layerChecked(id)) {
@@ -531,7 +537,47 @@
 
       reDraw() {
         if (Object.keys(drawnItems._layers).length > 0) {
-          console.log(this.buffer_distance)
+          errorItems.clearLayers()
+          annotationItems.clearLayers()
+
+          // leaflet z-ordering is dependent on insertion order,
+          // i.e. these annotation layers must be drawn first, or
+          // use https://leafletjs.com/reference.html#path-bringtoback
+          if (this.invalidExtents()) {
+            // display max extent
+            let max_extent = turf.envelope(turf.buffer(
+              turf.centroid(this.getBufferedGeom()), 
+                Math.sqrt({{ project.max_area }}),
+                {units: 'kilometers'}
+              ))
+            L.geoJson(max_extent, {
+              onEachFeature: function (feature, layer) {
+                layer.setStyle({
+                  "color": "#f00",
+                  "weight": 2,
+                  "opacity": 0.25,
+                  "fillOpacity": 0.25,
+                })
+                errorItems.addLayer(layer)
+              }
+            })
+          }
+          if (this.buffer_distance > 0) {
+            // show full clipping extent of buffered area
+            let bounds = turf.envelope(this.getBufferedGeom())
+            L.geoJson(bounds, {
+              onEachFeature: function (feature, layer) {
+                layer.setStyle({
+                  "color": "#000",
+                  "weight": 1,
+                  "opacity": 0.25,
+                  "fillOpacity": 0.1,
+                })
+                annotationItems.addLayer(layer)
+              }
+            })
+          }
+
           newdata = this.getDrawnGeom(drawnItems)
           drawnItems.clearLayers()
           L.geoJson(newdata, {
@@ -552,6 +598,7 @@
               "opacity": 0.65
             })
           }
+
           // refresh reactive data values
           Alpine.store('refresh').refresh()
         }
