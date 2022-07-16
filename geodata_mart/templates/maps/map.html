@@ -204,11 +204,28 @@
     [-34.35, 18.48],
     15
   )
-  let bounds = turf.bbox({{ coverage }})
+
+  let coverage_geojson = '{{ coverage }}'
+  coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
+  let bounds = turf.bbox(JSON.parse(coverage_geojson))
+  
+  // let coverageLayer = new L.FeatureGroup().addTo(map)
+  // L.geoJson(JSON.parse(coverage_geojson), {
+  //   onEachFeature: function (feature, layer) {
+  //     layer.setStyle({
+  //       "color": "#0f0",
+  //       "weight": 2,
+  //       "opacity": 0.25,
+  //       "fillOpacity": 0.1,
+  //     })
+  //     coverageLayer.addLayer(layer)
+  //   }
+  // })
+
   map.fitBounds(
     L.latLngBounds(
-      L.latLng(bounds[0], bounds[1]),
-      L.latLng(bounds[2], bounds[3])
+      L.latLng(bounds[1], bounds[0]),
+      L.latLng(bounds[3], bounds[2])
     )
   )
   {% else %}
