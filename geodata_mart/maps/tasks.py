@@ -23,7 +23,6 @@ from geodata_mart.utils.qgis import migrateProcessingScripts
 logger = get_task_logger(__name__)
 
 import shutil
-from processing.core.Processing import Processing
 
 
 def run_gdmclip_processing_script(
@@ -43,8 +42,8 @@ def run_gdmclip_processing_script(
     """Run the default generic processing script"""
 
     LAYERS = LAYERS if bool(LAYERS) else None  # If nullish, make nonetype
-    layers_param = ",".join(map(str, LAYERS)) if type(LAYERS) == list else LAYERS
-    EXCLUDES = LAYERS if bool(EXCLUDES) else None  # If nullish, make nonetype
+    layers_param = ",".join(map(str, LAYERS)) if (type(LAYERS) == list) else LAYERS
+    EXCLUDES = EXCLUDES if bool(EXCLUDES) else None  # If nullish, make nonetype
     excludes_param = (
         ",".join(map(str, EXCLUDES)) if type(EXCLUDES) == list else EXCLUDES
     )
@@ -117,8 +116,6 @@ def process_job_gdmclip(job_id):
     )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
     # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
 
-    registry.addProvider(GdalAlgorithmProvider)
-    
     qgs.setMaxThreads(1)
     qgs.initQgis()
 
@@ -129,19 +126,14 @@ def process_job_gdmclip(job_id):
     logger.info(f"Processing project file: {map_file}")
 
     readflags = QgsProject.ReadFlags()
-    readflags |= (
-        QgsProject.FlagDontResolveLayers
-        | QgsProject.FlagDontResolveLayers
-        | QgsProject.FlagDontLoadLayouts
-        | QgsProject.FlagTrustLayerMetadata
-    )
+    readflags |= QgsProject.FlagDontLoadLayouts | QgsProject.FlagTrustLayerMetadata
     project = QgsProject()
     project.instance().read(map_file, readflags)
     context.setProject(project)
     output_path = join(project_storage.location, "output", str(job.job_id))
     logger.info("Executing processing command")
 
-    Processing.initialize()
+    processing.core.Processing.Processing.initialize()
     if registry.providerById("script"):
         registry.providerById("script").refreshAlgorithms()
 
@@ -186,7 +178,9 @@ def process_job_gdmclip(job_id):
         statinfo = stat(results_file)  # get stats on the output file
 
         with project_storage.open(results_file, "w") as f:
-            f.write(statinfo)  # replace actual file (now duplicate) with file stats
+            f.write(
+                str(statinfo)
+            )  # replace actual file (now duplicate) with file stats
 
     except SoftTimeLimitExceeded:
         feedback.cancel()

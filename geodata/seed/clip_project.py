@@ -21,6 +21,7 @@ from qgis.core import (
     QgsFields,
     QgsField,
     QgsMapLayer,
+    QgsMapLayerType,
     QgsDataProvider,
     QgsProviderRegistry,
     QgsGeometry,
@@ -35,6 +36,8 @@ from qgis.core import (
 )
 from PyQt5.QtCore import QVariant
 from qgis import processing
+
+# import processing
 import os
 from pathlib import Path
 from datetime import date
@@ -111,9 +114,9 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         Returns a localised help string for the algorithm.
         """
         return self.tr(
-            "Clip and publish a QGIS Project file with GeoData Mart," +
-            " returning the path to the output zip file." +
-            "\nThis is not intended for use with QGIS Desktop Applications."
+            "Clip and publish a QGIS Project file with GeoData Mart,"
+            + " returning the path to the output zip file."
+            + "\nThis is not intended for use with QGIS Desktop Applications."
         )
 
     def shortHelpString(self):
@@ -123,8 +126,8 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         parameters and outputs associated with it.
         """
         return self.tr(
-            "Clip and publish a QGIS Project file with GeoData Mart," +
-            " returning the path to the output zip file."
+            "Clip and publish a QGIS Project file with GeoData Mart,"
+            + " returning the path to the output zip file."
         )
 
     def initAlgorithm(self, config=None):
@@ -224,7 +227,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
     def getCleanListFromCsvString(self, input_string):
         """Convert an input comma separated string into a list of clean values"""
-        output_list = input_string.split(", ")
+        input_string = input_string.replace("[", "")
+        input_string = input_string.replace("]", "")
+        input_string = input_string.replace("\\", "")
+        output_list = input_string.split(",")
         output_list = [
             a.replace(",", "").strip() for a in output_list if bool(a.strip())
         ]
@@ -602,7 +608,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             if layer.type() == QgsMapLayer.VectorLayer:
                 feedback.pushInfo(f"Clipping Vector {layer.name()}")
                 self.clipVector(parameters, context, feedback, layer, clip_layer)
-            elif layer.type() == QgsMapLayer.RasterLayer:
+            elif layer.type() in [QgsMapLayer.RasterLayer, QgsMapLayerType.RasterLayer]:
                 feedback.pushInfo(f"Clipping Raster {layer.name()}")
                 self.clipRaster(parameters, context, feedback, layer, clip_layer)
             else:
