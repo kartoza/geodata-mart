@@ -67,7 +67,7 @@
     <input type="hidden" id="project_id" name="project_id" :value="$store.pageData.project_id">
     <input type="hidden" id="parameters" name="parameters" :value="$store.pageData.parameters">
     <input type="hidden" id="comment" name="comment" :value="$store.pageData.comment">
-    <select id="checked-layers" name="checked-layers" style="display: none;" class="w-100 selectmultiple" readonly="true" multiple="true">
+    <select id="layers" name="layers" style="display: none;" class="w-100 selectmultiple" readonly="true" multiple="">
       <template x-for="i in $store.pageData.checkedLayers" :key="i">
         <option :value="i" selected="true"></option>
       </template>
