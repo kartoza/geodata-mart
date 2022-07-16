@@ -107,8 +107,8 @@
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" :name="layer.short_name"
                       :id="layer.short_name"
-                      :checked="$store.pageData.layerChecked(layer.id)"
-                      @click="$store.pageData.toggleCheckedLayer(layer.id)"
+                      :checked="$store.pageData.layerChecked(layer.id, $store.pageData.checkedLayers)"
+                      @click="$store.pageData.toggleLayer(layer.id, $store.pageData.checkedLayers)"
                       />
                     <label class="form-check-label" x-text="layer.layer_name"></label>
                   </div>
@@ -132,19 +132,38 @@
                 </label>
               </div>
             </div>
-            <div class="list-group-item list-group-item-action mx-0 y-3 lh-tight row justify-content-between">
-              <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
+            <div class="text-center w-100 text-muted">{% translate "Base Layers" %}</div>
+            <template x-for="layer in $store.pageData.baseLayers" :key="layer.id">
+              <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
                 <label :for="layer.short_name">
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                      :id="layer.short_name" x-model="$store.pageData.excludedLayers" />
-                    <label class="form-check-label" x-text="layer.layer_name"
-                    x-model="$store.pageData.excludedLayers"></label>
+                      :id="layer.short_name"
+                      :checked="$store.pageData.layerChecked(layer.id, $store.pageData.checkedBases)"
+                      @click="$store.pageData.toggleLayer(layer.id, $store.pageData.checkedBases)"
+                      />
+                    <label class="form-check-label" x-text="layer.layer_name"></label>
                   </div>
                   <div class="mb-1 small" x-text="layer.abstract"></div>
                 </label>
-              </template>
-            </div>
+              </div>
+            </template>
+            <div class="text-center w-100 text-muted">{% translate "Excludes" %}</div>
+            <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
+              <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+                <label :for="layer.short_name">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                      :id="layer.short_name"
+                      :checked="$store.pageData.layerChecked(layer.id, $store.pageData.checkedExcludes)"
+                      @click="$store.pageData.toggleLayer(layer.id, $store.pageData.checkedExcludes)"
+                      />
+                    <label class="form-check-label" x-text="layer.layer_name"></label>
+                  </div>
+                  <div class="mb-1 small" x-text="layer.abstract"></div>
+                </label>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -348,8 +367,12 @@
       checkedLayers: [{% for layer in map_layers %}
       {% if layer.is_default %}{{ layer.id }},{% endif %}
       {% endfor %}],
-      checkedBases: [],
-      checkedExcludes: [],
+      checkedBases:  [{% for layer in base_layers %}
+      {% if layer.is_default %}{{ layer.id }},{% endif %}
+      {% endfor %}],
+      checkedExcludes:  [{% for layer in excluded_layers %}
+      {% if layer.is_default %}{{ layer.id }},{% endif %}
+      {% endfor %}],
       mapLayers: [
         {% for layer in map_layers %}
         {id: {{ layer.id }},
@@ -373,16 +396,16 @@
       ],
       buffer_distance: 2,
 
-      toggleCheckedLayer(id) {
-        if (this.layerChecked(id)) {
-          this.checkedLayers = this.checkedLayers.filter(h => h !== id)
+      toggleLayer(id, layerList) {
+        if (this.layerChecked(id, layerList)) {
+          layerList = layerList.filter(h => h !== id)
         } else {
-            this.checkedLayers.push(id)
+          layerList.push(id)
         }
       },
 
-      layerChecked(id) {
-        if (this.checkedLayers.indexOf(id) > -1) {
+      layerChecked(id, layerList) {
+        if (layerList.indexOf(id) > -1) {
           return "checked"
         } else {
           return false
