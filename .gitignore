@@ -11,6 +11,8 @@
 # DO NOT COMMIT PROJECT FILES WITH EMBEDDED CREDENTIALS HERE
 /geodata/**
 !/geodata/**/.gitkeep
+!/geodata/cleaup.sh
+!/geodata/cleaup.ps1
 /geodata/output/**
 !/geodata/output/
 /geodata/projects/**
