@@ -53,7 +53,6 @@ def run_gdmclip_processing_script(
     project_crs_param = (
         QgsCoordinateReferenceSystem(PROJECT_CRS) if bool(PROJECT_CRS) else None
     )
-    # TODO Get QgsTask object
     result = processing.run(
         "script:gdmclip",
         {
@@ -138,29 +137,29 @@ def process_job_gdmclip(job_id):
         registry.providerById("script").refreshAlgorithms()
 
     try:
-        task = run_gdmclip_processing_script(
-            LAYERS=parameters["LAYERS"],
-            CLIP_GEOM=parameters["CLIP_GEOM"],
-            OUTPUT=output_path,
-            EXCLUDES=parameters["EXCLUDES"],
-            OUTPUT_CRS=parameters["OUTPUT_CRS"],
-            PROJECT_CRS=parameters["PROJECT_CRS"],
-            PROJECTID=parameters["PROJECTID"],
-            VENDORID=parameters["VENDORID"],
-            USERID=parameters["USERID"],
-            JOBID=str(job.job_id),
-            process_feedback=feedback,
-            process_context=context,
+        task = QgsTask.fromFunction(
+            "Clip",
+            run_gdmclip_processing_script(
+                LAYERS=parameters["LAYERS"],
+                CLIP_GEOM=parameters["CLIP_GEOM"],
+                OUTPUT=output_path,
+                EXCLUDES=parameters["EXCLUDES"],
+                OUTPUT_CRS=parameters["OUTPUT_CRS"],
+                PROJECT_CRS=parameters["PROJECT_CRS"],
+                PROJECTID=parameters["PROJECTID"],
+                VENDORID=parameters["VENDORID"],
+                USERID=parameters["USERID"],
+                JOBID=str(job.job_id),
+                process_feedback=feedback,
+                process_context=context,
+            ),
         )
+        task_id = qgs.taskManager().addTask(task)
         logger.info("Waiting for process to complete...")
         # Wait for processing script to run
-        # while (
-        #     not task.finished()
-        # ):  # https://qgis.org/pyqgis/master/core/QgsTask.html#qgis.core.QgsTask.finished
-        #     logger.info(task.progress())
-        ### https://docs.celeryq.dev/en/latest/userguide/calling.html#on-message
-        ### self.update_state(state="PROGRESS", meta={'progress': 50})
-        #     sleep(5)  # 5 seconds is fine
+        while qgs.taskManager().task(task_id).isActive():
+            logger.info(qgs.taskManager().task(task_id).progress())
+            sleep(1)
 
         logger.info(f'Processed output: {task["OUTPUT"]}')
 
