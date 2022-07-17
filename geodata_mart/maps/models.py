@@ -318,6 +318,18 @@ class Project(gismodels.Model):
         null=True,
         blank=True,
     )
+    buffer_min = models.FloatField(
+        default=0.0, verbose_name=_("Buffer Min"), blank=False, null=False
+    )
+    buffer_max = models.FloatField(
+        default=10.0, verbose_name=_("Buffer Max"), blank=False, null=False
+    )
+    buffer_step = models.FloatField(
+        default=0.5, verbose_name=_("Buffer Increment"), blank=False, null=False
+    )
+    buffer_default = models.FloatField(
+        default=1, verbose_name=_("Default Buffer (km)"), blank=False, null=False
+    )
     coverage = gismodels.MultiPolygonField(
         default=None,
         verbose_name=_("Project Coverage Region"),

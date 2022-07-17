@@ -121,8 +121,8 @@
             <div class="d-flex flex-row text-muted">
               <div class="w-100">
                 <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
-                <input class="form-range mr-2 px-2" type="range" min="0" max="15" step="0.5" id="clipBuffer"
-                  x-model="$store.pageData.buffer_distance" aria-label="Clip buffer"
+                <input class="form-range mr-2 px-2" type="range" min="{{ project.buffer_min }}" max="{{ project.buffer_max }}"
+                  step="{{ project.buffer_step }}" id="clipBuffer" x-model="$store.pageData.buffer_distance" aria-label="Clip buffer"
                   x-init="$watch('$store.pageData.buffer_distance', value => $store.pageData.reDraw())" />
                 <label for="clipBuffer" class="col-form-label px-2">
                   <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
@@ -394,7 +394,7 @@
         abstract: '{{ layer.abstract }}'},
         {% endfor %}
       ],
-      buffer_distance: 2,
+      buffer_distance: {{ project.buffer_default }},
 
       toggleLayer(id, layerList) {
         if (this.layerChecked(id, layerList)) {
