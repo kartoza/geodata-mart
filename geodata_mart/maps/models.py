@@ -344,10 +344,10 @@ class Project(gismodels.Model):
         auto_now_add=True, verbose_name=_("Created Date")
     )
     updated_date = models.DateTimeField(auto_now=True, verbose_name=_("Updated Date"))
-    project_file = models.ForeignKey(
+    qgis_project_file = models.ForeignKey(
         QgisProjectFile,
         on_delete=models.DO_NOTHING,
-        verbose_name=_("Project File"),
+        verbose_name=_("QGIS Project File"),
         null=True,
         blank=True,
     )
@@ -388,7 +388,6 @@ class Project(gismodels.Model):
             "updated_date",
             "created_date",
             "project_name",
-            "project_file",
         ]
 
     def __str__(self):
@@ -470,6 +469,11 @@ class Layer(models.Model):
     lyr_type = models.IntegerField(
         choices=LayerType.choices, default=LayerType.UNSPECIFIED
     )
+    lyr_license = models.TextField(verbose_name=_("License"), blank=True, null=True)
+    lyr_attribution = models.TextField(
+        verbose_name=_("Attribution"), blank=True, null=True
+    )
+    lyr_metadata = models.TextField(verbose_name=_("Metadata"), blank=True, null=True)
     siblings = models.ManyToManyField("self", blank=True)
     tags = models.ManyToManyField(MetaTags, blank=True)
 

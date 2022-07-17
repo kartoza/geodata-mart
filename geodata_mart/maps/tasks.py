@@ -122,7 +122,7 @@ def process_job_gdmclip(job_id):
     feedback = QgsProcessingFeedback()
     context = QgsProcessingContext()
 
-    map_file = job.project_id.project_file.file_object.path
+    map_file = job.project_id.qgis_project_file.file_object.path
     logger.info(f"Processing project file: {map_file}")
 
     readflags = QgsProject.ReadFlags()
@@ -158,6 +158,8 @@ def process_job_gdmclip(job_id):
         #     not task.finished()
         # ):  # https://qgis.org/pyqgis/master/core/QgsTask.html#qgis.core.QgsTask.finished
         #     logger.info(task.progress())
+        ### https://docs.celeryq.dev/en/latest/userguide/calling.html#on-message
+        ### self.update_state(state="PROGRESS", meta={'progress': 50})
         #     sleep(5)  # 5 seconds is fine
 
         logger.info(f'Processed output: {task["OUTPUT"]}')

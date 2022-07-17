@@ -370,7 +370,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "comment",
         "created_date",
         "updated_date",
-        "project_file",
+        "qgis_project_file",
         "vendor_id",
         "config_pgservice",
         "config_qgis",

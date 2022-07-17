@@ -106,7 +106,7 @@ class Command(BaseCommand):
                 project_name="NGI",
                 state=StateChoices.ACTIVE,
                 max_area=400,  # 20x20 square kilometers
-                project_file=ngi_project_file,
+                qgis_project_file=ngi_project_file,
                 vendor_id=kartoza,
                 comment="Sample project with topographic data from the National Geospatial Information Catalog for the Republic of South Africa",
             )
