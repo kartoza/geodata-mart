@@ -228,18 +228,18 @@
   coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
   let bounds = turf.bbox(JSON.parse(coverage_geojson))
   
-  // let coverageLayer = new L.FeatureGroup().addTo(map)
-  // L.geoJson(JSON.parse(coverage_geojson), {
-  //   onEachFeature: function (feature, layer) {
-  //     layer.setStyle({
-  //       "color": "#0f0",
-  //       "weight": 2,
-  //       "opacity": 0.25,
-  //       "fillOpacity": 0.1,
-  //     })
-  //     coverageLayer.addLayer(layer)
-  //   }
-  // })
+  let coverageLayer = new L.FeatureGroup().addTo(map)
+  L.geoJson(JSON.parse(coverage_geojson), {
+    onEachFeature: function (feature, layer) {
+      layer.setStyle({
+        "color": "#0f0",
+        "weight": 2,
+        "opacity": 0.25,
+        "fillOpacity": 0.05,
+      })
+      coverageLayer.addLayer(layer)
+    }
+  })
 
   map.fitBounds(
     L.latLngBounds(
@@ -247,6 +247,25 @@
       L.latLng(bounds[3], bounds[2])
     )
   )
+
+  let annotationItems = new L.FeatureGroup().addTo(map)
+  let errorItems = new L.FeatureGroup().addTo(map)
+  
+  new L.Control.Zoom({
+    position: "bottomleft"
+  }).addTo(map)
+
+  map.removeLayer(coverageLayer)
+
+  var layerController = L.control.layers(
+    null,
+    {
+      "Project Coverage": coverageLayer,
+      "Buffered Extent": annotationItems,
+      "Extent Limit": errorItems,
+    },
+    { position: 'bottomleft' }
+  ).addTo(map)
   {% else %}
   const map = L.map("map", {
     zoomControl: false,
@@ -254,21 +273,30 @@
     [-34.35, 18.48],
     15
   )
+  
+  let annotationItems = new L.FeatureGroup().addTo(map)
+  let errorItems = new L.FeatureGroup().addTo(map)
+  
+  new L.Control.Zoom({
+    position: "bottomleft"
+  }).addTo(map)
+
+  var layerController = L.control.layers(
+    null,
+    {
+      "Buffered Extent": annotationItems,
+      "Extent Limit": errorItems,
+    },
+    { position: 'bottomleft' }
+  ).addTo(map)
   {% endif %}
 
   L.Control.geocoder().addTo(map)
 
-  let annotationItems = new L.FeatureGroup().addTo(map)
-  let errorItems = new L.FeatureGroup().addTo(map)
-  
   let drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
       L.Toolbar2.EditAction.Popup.Edit,
     ]
-
-  new L.Control.Zoom({
-    position: "bottomleft"
-  }).addTo(map)
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
