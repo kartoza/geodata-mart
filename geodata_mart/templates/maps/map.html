@@ -262,7 +262,7 @@
     {
       "Project Coverage": coverageLayer,
       "Buffered Extent": annotationItems,
-      "Extent Limit": errorItems,
+      "Max Extents": errorItems,
     },
     { position: 'bottomleft' }
   ).addTo(map)
@@ -291,7 +291,24 @@
   ).addTo(map)
   {% endif %}
 
-  L.Control.geocoder().addTo(map)
+  var geocoder = L.Control.geocoder({
+    defaultMarkGeocode: false
+  })
+  .on('markgeocode', function (e) {
+    drawnItems.clearLayers()
+    errorItems.clearLayers()
+    annotationItems.clearLayers()
+    Alpine.store('refresh').refresh()
+    var bbox = e.geocode.bbox;
+    var poly = L.polygon([
+      bbox.getSouthEast(),
+      bbox.getNorthEast(),
+      bbox.getNorthWest(),
+      bbox.getSouthWest()
+    ]);
+    map.fitBounds(poly.getBounds());
+  })
+  .addTo(map);
 
   let drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
