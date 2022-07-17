@@ -600,3 +600,73 @@ class ResultFile(ManagedFileObject):
     class Meta(ManagedFileObject.Meta):
         verbose_name = _("Result File")
         verbose_name_plural = _("Result Files")
+
+
+class ProjectCoverageFile(ManagedFileObject):
+    """Spatial data file for defining the project coverage
+
+    Must be OGC compliant data source of Type MultiPolygon."""
+
+    class CoverageStateChoices(models.IntegerChoices):
+        """State choices for processing jobs"""
+
+        UNSPECIFIED = 0, _("Unspecified")
+        LOADED = 1, _("Loaded")
+        ERROR = 2, _("Error")
+
+    file_object = models.FileField(
+        upload_to="./projects/coverages",
+        storage=project_storage,
+        help_text=_("Spatial data file for definition of project coverage"),
+        verbose_name=_("Project Coverage File"),
+        blank=True,
+        null=True,
+    )
+    project_id = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+        unique=True,
+        related_name="coverage_file",
+        blank=False,
+        null=False,
+    )
+    state = models.IntegerField(
+        choices=CoverageStateChoices.choices,
+        default=CoverageStateChoices.UNSPECIFIED,
+        blank=True,
+        null=True,
+    )
+
+    class Meta(ManagedFileObject.Meta):
+        verbose_name = _("Project Coverage File")
+        verbose_name_plural = _("Project Coverage Files")
+
+    # @receiver(post_save)
+    # def load_project_coverage_data(sender, instance, **kwargs):
+    #     """Populate coverage field in the related project model
+
+    #     Use GeoDjango LayerMapping to load OGR data source from
+    #     a file source and load the geometry into the database"""
+
+    #     for field in sender._meta.concrete_fields:
+    #         if isinstance(field, models.FileField):
+    #             try:
+    #                 record_instance = sender.objects.get(pk=instance.pk)
+    #             except sender.DoesNotExist:
+    #                 raise ValueError("Source file record not found")
+
+    #             ds = DataSource(record_instance.file_object.path)
+    #             layer = ds[0]
+    #             if not layer.geom_type in ["MultiPolygon", "Polygon"]:
+    #                 instance.state = instance.CoverageStateChoices.ERROR
+    #                 raise ValueError("The geometry type must be a Polygon")
+
+    #             lm = LayerMapping(
+    #                 Project,
+    #                 instance.file_object.path,
+    #                 {"coverage": "POLYGON"},
+    #                 source_srs=layer.srs,
+    #                 transform=True,
+    #             )
+    #             lm.save(verbose=True, step=1000, progress=True)
+    #             instance.state = instance.CoverageStateChoices.LOADED

@@ -426,3 +426,17 @@ class ProjectAdmin(admin.ModelAdmin):
     @admin.action(description="Set selected project type to PostGIS")
     def set_state_3(self, request, queryset):
         queryset.update(state=3)
+
+
+@admin.register(models.ProjectCoverageFile)
+class ProjectCoverageFileAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "file_object",
+        "state",
+    )
+    fields = [
+        "file_object",
+        "project_id",
+        "state",
+    ]
