@@ -2,8 +2,8 @@ from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django.db import models
 from django.contrib.gis.db import models as gismodels
-from django.contrib.gis.utils import LayerMapping
 from django.contrib.gis.gdal import DataSource
+from django.contrib.gis.geos import MultiPolygon
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from geodata_mart.vendors.models import Vendor
@@ -641,32 +641,31 @@ class ProjectCoverageFile(ManagedFileObject):
         verbose_name = _("Project Coverage File")
         verbose_name_plural = _("Project Coverage Files")
 
-    # @receiver(post_save)
-    # def load_project_coverage_data(sender, instance, **kwargs):
-    #     """Populate coverage field in the related project model
 
-    #     Use GeoDjango LayerMapping to load OGR data source from
-    #     a file source and load the geometry into the database"""
+@receiver(post_save, sender=ProjectCoverageFile)
+def load_project_coverage_data(sender, instance, **kwargs):
+    """Populate coverage field in the related project model
 
-    #     for field in sender._meta.concrete_fields:
-    #         if isinstance(field, models.FileField):
-    #             try:
-    #                 record_instance = sender.objects.get(pk=instance.pk)
-    #             except sender.DoesNotExist:
-    #                 raise ValueError("Source file record not found")
+    Use GeoDjango LayerMapping to load OGR data source from
+    a file source and load the geometry into the database"""
 
-    #             ds = DataSource(record_instance.file_object.path)
-    #             layer = ds[0]
-    #             if not layer.geom_type in ["MultiPolygon", "Polygon"]:
-    #                 instance.state = instance.CoverageStateChoices.ERROR
-    #                 raise ValueError("The geometry type must be a Polygon")
+    try:
+        record_instance = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        raise ValueError("Source file record not found")
 
-    #             lm = LayerMapping(
-    #                 Project,
-    #                 instance.file_object.path,
-    #                 {"coverage": "POLYGON"},
-    #                 source_srs=layer.srs,
-    #                 transform=True,
-    #             )
-    #             lm.save(verbose=True, step=1000, progress=True)
-    #             instance.state = instance.CoverageStateChoices.LOADED
+    ds = DataSource(record_instance.file_object.path)
+    layer = ds[0]
+    if not layer.geom_type in ["MultiPolygon"]:
+        record_instance.state = ProjectCoverageFile.CoverageStateChoices.ERROR
+        raise ValueError("The geometry type must be a MultiPolygon")
+
+    try:
+        project = Project.objects.get(id=record_instance.project_id.id)
+        project.coverage = layer.get_geoms(geos=True)[0]
+        project.save()
+        record_instance.state = ProjectCoverageFile.CoverageStateChoices.LOADED
+    except Exception as e:
+        print("Error saving coverage geometry from file")
+        print(f"{e}")
+        record_instance.state = ProjectCoverageFile.CoverageStateChoices.ERROR
