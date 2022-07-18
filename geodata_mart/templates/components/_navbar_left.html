@@ -1,0 +1,14 @@
+{% load static i18n compress %}
+<ul class="navbar-nav mr-auto">
+  <li class="nav-item active">
+    <a class="nav-link" href="{% url 'gallery' %}">Home <span class="visually-hidden">(current)</span></a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'about' %}">About</a>
+  </li>
+  {% if debug %}
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'devapp:dev' %}">Dev</a>
+  </li>
+  {% endif %}
+</ul>

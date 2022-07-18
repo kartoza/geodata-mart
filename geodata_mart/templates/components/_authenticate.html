@@ -1,0 +1,23 @@
+{% load i18n %}
+{% if not request.user.is_authenticated %}
+<section class="py-5 text-center container">
+  <div class="row py-lg-5">
+    <div class="col-lg-6 col-md-8 mx-auto">
+      <h1 class="fw-light">GeoData Mart</h1>
+      <p class="lead text-muted">
+        {% translate "Select, clip, and ship collections of geodata quickly and conveniently." %}
+      </p>
+      <div class="d-flex justify-content-between">
+        <div class="p-2 flex-fill">
+          <a href="{% url 'account_signup' %}"
+            class="btn btn-block btn-secondary btn-block m-2 p-4 w-100">{% translate "Sign Up" %}</a>
+        </div>
+        <div class="p-2 flex-fill">
+          <a href="{% url 'account_login' %}"
+            class="btn btn-primary btn-block m-2 p-4 w-100">{% translate "Sign In" %}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}

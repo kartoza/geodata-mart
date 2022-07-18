@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <div class="py-5">
+    <div class="container">
+      {% for job in jobs %}
+      <div>
+        <ul>
+          {% for name, value in job.get_fields %}
+          {% if name == 'job_id' %}
+          <li>{{ name }}: <a href="{% url 'maps:checkout' value %}">{{ value }}</a></li>
+          {% else %}
+          <li>{{ name }}: {{ value }}</li>
+          {% endif %}
+          {% endfor %}
+          {% for result in results %}
+          {% if result.job_id == job %}
+          <li>
+            <a href="{{ result.file_object.url }}">
+              {{ result.file_name }}
+            </a>
+          </li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</main>
+{% endblock content %}

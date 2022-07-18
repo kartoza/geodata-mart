@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% load crispy_forms_tags %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <div class="py-5">
+    <div class="container">
+      <form action="{% url 'maps:checkout' job.job_id %}" id="job-form" class="form-horizontal" method="post">
+        {% csrf_token %}
+        <div class="row py-lg-5">
+          <div class="col-lg-6 col-md-8 mx-auto">
+            <legend>{{ job.job_id }}</legend>
+            {% crispy form %}
+
+            <div class="container">
+              <div class="row align-items-center justify-content-between">
+                <a href="{% url 'maps:cancel_job' job.job_id %}" class="btn btn-block"><button
+                    class="btn btn-secondary btn-block m-2 p-4" type="button"
+                    name="">{% translate 'Cancel' %}</button></a>
+                <button class="btn btn-success btn-block m-2 p-4" type="submit"
+                  name="">{% translate 'Process' %}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</main>
+{% endblock content %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block extrahead %}
+
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <div class="py-5">
+    <div class="container">
+      <form action="{% url 'maps:create_job' %}" class="form-horizontal" method="post">
+        {% csrf_token %}
+        <div class="row py-lg-5">
+          <div class="col-lg-6 col-md-8 mx-auto">
+            <legend>Create Job for {{ project.project_name }}</legend>
+            <div class="mb-3">
+              <label for="form-user_id" class="form-label">User</label>
+              <input type="text" id="form-user_id" name="user_id">
+            </div>
+            <div class="mb-3">
+              <label for="form-project_id" class="form-label">Project</label>
+              <input type="text" id="form-project_id" name="project_id">
+            </div>
+            <div class="mb-3" x-data="$store.mapLayers">
+              <label for="form-map_layers" class="form-label">Layers</label>
+              <select name="layers" class="uneditable-input selectmultiple" readonly="True"
+              id="form-map_layers" name="map_layers" multiple="" x-model="$store.selectedLayers">
+                <template x-for="layer in $store.mapLayers" :key="layer.id">
+                <option :value="layer.id" x-text="layer.name" selected="true"></option>
+              </template>
+            </select>
+            <div class="mb-3">
+              <label for="form-parameters" class="form-label">Parameters</label>
+              <textarea type="textarea" id="form-parameters" name="parameters"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="form-comment" class="form-label">Comment</label>
+              <input type="text" id="form-comment" name="comment">
+            </div>
+            <div class="text-right">
+              <button type="submit" class="btn btn-primary mb-3">{% translate 'Submit' %}</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</main>
+{% endblock content %}
+
+{% block inline_javascript %}
+<script>
+  let formData = {
+      user_id: {{ request.user.id }},
+      project_id: {{ project.id }},
+      parameters: {
+        'PROJECTID': '{{ project.id }}',
+        'VENDORID': '{{ project.vendor_id.name }}',
+        'USERID': '{{ request.user.username }}',
+        'LAYERS': 'roads, lclu_landuse_exp',
+        'EXCLUDES': 'rsaortho',
+        'CLIP_GEOM': 'POLYGON ((29.5 -28.0, 29.5 -28.1, 29.6 -28.1, 29.6 -28.0, 29.5 -28.0))',
+        'OUTPUT_CRS': 'EPSG:9221',
+        'PROJECT_CRS': 'EPSG:9221',
+      },
+      comment: "Generated with nomap form"
+    }
+  
+  document.getElementById("form-user_id").value = formData.user_id
+  document.getElementById("form-project_id").value = formData.project_id
+  document.getElementById("form-parameters").value = JSON.stringify(formData.parameters)
+  document.getElementById("form-comment").value = formData.comment
+  
+  document.addEventListener('alpine:init', () => {
+  Alpine.store('mapLayers', [
+  { id: 1, name: 'roads' },
+  { id: 2, name: 'cult_educational_exp_point' },
+  { id: 3, name: 'lclu_landuse_exp' },
+  ])
+  })
+</script>
+{% endblock inline_javascript %}

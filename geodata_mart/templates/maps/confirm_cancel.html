@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <section class="py-5 text-center container">
+    <div class="row py-lg-5">
+      <div class="col-lg-6 col-md-8 mx-auto">
+        <h1 class="fw-light">{% translate "Cancellation" %}</h1>
+        <h3 class="fw-light">{{ job.job_id }}</h3>
+        <p class="lead text-muted">
+          {% translate "Select, clip, and ship collections of geodata quickly and conveniently." %}
+        </p>
+        <div class="d-flex justify-content-between">
+          <div class="p-2 flex-fill">
+            <form action="{% url 'maps:cancel_job' job.job_id %}" method="post">{% csrf_token %}
+              <button href="{% url 'account_signup' %}" type="submit"
+                class="btn btn-block btn-secondary btn-block m-2 p-4 w-100">{% translate "Confirm Cancellation" %}</button>
+            </form>
+          </div>
+          <div class="p-2 flex-fill">
+            <a href="{% url 'maps:checkout' job.job_id %}"
+              class="btn btn-primary btn-block m-2 p-4 w-100">{% translate "Back" %}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock content %}

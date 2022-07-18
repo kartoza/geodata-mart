@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Development Stack Components</h1>
+<p>
+  Links, resources, and pages for simplifying the development experience.
+</p>
+<ul>
+  <li>
+    <a href="/admin/">ADMIN</a>
+  </li>
+  <li>
+    <a href="http://127.0.0.1:9001">MINIO</a>
+  </li>
+  <li>
+    <a href="http://127.0.0.1:9002">MAILHOG</a>
+  </li>
+  <li>
+    <a href="http://127.0.0.1:9003">FLOWER</a>
+  </li>
+  <li>
+    <a href="http://127.0.0.1:9004">DOCS</a>
+  </li>
+  <li>
+    <a href="/api/">DRF</a>
+  </li>
+  <li>
+    <a href="/api/docs/">Swagger UI</a>
+  </li>
+  <li>
+    <a href="/api/schema/">Open API Schema</a>
+  </li>
+  <li>
+    <a href="/auth-token/">Get Auth Token</a>
+  </li>
+  <li>
+    <a href="{% url 'devapp:map' %}">Development Map Form</a>
+  </li>
+  <li>
+    <a href="{% url 'devapp:nomap' "1" %}">Development NoMap Form for Project 1</a>
+  </li>
+</ul>
+{% endblock content %}
