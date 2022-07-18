@@ -18,6 +18,20 @@ Bring down the stack
 docker compose down -v
 ```
 
+### Running commands
+
+Because the django app is run within an isolated docker container and may not have access to the declared environment variables for the project, from within a container run the provided helper script to configure the environments:
+
+```bash
+source /app/setenv.sh &> /dev/null
+```
+
+This script will output the values from the .env to the console, so piping to dev/null is recommended. Once this script has run and defined the environment, running django commands may proceed as normal
+
+```bash
+python /app/manage.py shell
+```
+
 ## Deploy
 
 Deployment is expected to be completed with Kubernetes.
@@ -32,10 +46,12 @@ Development and stack is managed using docker. Note that their are multiple "env
 
 ### Prerequisites
 
-Git
-precommit
-editorconfig
-python 3.10
+Development systems should have:
+
+- git
+- precommit
+- editorconfig
+- python 3.8
 
 ### Dev environment venv creation
 
@@ -51,29 +67,6 @@ This application was modified from cookiecutter-django, and the [project docs](h
 
 ### Settings
 
-It is desirable to aim for [dev-prod-parity](https://12factor.net/dev-prod-parity). The `production.py` settings exclude many functions from `dev.py`, such as debug and dev tools and a change in email service configuration. The `frontend.py` settings replicate `dev`, but disable white noise and the offline caching of django-compressor to allow more dynamic loading and modification of frontend assets.
+It is desirable to aim for [dev-prod-parity](https://12factor.net/dev-prod-parity). The `production.py` settings exclude many functions from `dev.py`, such as debug and dev tools and a change in email service configuration. The `frontend.py` settings replicate `dev`, but disable white noise and the offline caching of django-compressor to allow more dynamic loading and modification of frontend assets without having to restart the stack.
 
-### Running commands
-
-Because the django app is run within an isolated docker container and may not have access to the declared environment variables for the project, to run commands it is required to run a temporary instance of the django container. This will initiate the environment variable with the docker entrypoint (rather than a typical command operation), e.g.
-
-```bash
-docker compose run --rm django python manage.py migrate
-docker compose run --rm django python manage.py createsuperuser
-```
-
-From within a container a helper script to configure the environment is provided:
-
-```bash
-source ./setenv.sh
-python ./manage.py seed
-```
-
-The [docs](https://cookiecutter-django.readthedocs.io/en/latest/developing-locally-docker.html#execute-management-commands) have more information on this process. Note that trying to exec into a running django instance will require you to declare relevant environment variables, e.g.:
-
-- https://github.com/cookiecutter/cookiecutter-django/issues/2821
-- https://github.com/cookiecutter/cookiecutter-django/issues/2589
-
-### To do
-
-Integrate https://github.com/jrief/django-sass-processor
+Note that changes to the celery tasks etc. will require you to rerun the docker build function before your changes are reflected in the tasks and scripts.
