@@ -63,7 +63,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
     CLIP_GEOM = "CLIP_GEOM"
     OUTPUT_CRS = "OUTPUT_CRS"
     PROJECT_CRS = "PROJECT_CRS"
-    BUFFER_DIST_KM = "BUFFER_DIST_KM"
     OUTPUT = "OUTPUT"
 
     def tr(self, string):
