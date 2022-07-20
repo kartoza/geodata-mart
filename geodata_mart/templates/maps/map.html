@@ -258,7 +258,7 @@
 
   map.removeLayer(coverageLayer)
 
-  var layerController = L.control.layers(
+  const layerController = L.control.layers(
     null,
     {
       "Project Coverage": coverageLayer,
@@ -267,6 +267,35 @@
     },
     { position: 'bottomleft' }
   ).addTo(map)
+
+  const viewBox = '\''+bounds[0]+','+bounds[3]+','+bounds[2]+','+bounds[1]+'\''
+  console.log(viewBox)
+  const nominatimGeocoder = L.Control.Geocoder.nominatim({
+    geocodingQueryParams: {
+      bounded:1,
+      viewbox: viewBox
+    }
+  });
+  const geocoderControl = L.Control.geocoder({
+    defaultMarkGeocode: false,
+    geocoder: nominatimGeocoder
+  })
+  .on('markgeocode', function (e) {
+    drawnItems.clearLayers()
+    errorItems.clearLayers()
+    annotationItems.clearLayers()
+    Alpine.store('refresh').refresh()
+    let bbox = e.geocode.bbox;
+    let poly = L.polygon([
+      bbox.getSouthEast(),
+      bbox.getNorthEast(),
+      bbox.getNorthWest(),
+      bbox.getSouthWest()
+    ]);
+    map.fitBounds(poly.getBounds());
+  })
+  .addTo(map);
+
   {% else %}
   const map = L.map("map", {
     zoomControl: false,
@@ -282,7 +311,7 @@
     position: "bottomleft"
   }).addTo(map)
 
-  var layerController = L.control.layers(
+  const layerController = L.control.layers(
     null,
     {
       "Buffered Extent": annotationItems,
@@ -290,9 +319,8 @@
     },
     { position: 'bottomleft' }
   ).addTo(map)
-  {% endif %}
 
-  var geocoder = L.Control.geocoder({
+  const geocoderControl = L.Control.geocoder({
     defaultMarkGeocode: false
   })
   .on('markgeocode', function (e) {
@@ -300,8 +328,8 @@
     errorItems.clearLayers()
     annotationItems.clearLayers()
     Alpine.store('refresh').refresh()
-    var bbox = e.geocode.bbox;
-    var poly = L.polygon([
+    let bbox = e.geocode.bbox;
+    let poly = L.polygon([
       bbox.getSouthEast(),
       bbox.getNorthEast(),
       bbox.getNorthWest(),
@@ -310,6 +338,8 @@
     map.fitBounds(poly.getBounds());
   })
   .addTo(map);
+
+  {% endif %}
 
   let drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
@@ -362,7 +392,7 @@
           Alpine.store('refresh').refresh()
         })
 
-      var controlUI = L.DomUtil.create(
+      const controlUI = L.DomUtil.create(
         "a",
         "leaflet-draw-edit-remove",
         controlDiv
