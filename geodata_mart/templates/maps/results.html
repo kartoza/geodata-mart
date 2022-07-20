@@ -7,6 +7,19 @@
 <main>
   {% include "components/_authenticate.html" %}
 
+  {% if not jobs|length > 0 %}
+  <section class="py-5 text-center container">
+    <div class="row py-lg-5">
+      <div class="col-lg-6 col-md-8 mx-auto">
+        <h1 class="fw-light">{% translate "My Data" %}</h1>
+        <p class="lead text-muted">
+          {% translate "You do not seem to have any orders yet." %}
+        </p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <div class="py-5">
     <div class="container">
       {% for job in jobs %}
