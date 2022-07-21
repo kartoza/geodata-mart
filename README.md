@@ -23,14 +23,16 @@ docker compose down -v
 Because the django app is run within an isolated docker container and may not have access to the declared environment variables for the project, from within a container run the provided helper script to configure the environments:
 
 ```bash
-source /app/setenv.sh &> /dev/null
+source /app/setenv.sh
 ```
 
-This script will output the values from the .env to the console, so piping to dev/null is recommended. Once this script has run and defined the environment, running django commands may proceed as normal
+Once this script has run and defined the environment, running django commands may proceed as normal.
 
 ```bash
 python /app/manage.py shell
 ```
+
+Using the docker extension with vscode along with the `docker.commands.attach` command available from the supplied settings.json file will automatically run this script when attaching a shell to a container.
 
 ## Deploy
 
