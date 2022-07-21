@@ -32,6 +32,7 @@ services:
       - .env
     ports:
       - "${DJANGO_PORT}:8000"
+      - 9999:9999
     command: /start
 
   postgres:
@@ -81,6 +82,9 @@ services:
     volumes:
       - ./geodata:/qgis:z
     command: /start-celeryworker
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
 
   celerybeat:
     <<: *django

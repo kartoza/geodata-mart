@@ -1,3 +1,4 @@
+from django.conf import settings
 from config import celery_app
 from celery.utils.log import get_task_logger
 from celery.exceptions import SoftTimeLimitExceeded
@@ -75,6 +76,11 @@ def run_gdmclip_processing_script(
 
 @celery_app.task()
 def process_job_gdmclip(job_id):
+    if settings.DEBUG:
+        import debugpy  # pylint: disable=import-outside-toplevel
+
+        debugpy.listen(("0.0.0.0", 9999))
+        debugpy.wait_for_client()
     job = Job.objects.filter(job_id=job_id).first()
     if not job:
         raise ValueError(f"Processing Job {job_id} not found")
@@ -137,33 +143,20 @@ def process_job_gdmclip(job_id):
         registry.providerById("script").refreshAlgorithms()
 
     try:
-        task = QgsTask.fromFunction(
-            "Clip",
-            run_gdmclip_processing_script(
-                LAYERS=parameters["LAYERS"],
-                CLIP_GEOM=parameters["CLIP_GEOM"],
-                OUTPUT=output_path,
-                EXCLUDES=parameters["EXCLUDES"],
-                OUTPUT_CRS=parameters["OUTPUT_CRS"],
-                PROJECT_CRS=parameters["PROJECT_CRS"],
-                PROJECTID=parameters["PROJECTID"],
-                VENDORID=parameters["VENDORID"],
-                USERID=parameters["USERID"],
-                JOBID=str(job.job_id),
-                process_feedback=feedback,
-                process_context=context,
-            ),
+        task = run_gdmclip_processing_script(
+            LAYERS=parameters["LAYERS"],
+            CLIP_GEOM=parameters["CLIP_GEOM"],
+            OUTPUT=output_path,
+            EXCLUDES=parameters["EXCLUDES"],
+            OUTPUT_CRS=parameters["OUTPUT_CRS"],
+            PROJECT_CRS=parameters["PROJECT_CRS"],
+            PROJECTID=parameters["PROJECTID"],
+            VENDORID=parameters["VENDORID"],
+            USERID=parameters["USERID"],
+            JOBID=str(job.job_id),
+            process_feedback=feedback,
+            process_context=context,
         )
-        task_id = qgs.taskManager().addTask(task)
-        logger.info("Waiting for process to complete...")
-        # Wait for processing script to run
-        while qgs.taskManager().task(task_id).isActive():
-            logger.info(qgs.taskManager().task(task_id).progress())
-            sleep(1)
-
-        logger.info(f'Processed output: {task["OUTPUT"]}')
-
-        # create new results file from this object
         results_file = task["OUTPUT"]
         if not project_storage.exists(results_file):
             raise Exception(f"{project_storage.path(results_file)} not found")
