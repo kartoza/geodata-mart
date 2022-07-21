@@ -1,6 +1,3 @@
-from django.conf import settings
-from sys import argv
-
 from config import celery_app
 from celery.utils.log import get_task_logger
 from celery.exceptions import SoftTimeLimitExceeded
@@ -78,13 +75,6 @@ def run_gdmclip_processing_script(
 
 @celery_app.task()
 def process_job_gdmclip(job_id):
-    if settings.DEBUG:
-        IN_CELERY_PROCESS = argv and argv[0].endswith("celery") in argv
-        if not IN_CELERY_PROCESS:
-            import debugpy  # pylint: disable=import-outside-toplevel
-
-            debugpy.listen(("0.0.0.0", 9999))
-            debugpy.wait_for_client()
     job = Job.objects.filter(job_id=job_id).first()
     if not job:
         raise ValueError(f"Processing Job {job_id} not found")
@@ -118,8 +108,7 @@ def process_job_gdmclip(job_id):
         # platformName="qgis_process",
     )
 
-    qgs.setPrefixPath("/usr/bin/qgis", useDefaultPaths=False)
-    # qgs.setPrefixPath("/usr/bin/qgis", useDefaultPaths=True)
+    qgs.setPrefixPath("/usr", useDefaultPaths=True)
 
     logger.info("Configuring QGIS")
     registry = (
@@ -135,15 +124,12 @@ def process_job_gdmclip(job_id):
 
     map_file = job.project_id.qgis_project_file.file_object.path
     logger.info(f"Processing project file: {map_file}")
-
-    # readflags = QgsProject.ReadFlags()
-    # readflags |= QgsProject.FlagDontLoadLayouts | QgsProject.FlagTrustLayerMetadata
-    # project = QgsProject()
-    # project.instance().read(map_file, readflags)
-    logger.info(f"Reading Project File: {map_file}")
+    readflags = QgsProject.ReadFlags()
+    readflags |= QgsProject.FlagDontLoadLayouts | QgsProject.FlagTrustLayerMetadata
     project = QgsProject()
-    project.instance().read(map_file)
+    project.instance().read(map_file, readflags)
     context.setProject(project)
+
     output_path = join(project_storage.location, "output", str(job.job_id))
     logger.info("Executing processing command")
 

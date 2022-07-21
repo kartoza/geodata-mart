@@ -46,7 +46,6 @@ def do():
             "QT_QPA_PLATFORM"
         ] = "offscreen"  # https://gis.stackexchange.com/questions/379131/qgis-linux-qt-qpa-plugin-could-not-load-the-qt-platform-plugin-xcb-in-eve
 
-        # QgsApplication.setPrefixPath("/usr/bin/qgis", useDefaultPaths=False)
         QgsApplication.setPrefixPath("/usr", useDefaultPaths=True)
 
         qgs = QgsApplication(
@@ -56,11 +55,6 @@ def do():
             platformName="external",
             # platformName="qgis_process",
         )
-
-        # QgsApplication.setPrefixPath("/usr/bin/qgis", useDefaultPaths=True)
-        # QgsApplication.setPrefixPath("/usr/bin/qgis", useDefaultPaths=False)
-        # qgs.setPrefixPath("/usr/bin/qgis", useDefaultPaths=False)
-        # qgs.setPrefixPath("/usr/bin/qgis", useDefaultPaths=True)
 
         registry = (
             qgs.processingRegistry()
