@@ -3,11 +3,18 @@
   "tasks": [
     {
       "label": "Run docker-compose up",
-      "type": "shell",
-      "command": "docker-compose -f ${workspaceFolder}/docker-compose.yml --env-file ${workspaceFolder}/.dev.env up -d --build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
+      "type": "docker-compose",
+      "dockerCompose": {
+        "up": {
+          "detached": true,
+          "build": true,
+          "services": [
+            ""
+          ]
+        },
+        "files": [
+          "${workspaceFolder}/docker-compose.yml"
+        ]
       }
     },
     {
