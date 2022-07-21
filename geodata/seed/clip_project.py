@@ -450,14 +450,25 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer (QgsMapLayer): Input layer to be clipped
             clip_layer (QgsGeometry): Masking geometry to use for clipping
         """
+
+        # Try and resolve invalid layers
+        if not layer.isValid():
+            layer.reload()  # Attempt reload
+            if not layer.isValid():
+                QgsProject.instance().removeMapLayer(layer.id())
+                feedback.reportError(
+                    str(f"Layer {layer.name()} is not valid"), fatalError=False
+                )
+
         layer_name = layer.name().replace('"', "")
         output_gpkg = os.path.join(self.output_path, self.jobid + ".gpkg")
+        layer_source = layer.source().replace("\\", "")
 
         try:
             clipped_vector = processing.run(
                 "native:clip",
                 {
-                    "INPUT": layer.source(),
+                    "INPUT": layer_source,
                     "OVERLAY": clip_layer,
                     "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
                 },
@@ -508,6 +519,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             del filesave_error
 
         except Exception as e:
+            QgsProject.instance().removeMapLayer(layer.id())
             feedback.reportError(str(e), fatalError=False)
 
         finally:
@@ -538,10 +550,21 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer (QgsMapLayer): Input layer to be clipped
             clip_layer (QgsGeometry): Masking geometry to use for clipping
         """
+
+        # Try and resolve invalid layers
+        if not layer.isValid():
+            layer.reload()  # Attempt reload
+            if not layer.isValid():
+                QgsProject.instance().removeMapLayer(layer.id())
+                feedback.reportError(
+                    str(f"Layer {layer.name()} is not valid"), fatalError=False
+                )
+
         layer_name = layer.name().replace('"', "")
         output_img = os.path.join(self.output_path, f"{layer_name}.tif")
-        try:
+        layer_source = layer.source().replace("\\", "")
 
+        try:
             if self.output_crs:
                 crs = QgsCoordinateReferenceSystem(self.output_crs)
             else:
@@ -549,7 +572,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             clipped_raster = processing.run(
                 "gdal:cliprasterbymasklayer",
                 {
-                    "INPUT": layer.source(),
+                    "INPUT": layer_source,
                     "MASK": clip_layer,
                     "SOURCE_CRS": None,
                     "TARGET_CRS": None,
@@ -574,6 +597,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             feedback.setProgress(feedback.progress() + self.increment)
 
         except Exception as e:
+            QgsProject.instance().removeMapLayer(layer.id())
             feedback.reportError(str(e), fatalError=False)
 
         finally:
