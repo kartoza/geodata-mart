@@ -3,7 +3,8 @@
 # # define an alias for the specfic python version used in this file.
 # FROM python:${PYTHON_VERSION} as python
 
-FROM qgis/qgis:final-3_22_8 as python
+# FROM qgis/qgis:final-3_22_8 as python
+FROM qgis/qgis:final-3_26_1 as python
 
 # Alias the python command with the interpreter used with qgis
 # note RUN alias python="/usr/bin/python3" will not work between build steps
@@ -84,6 +85,8 @@ COPY ./docker/dev/celery/flower/start /start-flower
 RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 
+
+FROM python-run-stage as python-exec-stage
 
 # copy application code to WORKDIR
 COPY . ${APP_HOME}
