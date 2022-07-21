@@ -95,9 +95,8 @@ class Command(BaseCommand):
             state=StateChoices.OTHER,
         )
 
-        ngi_project_file.file_object.save(
-            basename(project_file), project_storage.open(project_file), save=True
-        )
+        with project_storage.open(project_file) as f:
+            ngi_project_file.file_object.save(basename(project_file), f, save=True)
 
         self.stdout.write("create default project object...")
         ngi_project = Project.objects.filter(project_name="NGI").first()
@@ -203,9 +202,8 @@ class Command(BaseCommand):
             file_name="script:gdmclip",
         )
 
-        script_record.file_object.save(
-            basename(script_file), project_storage.open(script_file), save=True
-        )
+        with project_storage.open(script_file) as f:
+            script_record.file_object.save(basename(script_file), f, save=True)
 
         self.stdout.write("create placeholder projects...")
 
