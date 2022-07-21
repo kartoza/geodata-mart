@@ -453,7 +453,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
         # Try and resolve invalid layers
         if not layer.isValid():
-            layer.reload()  # Attempt reload
+            layer.dataProvider.forceReload()  # Attempt reload
             if not layer.isValid():
                 QgsProject.instance().removeMapLayer(layer.id())
                 feedback.reportError(
@@ -553,7 +553,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
         # Try and resolve invalid layers
         if not layer.isValid():
-            layer.reload()  # Attempt reload
+            layer.dataProvider.forceReload()  # Attempt reload
             if not layer.isValid():
                 QgsProject.instance().removeMapLayer(layer.id())
                 feedback.reportError(
