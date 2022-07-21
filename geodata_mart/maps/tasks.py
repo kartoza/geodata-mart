@@ -75,6 +75,12 @@ def run_gdmclip_processing_script(
 
 @celery_app.task()
 def process_job_gdmclip(job_id):
+
+    import debugpy  # pylint: disable=import-outside-toplevel
+
+    debugpy.listen(("0.0.0.0", 9999))
+    debugpy.wait_for_client()
+
     job = Job.objects.filter(job_id=job_id).first()
     if not job:
         raise ValueError(f"Processing Job {job_id} not found")
@@ -152,9 +158,11 @@ def process_job_gdmclip(job_id):
             process_feedback=feedback,
             process_context=context,
         )
+        logger.info(f"Task to output")
         results_file = task["OUTPUT"]
         if not project_storage.exists(results_file):
             raise Exception(f"{project_storage.path(results_file)} not found")
+        logger.info(f"Saving to to result file")
         results_file_record = ResultFile.objects.create(
             file_name=job.job_id,
             job_id=job,
@@ -163,6 +171,7 @@ def process_job_gdmclip(job_id):
         with project_storage.open(results_file) as f:
             results_file_record.file_object.save(basename(results_file), f, save=True)
 
+        logger.info(f"Remove artifact")
         statinfo = stat(results_file)  # get stats on the output file
 
         with project_storage.open(results_file, "w") as f:
@@ -174,4 +183,6 @@ def process_job_gdmclip(job_id):
         feedback.cancel()
 
     finally:
-        qgs.exitQgis()
+        logger.info(f"Closing QGIS")
+        # qgs.exitQgis()  # segmentation fault
+        qgs.exit()

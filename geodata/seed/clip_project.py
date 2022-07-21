@@ -462,13 +462,12 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
         layer_name = layer.name().replace('"', "")
         output_gpkg = os.path.join(self.output_path, self.jobid + ".gpkg")
-        layer_source = layer.source().replace("\\", "")
 
         try:
             clipped_vector = processing.run(
                 "native:clip",
                 {
-                    "INPUT": layer_source,
+                    "INPUT": layer,
                     "OVERLAY": clip_layer,
                     "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
                 },
@@ -562,7 +561,6 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
         layer_name = layer.name().replace('"', "")
         output_img = os.path.join(self.output_path, f"{layer_name}.tif")
-        layer_source = layer.source().replace("\\", "")
 
         try:
             if self.output_crs:
@@ -572,7 +570,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             clipped_raster = processing.run(
                 "gdal:cliprasterbymasklayer",
                 {
-                    "INPUT": layer_source,
+                    "INPUT": layer,
                     "MASK": clip_layer,
                     "SOURCE_CRS": None,
                     "TARGET_CRS": None,
