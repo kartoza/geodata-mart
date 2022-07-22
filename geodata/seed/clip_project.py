@@ -812,12 +812,12 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         QgsProject.instance().clear()
         # Package the outputs
         output_zip_path = str(os.path.join(self.output_path, self.jobid + ".zip"))
-        exclude_files_ext = [".gpkg-shm", ".gpkg-wal"]
+        exclude_files_ext = [".gpkg-shm", ".gpkg-wal", ".gpkg-wal", ".gpkg-journal"]
         zip = self.zipOutputs(
             parameters, context, feedback, exclude_files_ext, output_zip_path
         )
         # Remove obsolete files
-        remove_files_ext = [".gpkg", ".gpkg-shm", ".gpkg-wal", ".tif"]
+        remove_files_ext = [".gpkg", ".gpkg-shm", ".gpkg-wal", ".gpkg-journal", ".tif"]
         self.removeOutputs(parameters, context, feedback, remove_files_ext)
 
         return {self.OUTPUT: output_zip_path}
