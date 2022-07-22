@@ -45,6 +45,7 @@ Development and stack is managed using docker. Note that their are multiple "env
 - Local development environment: This is a python environment that includes prerequisites such as precommit, black, and other linting/ testing/ code quality tools. This can be the system environment, but using a venv is recommended.
 - Development environment: The requirements dev.txt is used by the dev Dockerfile, which is a Django environment with a number of development and debug tools. This is the docker-compose stack environment used for development
 - Production environment: The requirements production.txt is used by the production Dockerfile, which is a Django environment intended to be pushed to a container repository, and deployed with kubernetes.
+- On windows, add `FORKED_BY_MULTIPROCESSING=1` to your `.env` to prevent the celery worker from failing
 
 ### Prerequisites
 
