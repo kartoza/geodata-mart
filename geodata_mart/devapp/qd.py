@@ -7,30 +7,16 @@ from PyQt5 import *
 from qgis.core import *
 
 import processing
+from concurrent.futures import ThreadPoolExecutor
 
-from functools import partial
-from time import sleep
-from os.path import join, basename
-from os import environ, stat
+from os import environ
 from pathlib import Path
-
-import logging
 
 # from django.core.files.storage import FileSystemStorage
 from geodata_mart.maps.models import project_storage
-from geodata_mart.maps.models import Job, ResultFile
 
 from geodata_mart.utils.qgis import migrateProcessingScripts
 import shutil
-
-
-def post_process(successful, results):
-    """Run the default generic processing script"""
-    print("Create results from task")
-    if not successful:
-        print("Task was unsuccessful")
-    else:
-        print(results["OUTPUT"])
 
 
 def do():
@@ -112,10 +98,15 @@ def do():
             "CLIP_GEOM": "POLYGON ((29.5 -28.0, 29.5 -28.1, 29.6 -28.1, 29.6 -28.0, 29.5 -28.0))",
             "OUTPUT": "/qgis/test/output",
         }
-        task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
-        print("---")
-        task.executed.connect(partial(post_process))
-        task.run()
+        task = script.create()
+        task.prepare(params, context, feedback)
+
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(task.runPrepared, params, context, feedback)
+            return_value = future.result()
+            print(return_value)
+        # result = task.runPrepared(params, context, feedback)
+        # print(result["OUTPUT"])
 
     except Exception as e:
         print("exception")
@@ -124,5 +115,7 @@ def do():
     finally:
         print("end")
         # manual cleanup to prevent segmentation fault
-        del registry, project, task, feedback, context
+        for var in [registry, project, task, feedback, context]:
+            if var in locals():
+                del var
         qgs.exitQgis()
