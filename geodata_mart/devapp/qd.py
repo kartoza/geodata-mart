@@ -24,13 +24,20 @@ from geodata_mart.utils.qgis import migrateProcessingScripts
 import shutil
 
 
+class TaskCallerClass:
+    def run(self, task, app):
+        self.task = task
+        task_id = app.taskManager().addTask(self.task)
+        self.id = task_id
+
+
 def post_process(successful, results):
     """Run the default generic processing script"""
-    logging.info("Create results from task")
+    print("Create results from task")
     if not successful:
-        logging.info("Task was unsuccessful")
+        print("Task was unsuccessful")
     else:
-        logging.info(results["OUTPUT"])
+        print(results["OUTPUT"])
 
 
 def do():
@@ -113,34 +120,22 @@ def do():
             "OUTPUT": "/qgis/test/output",
         }
         task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
-        task.run()
-        # task.executed.connect(partial(post_process))
-        # task_id = qgs.taskManager().addTask(task)
-        # logging.info(task_id)
-        # logging.info(qgs.taskManager().task(task_id).isActive())
-        # logging.info(qgs.taskManager().task(task_id).progress())
-        # task.run()
-        # while task.isActive() and max_time < 40:
-        #     logging.info(task.progress())
-        #     sleep(1)
-        #     max_time += 1
-        # task_id = qgs.taskManager().addTask(task)  # segmentation fault
-        # task.executed.connect(partial(post_process, context))
-        # qgs.taskManager().addTask(task)
-        # task_id = qgs.taskManager().addTask(task)
-        # logging.info(task_id)
-        # logging.info(qgs.taskManager().task(task_id).isActive())
-        # logging.info(qgs.taskManager().task(task_id).progress())
-        # max_time = 0
-        # while qgs.taskManager().task(task_id).isActive() and max_time < 40:
-        #     logging.info(qgs.taskManager().task(task_id).progress())
-        #     sleep(1)
-        #     max_time += 1
+        print("---")
+        # https://gis.stackexchange.com/questions/296175/issues-with-qgstask-and-task-manager
+        # taskCaller = TaskCallerClass()
+        # taskCaller = taskCaller.run(task, qgs)
+        taskCaller = TaskCallerClass().run(task, qgs)
+        task_id = taskCaller.id
+        print(task_id)
+        print(qgs.taskManager().task(task_id).isActive())
+        print(qgs.taskManager().task(task_id).progress())
 
     except Exception as e:
-        logging.info(e)
+        print("exception")
+        print(e)
 
     finally:
+        print("end")
         # manual cleanup to prevent segmentation fault
-        del registry, project, task, feedback, context
+        # del registry, project, task, feedback, context
         qgs.exitQgis()
