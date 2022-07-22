@@ -7,14 +7,12 @@ from qgis.core import *
 
 import processing
 
+from functools import partial
 from time import sleep
 from os.path import join, basename
 from os import environ, stat
 from pathlib import Path
 
-from django.core.files import File
-
-# from django.core.files.storage import FileSystemStorage
 from geodata_mart.maps.models import project_storage
 from geodata_mart.maps.models import Job, ResultFile
 
@@ -25,80 +23,45 @@ logger = get_task_logger(__name__)
 import shutil
 
 
-def run_gdmclip_processing_script(
-    LAYERS,
-    CLIP_GEOM,
-    OUTPUT,
-    EXCLUDES,
-    OUTPUT_CRS,
-    PROJECT_CRS,
-    PROJECTID,
-    VENDORID,
-    USERID,
-    JOBID,
-    process_feedback,
-    process_context,
-):
+def post_process_gdmclip(context, successful, results):
     """Run the default generic processing script"""
+    logger.info("Create results from task")
+    if not successful:
+        logger.error("Task was unsuccessful")
+    else:
+        results_file = results["OUTPUT"]
+        if not project_storage.exists(results_file):
+            raise Exception(
+                f"Output file {project_storage.path(results_file)} not found"
+            )
+        logger.info(f"Saving to to result file")
+        results_file_record = ResultFile.objects.create(
+            file_name="test",
+            job_id="test",
+        )
+        # add results file object to results file record (upload_to=results)
+        with project_storage.open(results_file) as f:
+            results_file_record.file_object.save(basename(results_file), f, save=True)
 
-    LAYERS = LAYERS if bool(LAYERS) else None  # If nullish, make nonetype
-    layers_param = ",".join(map(str, LAYERS)) if (type(LAYERS) == list) else LAYERS
-    EXCLUDES = EXCLUDES if bool(EXCLUDES) else None  # If nullish, make nonetype
-    excludes_param = (
-        ",".join(map(str, EXCLUDES)) if type(EXCLUDES) == list else EXCLUDES
-    )
-    output_crs_param = (
-        QgsCoordinateReferenceSystem(OUTPUT_CRS) if bool(OUTPUT_CRS) else None
-    )
-    project_crs_param = (
-        QgsCoordinateReferenceSystem(PROJECT_CRS) if bool(PROJECT_CRS) else None
-    )
-    result = processing.run(
-        "script:gdmclip",
-        {
-            "PROJECTID": PROJECTID,
-            "VENDORID": VENDORID,
-            "USERID": USERID,
-            "JOBID": JOBID,
-            "LAYERS": layers_param,
-            "EXCLUDES": excludes_param,
-            "CLIP_GEOM": CLIP_GEOM,
-            "OUTPUT_CRS": output_crs_param,
-            "PROJECT_CRS": project_crs_param,
-            "OUTPUT": OUTPUT,
-        },
-        context=process_context,
-        feedback=process_feedback,
-    )
-    return result
+        logger.info(f"Remove artifact")
+        statinfo = stat(results_file)  # get stats on the output file
+
+        with project_storage.open(results_file, "w") as f:
+            f.write(
+                str(statinfo)
+            )  # replace actual file (now duplicate) with file stats
+    logger.info(f"Closing QGIS")
+    QgsApplication.exitQgis()
 
 
 @celery_app.task()
 def process_job_gdmclip(job_id):
-
-    import debugpy  # pylint: disable=import-outside-toplevel
-
-    debugpy.listen(("0.0.0.0", 9999))
-    debugpy.wait_for_client()
 
     job = Job.objects.filter(job_id=job_id).first()
     if not job:
         raise ValueError(f"Processing Job {job_id} not found")
     else:
         logger.info(f"Processing Job: {job_id}")
-
-    logger.info(f"Updating processing script availability")
-
-    migrateProcessingScripts()
-
-    # manually force script availability
-    Path("/root/.local/share/profiles/default/processing/scripts/").mkdir(
-        parents=True, exist_ok=True
-    )
-    shutil.copy2(
-        "/qgis/processing/scripts/clip_project.py",
-        "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
-    )
 
     logger.info(f"Configuring environment")
     parameters = job.parameters
@@ -122,7 +85,7 @@ def process_job_gdmclip(job_id):
     )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
     # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
 
-    qgs.setMaxThreads(1)
+    # qgs.setMaxThreads(2)
     qgs.initQgis()
 
     feedback = QgsProcessingFeedback()
@@ -131,58 +94,88 @@ def process_job_gdmclip(job_id):
     map_file = job.project_id.qgis_project_file.file_object.path
     logger.info(f"Processing project file: {map_file}")
     readflags = QgsProject.ReadFlags()
-    readflags |= QgsProject.FlagDontLoadLayouts | QgsProject.FlagTrustLayerMetadata
+    readflags |= (
+        QgsProject.FlagDontResolveLayers
+        | QgsProject.FlagDontLoadLayouts
+        | QgsProject.FlagTrustLayerMetadata
+    )
     project = QgsProject()
     project.instance().read(map_file, readflags)
     context.setProject(project)
 
-    output_path = join(project_storage.location, "output", str(job.job_id))
-    logger.info("Executing processing command")
+    logger.info(f"Updating processing script availability")
+    migrateProcessingScripts()
+    # manually force script availability
+    Path("/root/.local/share/profiles/default/processing/scripts/").mkdir(
+        parents=True, exist_ok=True
+    )
+    shutil.copy2(
+        "/qgis/processing/scripts/clip_project.py",
+        "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
+    )
 
+    logger.info("Refreshing processing registry")
     processing.core.Processing.Processing.initialize()
     if registry.providerById("script"):
         registry.providerById("script").refreshAlgorithms()
 
+    logger.info("Configuring processing paramters")
+    output_path = join(project_storage.location, "output", str(job.job_id))
+    LAYERS = (
+        parameters["LAYERS"] if bool(parameters["LAYERS"]) else None
+    )  # If nullish, make nonetype
+    layers_param = ",".join(map(str, LAYERS)) if (type(LAYERS) == list) else LAYERS
+    EXCLUDES = (
+        parameters["EXCLUDES"] if bool(parameters["EXCLUDES"]) else None
+    )  # If nullish, make nonetype
+    excludes_param = (
+        ",".join(map(str, EXCLUDES)) if type(EXCLUDES) == list else EXCLUDES
+    )
+    output_crs_param = (
+        QgsCoordinateReferenceSystem(parameters["OUTPUT_CRS"])
+        if bool(parameters["OUTPUT_CRS"])
+        else None
+    )
+    project_crs_param = (
+        QgsCoordinateReferenceSystem(parameters["PROJECT_CRS"])
+        if bool(parameters["PROJECT_CRS"])
+        else None
+    )
+    # TODO validation of single polygon (& test multipolygon) WKT area feature
+    clipping_geometry = parameters["CLIP_GEOM"]
+
+    logger.info("Executing processing command")
+
     try:
-        task = run_gdmclip_processing_script(
-            LAYERS=parameters["LAYERS"],
-            CLIP_GEOM=parameters["CLIP_GEOM"],
-            OUTPUT=output_path,
-            EXCLUDES=parameters["EXCLUDES"],
-            OUTPUT_CRS=parameters["OUTPUT_CRS"],
-            PROJECT_CRS=parameters["PROJECT_CRS"],
-            PROJECTID=parameters["PROJECTID"],
-            VENDORID=parameters["VENDORID"],
-            USERID=parameters["USERID"],
-            JOBID=str(job.job_id),
-            process_feedback=feedback,
-            process_context=context,
-        )
-        logger.info(f"Task to output")
-        results_file = task["OUTPUT"]
-        if not project_storage.exists(results_file):
-            raise Exception(f"{project_storage.path(results_file)} not found")
-        logger.info(f"Saving to to result file")
-        results_file_record = ResultFile.objects.create(
-            file_name=job.job_id,
-            job_id=job,
-        )
-        # add results file object to results file record (upload_to=results)
-        with project_storage.open(results_file) as f:
-            results_file_record.file_object.save(basename(results_file), f, save=True)
-
-        logger.info(f"Remove artifact")
-        statinfo = stat(results_file)  # get stats on the output file
-
-        with project_storage.open(results_file, "w") as f:
-            f.write(
-                str(statinfo)
-            )  # replace actual file (now duplicate) with file stats
+        script = QgsApplication.processingRegistry().algorithmById("script:gdmclip")
+        params = {
+            "PROJECTID": parameters["PROJECTID"],
+            "VENDORID": parameters["VENDORID"],
+            "USERID": parameters["USERID"],
+            "JOBID": str(job.job_id),
+            "LAYERS": layers_param,
+            "EXCLUDES": excludes_param,
+            "CLIP_GEOM": clipping_geometry,
+            "OUTPUT_CRS": output_crs_param,
+            "PROJECT_CRS": project_crs_param,
+            "OUTPUT": output_path,
+        }
+        task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
+        task.executed.connect(partial(post_process_gdmclip, context))
+        task_id = qgs.taskManager().addTask(task)
+        logger.info(f"Added task {task_id}")
+        logger.info("Waiting for process to complete...")
+        max_time = 0
+        while qgs.taskManager().task(task_id).isActive() and max_time < 40:
+            logger.info(qgs.taskManager().task(task_id).progress())
+            sleep(1)
+            max_time += 1
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
 
     finally:
-        logger.info(f"Closing QGIS")
-        # qgs.exitQgis()  # segmentation fault
-        qgs.exit()
+        # manual cleanup to prevent segmentation fault
+        del registry, project, task, feedback, context
+        # logger.info(f"Closing QGIS")
+        # qgs.exitQgis()

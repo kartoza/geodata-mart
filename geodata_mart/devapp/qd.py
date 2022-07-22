@@ -8,6 +8,7 @@ from qgis.core import *
 
 import processing
 
+from functools import partial
 from time import sleep
 from os.path import join, basename
 from os import environ, stat
@@ -23,6 +24,15 @@ from geodata_mart.utils.qgis import migrateProcessingScripts
 import shutil
 
 
+def post_process(context, successful, results):
+    """Run the default generic processing script"""
+    print("Create results from task")
+    if not successful:
+        print("Task was unsuccessful")
+    else:
+        print(results["OUTPUT"])
+
+
 def do():
     try:
 
@@ -30,17 +40,6 @@ def do():
 
         debugpy.listen(("0.0.0.0", 9999))
         debugpy.wait_for_client()
-
-        migrateProcessingScripts()
-
-        # manually force script availability
-        Path("/root/.local/share/profiles/default/processing/scripts/").mkdir(
-            parents=True, exist_ok=True
-        )
-        shutil.copy2(
-            "/qgis/processing/scripts/clip_project.py",
-            "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
-        )
 
         environ[
             "QT_QPA_PLATFORM"
@@ -70,10 +69,25 @@ def do():
         map_file = "/qgis/test/projects/ngi_sample.qgs"
 
         readflags = QgsProject.ReadFlags()
-        readflags |= QgsProject.FlagDontLoadLayouts | QgsProject.FlagTrustLayerMetadata
+        readflags |= (
+            QgsProject.FlagDontResolveLayers
+            | QgsProject.FlagDontLoadLayouts
+            | QgsProject.FlagTrustLayerMetadata
+        )
         project = QgsProject()
         project.instance().read(map_file, readflags)
         context.setProject(project)
+
+        migrateProcessingScripts()
+
+        # manually force script availability
+        Path("/root/.local/share/profiles/default/processing/scripts/").mkdir(
+            parents=True, exist_ok=True
+        )
+        shutil.copy2(
+            "/qgis/processing/scripts/clip_project.py",
+            "/root/.local/share/profiles/default/processing/scripts/clip_project.py",
+        )
 
         processing.core.Processing.Processing.initialize()
 
@@ -92,12 +106,31 @@ def do():
             if layer.name() == "roads"
         ][0]
 
-        print(worlddem.dataProvider())
-        print(roads.dataProvider())
+        script = QgsApplication.processingRegistry().algorithmById("script:gdmclip")
+        params = {
+            "LAYERS": "roads",
+            "CLIP_GEOM": "POLYGON ((29.5 -28.0, 29.5 -28.1, 29.6 -28.1, 29.6 -28.0, 29.5 -28.0))",
+            "OUTPUT": "/qgis/output",
+        }
+        task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
+        task.executed.connect(partial(post_process))
+        task_id = qgs.taskManager().addTask(task)  # segmentation fault
+        # task.executed.connect(partial(post_process, context))
+        # qgs.taskManager().addTask(task)
+        # task_id = qgs.taskManager().addTask(task)
+        # print(task_id)
+        # print(qgs.taskManager().task(task_id).isActive())
+        # print(qgs.taskManager().task(task_id).progress())
+        # max_time = 0
+        # while qgs.taskManager().task(task_id).isActive() and max_time < 40:
+        #     print(qgs.taskManager().task(task_id).progress())
+        #     sleep(1)
+        #     max_time += 1
 
     except Exception as e:
         print(e)
 
     finally:
-        # qgs.exitQgis()  # segmentation fault
-        qgs.exit()
+        # manual cleanup to prevent segmentation fault
+        del registry, project, task, feedback, context
+        qgs.exitQgis()
