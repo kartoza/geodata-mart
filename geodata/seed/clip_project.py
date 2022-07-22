@@ -241,7 +241,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         ]
         return output_list
 
-    def zipOutputs(self, parameters, context, feedback, file_name):
+    def zipOutputs(self, parameters, context, feedback, extensions, file_name):
         """
         Compile the outputs from the processing tool into a single zip file
         """
@@ -256,6 +256,14 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     for filename in files:
                         filepath = os.path.join(root, filename)
                         file_paths.append(filepath)
+
+            # Exclude redundant files from output
+            for extension in extensions:
+                file_paths = [
+                    filepath
+                    for filepath in file_paths
+                    if not filepath.endswith(extension)
+                ]
 
             with ZipFile(file_name, "w") as zip:
                 for file in file_paths:
@@ -804,8 +812,12 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         QgsProject.instance().clear()
         # Package the outputs
         output_zip_path = str(os.path.join(self.output_path, self.jobid + ".zip"))
-        zip = self.zipOutputs(parameters, context, feedback, output_zip_path)
+        exclude_files_ext = [".gpkg-shm", ".gpkg-wal"]
+        zip = self.zipOutputs(
+            parameters, context, feedback, exclude_files_ext, output_zip_path
+        )
         # Remove obsolete files
-        self.removeOutputs(parameters, context, feedback, [".gpkg", ".tif"])
+        remove_files_ext = [".gpkg", ".gpkg-shm", ".gpkg-wal", ".tif"]
+        self.removeOutputs(parameters, context, feedback, remove_files_ext)
 
         return {self.OUTPUT: output_zip_path}
