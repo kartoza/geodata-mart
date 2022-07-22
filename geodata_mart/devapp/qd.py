@@ -14,7 +14,7 @@ from os.path import join, basename
 from os import environ, stat
 from pathlib import Path
 
-from django.core.files import File
+import logging
 
 # from django.core.files.storage import FileSystemStorage
 from geodata_mart.maps.models import project_storage
@@ -24,13 +24,13 @@ from geodata_mart.utils.qgis import migrateProcessingScripts
 import shutil
 
 
-def post_process(context, successful, results):
+def post_process(successful, results):
     """Run the default generic processing script"""
-    print("Create results from task")
+    logging.info("Create results from task")
     if not successful:
-        print("Task was unsuccessful")
+        logging.info("Task was unsuccessful")
     else:
-        print(results["OUTPUT"])
+        logging.info(results["OUTPUT"])
 
 
 def do():
@@ -60,7 +60,7 @@ def do():
         )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
         # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
 
-        qgs.setMaxThreads(1)
+        qgs.setMaxThreads(2)
         qgs.initQgis()
 
         feedback = QgsProcessingFeedback()
@@ -110,25 +110,35 @@ def do():
         params = {
             "LAYERS": "roads",
             "CLIP_GEOM": "POLYGON ((29.5 -28.0, 29.5 -28.1, 29.6 -28.1, 29.6 -28.0, 29.5 -28.0))",
-            "OUTPUT": "/qgis/output",
+            "OUTPUT": "/qgis/test/output",
         }
         task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
-        task.executed.connect(partial(post_process))
-        task_id = qgs.taskManager().addTask(task)  # segmentation fault
+        task.run()
+        # task.executed.connect(partial(post_process))
+        # task_id = qgs.taskManager().addTask(task)
+        # logging.info(task_id)
+        # logging.info(qgs.taskManager().task(task_id).isActive())
+        # logging.info(qgs.taskManager().task(task_id).progress())
+        # task.run()
+        # while task.isActive() and max_time < 40:
+        #     logging.info(task.progress())
+        #     sleep(1)
+        #     max_time += 1
+        # task_id = qgs.taskManager().addTask(task)  # segmentation fault
         # task.executed.connect(partial(post_process, context))
         # qgs.taskManager().addTask(task)
         # task_id = qgs.taskManager().addTask(task)
-        # print(task_id)
-        # print(qgs.taskManager().task(task_id).isActive())
-        # print(qgs.taskManager().task(task_id).progress())
+        # logging.info(task_id)
+        # logging.info(qgs.taskManager().task(task_id).isActive())
+        # logging.info(qgs.taskManager().task(task_id).progress())
         # max_time = 0
         # while qgs.taskManager().task(task_id).isActive() and max_time < 40:
-        #     print(qgs.taskManager().task(task_id).progress())
+        #     logging.info(qgs.taskManager().task(task_id).progress())
         #     sleep(1)
         #     max_time += 1
 
     except Exception as e:
-        print(e)
+        logging.info(e)
 
     finally:
         # manual cleanup to prevent segmentation fault
