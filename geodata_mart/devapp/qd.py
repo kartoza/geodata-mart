@@ -24,13 +24,6 @@ from geodata_mart.utils.qgis import migrateProcessingScripts
 import shutil
 
 
-class TaskCallerClass:
-    def run(self, task, app):
-        self.task = task
-        task_id = app.taskManager().addTask(self.task)
-        self.id = task_id
-
-
 def post_process(successful, results):
     """Run the default generic processing script"""
     print("Create results from task")
@@ -121,14 +114,8 @@ def do():
         }
         task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
         print("---")
-        # https://gis.stackexchange.com/questions/296175/issues-with-qgstask-and-task-manager
-        # taskCaller = TaskCallerClass()
-        # taskCaller = taskCaller.run(task, qgs)
-        taskCaller = TaskCallerClass().run(task, qgs)
-        task_id = taskCaller.id
-        print(task_id)
-        print(qgs.taskManager().task(task_id).isActive())
-        print(qgs.taskManager().task(task_id).progress())
+        task.executed.connect(partial(post_process))
+        task.run()
 
     except Exception as e:
         print("exception")
@@ -137,5 +124,5 @@ def do():
     finally:
         print("end")
         # manual cleanup to prevent segmentation fault
-        # del registry, project, task, feedback, context
+        del registry, project, task, feedback, context
         qgs.exitQgis()

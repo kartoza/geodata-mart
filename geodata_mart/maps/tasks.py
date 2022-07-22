@@ -50,8 +50,6 @@ def post_process_gdmclip(context, successful, results):
             f.write(
                 str(statinfo)
             )  # replace actual file (now duplicate) with file stats
-    logger.info(f"Closing QGIS")
-    QgsApplication.exitQgis()
 
 
 @celery_app.task()
@@ -162,14 +160,7 @@ def process_job_gdmclip(job_id):
         }
         task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
         task.executed.connect(partial(post_process_gdmclip, context))
-        task_id = qgs.taskManager().addTask(task)
-        logger.info(f"Added task {task_id}")
-        logger.info("Waiting for process to complete...")
-        max_time = 0
-        while qgs.taskManager().task(task_id).isActive() and max_time < 40:
-            logger.info(qgs.taskManager().task(task_id).progress())
-            sleep(1)
-            max_time += 1
+        task.run()
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
@@ -177,5 +168,5 @@ def process_job_gdmclip(job_id):
     finally:
         # manual cleanup to prevent segmentation fault
         del registry, project, task, feedback, context
-        # logger.info(f"Closing QGIS")
-        # qgs.exitQgis()
+        logger.info(f"Closing QGIS")
+        qgs.exitQgis()
