@@ -88,6 +88,8 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "django_htmx",
+    "django_tables2",
+    "celery_progress",
 ]
 
 LOCAL_APPS = [

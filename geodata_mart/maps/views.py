@@ -148,6 +148,16 @@ def checkout(request, job_id):
 
 
 @login_required
+def job(request, job_id):
+    if request.method == "GET":
+        job = Job.objects.filter(job_id=job_id).first()
+        if not job:
+            raise Http404("Job does not exist")
+        context = {"job": job}
+        return render(request, "maps/job.html", context)
+
+
+@login_required
 def results(request):
     try:
         jobs = Job.objects.filter(user_id=request.user.id)

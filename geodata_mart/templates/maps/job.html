@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static i18n maps_extras %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+          <h1>{{ job.job_id }}</h1>
+          <h3>First Task: {{ job.job_id|getJobsFirstTask }}</h3>
+          <div class="container">
+            <div id="celery-result"></div>
+          </div>
+          <div class='progress-wrapper'>
+            <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>
+          </div>
+          <div id="progress-bar-message">Waiting for progress to start...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+{% endblock content %}
+
+{% block inline_javascript %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let progressUrl = "{% url 'celery_progress:task_status' job.job_id|getJobsFirstTask %}";
+    CeleryProgressBar.initProgressBar(progressUrl);
+  });
+
+</script>
+{% endblock inline_javascript %}

@@ -13,12 +13,12 @@
         {% csrf_token %}
         <div class="row py-lg-5">
           <div class="col-lg-6 col-md-8 mx-auto">
-            <legend>Processing Job {{ job.job_id }}</legend>
+            <legend>{{ job.job_id }}</legend>
             <a href="{% url 'maps:checkout' job.job_id %}">
-              <button class="btn btn-secondary m-2 p-4" type="button" name="" value="{% translate 'Cancel' %}"
+              <button class="btn btn-secondary ml-0 mr-2 p-4 w-100" type="button" name="" value="{% translate 'Cancel' %}"
                 class></button>
             </a>
-            <button class="btn btn-success m-2 p-4" type="submit" name="" value="{% translate 'Process' %}"
+            <button class="btn btn-success ml-0 mr-2 p-4 w-100" type="submit" name="" value="{% translate 'Process' %}"
               class></button>
           </div>
         </div>

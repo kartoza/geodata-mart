@@ -27,7 +27,8 @@
         <ul>
           {% for name, value in job.get_fields %}
           {% if name == 'job_id' %}
-          <li>{{ name }}: <a href="{% url 'maps:checkout' value %}">{{ value }}</a></li>
+          <li>Job: <a href="{% url 'maps:job' value %}">{{ value }}</a></li>
+          <li>Checkout: <a href="{% url 'maps:checkout' value %}">{{ value }}</a></li>
           {% else %}
           <li>{{ name }}: {{ value }}</li>
           {% endif %}

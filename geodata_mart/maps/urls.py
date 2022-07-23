@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.gallery, name="gallery"),
     path("<int:project_id>/", views.map, name="map"),
     path("create/", views.create_job, name="create_job"),
+    path("job/<job_id>", views.job, name="job"),
     path("checkout/<job_id>", views.checkout, name="checkout"),
     path("cancel/<job_id>", views.cancel_job, name="cancel_job"),
     path("data/", views.results, name="results"),

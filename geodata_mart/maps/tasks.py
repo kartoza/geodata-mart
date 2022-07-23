@@ -1,6 +1,9 @@
 from config import celery_app
+from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery.exceptions import SoftTimeLimitExceeded
+
+from celery_progress.backend import ProgressRecorder
 
 from PyQt5 import *
 from qgis.core import *
@@ -23,37 +26,8 @@ logger = get_task_logger(__name__)
 import shutil
 
 
-def post_process_gdmclip(context, successful, results):
-    """Run the default generic processing script"""
-    logger.info("Create results from task")
-    if not successful:
-        logger.error("Task was unsuccessful")
-    else:
-        results_file = results["OUTPUT"]
-        if not project_storage.exists(results_file):
-            raise Exception(
-                f"Output file {project_storage.path(results_file)} not found"
-            )
-        logger.info(f"Saving to to result file")
-        results_file_record = ResultFile.objects.create(
-            file_name="test",
-            job_id="test",
-        )
-        # add results file object to results file record (upload_to=results)
-        with project_storage.open(results_file) as f:
-            results_file_record.file_object.save(basename(results_file), f, save=True)
-
-        logger.info(f"Remove artifact")
-        statinfo = stat(results_file)  # get stats on the output file
-
-        with project_storage.open(results_file, "w") as f:
-            f.write(
-                str(statinfo)
-            )  # replace actual file (now duplicate) with file stats
-
-
-@celery_app.task()
-def process_job_gdmclip(job_id):
+@shared_task(bind=True)
+def process_job_gdmclip(self, job_id):
 
     job = Job.objects.filter(job_id=job_id).first()
     if not job:
@@ -83,7 +57,7 @@ def process_job_gdmclip(job_id):
     )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
     # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
 
-    # qgs.setMaxThreads(2)
+    qgs.setMaxThreads(1)
     qgs.initQgis()
 
     feedback = QgsProcessingFeedback()
@@ -144,9 +118,12 @@ def process_job_gdmclip(job_id):
 
     logger.info("Executing processing command")
 
+    progress_recorder = ProgressRecorder(self)
+
     try:
         script = QgsApplication.processingRegistry().algorithmById("script:gdmclip")
         params = {
+            "PROGRESS_RECORDER": progress_recorder,
             "PROJECTID": parameters["PROJECTID"],
             "VENDORID": parameters["VENDORID"],
             "USERID": parameters["USERID"],
@@ -158,15 +135,40 @@ def process_job_gdmclip(job_id):
             "PROJECT_CRS": project_crs_param,
             "OUTPUT": output_path,
         }
-        task = QgsProcessingAlgRunnerTask(script, params, context, feedback)
-        task.executed.connect(partial(post_process_gdmclip, context))
-        task.run()
+        task = script.create()
+        task.prepare(params, context, feedback)
+        result = task.runPrepared(params, context, feedback)
+
+        logger.info("Create results from task")
+        results_file = result["OUTPUT"]
+        if not project_storage.exists(results_file):
+            raise Exception(
+                f"Output file {project_storage.path(results_file)} not found"
+            )
+        logger.info(f"Saving to to result file")
+        results_file_record = ResultFile.objects.create(
+            file_name=job.job_id,
+            job_id=job,
+        )
+        # add results file object to results file record (upload_to=results)
+        with project_storage.open(results_file) as f:
+            results_file_record.file_object.save(basename(results_file), f, save=True)
+
+        logger.info(f"Remove artifact")
+        statinfo = stat(results_file)  # get stats on the output file
+
+        with project_storage.open(results_file, "w") as f:
+            f.write(
+                str(statinfo)
+            )  # replace actual file (now duplicate) with file stats
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
 
     finally:
-        # manual cleanup to prevent segmentation fault
-        del registry, project, task, feedback, context
         logger.info(f"Closing QGIS")
+        # manual cleanup to prevent segmentation fault
+        for var in [registry, project, task, feedback, context]:
+            if var in locals():
+                del var
         qgs.exitQgis()
