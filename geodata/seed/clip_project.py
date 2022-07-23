@@ -725,9 +725,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
         self.output_crs = self.getParameterValue(parameters, "OUTPUT_CRS")
         self.project_crs = self.getParameterValue(parameters, "PROJECT_CRS")
+
+        # Setup Progress recorder
         self.project_recorder = self.getParameterValue(parameters, "PROGRESS_RECORDER")
 
-        if self.project_recorder:
+        if self.project_recorder:  # Should be the Celery Async task ID
+
+            progress_recorders = globals()["progress_recorders"]
+
+            self.project_recorder = progress_recorders[self.project_recorder]
+
             self.project_recorder.set_progress(
                 10.0, 110.0, description="QGIS Processing Initialized"
             )  # current, total, description

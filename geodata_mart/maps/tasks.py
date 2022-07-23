@@ -10,8 +10,6 @@ from qgis.core import *
 
 import processing
 
-from functools import partial
-from time import sleep
 from os.path import join, basename
 from os import environ, stat
 from pathlib import Path
@@ -91,7 +89,7 @@ def process_job_gdmclip(self, job_id):
     if registry.providerById("script"):
         registry.providerById("script").refreshAlgorithms()
 
-    logger.info("Configuring processing paramters")
+    logger.info("Configuring processing parameters")
     output_path = join(project_storage.location, "output", str(job.job_id))
     LAYERS = (
         parameters["LAYERS"] if bool(parameters["LAYERS"]) else None
@@ -120,10 +118,17 @@ def process_job_gdmclip(self, job_id):
 
     progress_recorder = ProgressRecorder(self)
 
+    progress_recorders = globals()["progress_recorders"]
+
+    if not progress_recorders:
+        progress_recorders = {}
+
+    progress_recorders[self.request.id.__str__()] = progress_recorder
+
     try:
         script = QgsApplication.processingRegistry().algorithmById("script:gdmclip")
         params = {
-            "PROGRESS_RECORDER": progress_recorder,
+            "PROGRESS_RECORDER": self.request.id.__str__(),
             "PROJECTID": parameters["PROJECTID"],
             "VENDORID": parameters["VENDORID"],
             "USERID": parameters["USERID"],
