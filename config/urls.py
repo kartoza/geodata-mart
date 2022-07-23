@@ -27,7 +27,7 @@ urlpatterns = i18n_patterns(
     path("maps/", include("geodata_mart.maps.urls", namespace="maps")),
     # path("geodata/assets/<str:file_uri>", geodata_view, name="geodata"),
     re_path(r"geodata/assets/(?P<path>.*)$", geodata_view, name="geodata"),
-    re_path(r"^celery-progress/", include("celery_progress.urls")),
+    re_path(r"^tasks/", include("celery_progress.urls")),
 )
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
