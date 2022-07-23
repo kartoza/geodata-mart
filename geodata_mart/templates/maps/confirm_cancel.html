@@ -11,9 +11,12 @@
     <div class="row py-lg-5">
       <div class="col-lg-6 col-md-8 mx-auto">
         <h1 class="fw-light">{% translate "Cancellation" %}</h1>
+        <p class="lead text-muted">
+          {% translate "Please confirm whether you would like to cancel the order:" %}
+        </p>
         <h3 class="fw-light">{{ job.job_id }}</h3>
         <p class="lead text-muted">
-          {% translate "Select, clip, and ship collections of geodata quickly and conveniently." %}
+          {% translate "This process cannot be undone." %}
         </p>
         <div class="d-flex justify-content-between">
           <div class="p-2 flex-fill">
