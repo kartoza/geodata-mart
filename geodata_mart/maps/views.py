@@ -76,7 +76,7 @@ def cancel_job(request, job_id):
         job.save()
         return HttpResponseRedirect(reverse("maps:results"))
     else:
-        return render(request, "maps/confirm_cancel.html", {"job": job})
+        return render(request, "maps/cancel.html", {"job": job})
 
 
 @login_required
