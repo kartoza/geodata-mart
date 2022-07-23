@@ -731,9 +731,12 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
         if self.project_recorder:  # Should be the Celery Async task ID
 
-            progress_recorders = globals()["progress_recorders"]
+            import pickle  # pylint: disable=import-outside-toplevel
+            import codecs  # pylint: disable=import-outside-toplevel
 
-            self.project_recorder = progress_recorders[self.project_recorder]
+            self.project_recorder = pickle.loads(
+                codecs.decode(self.project_recorder.encode(), "base64")
+            )
 
             self.project_recorder.set_progress(
                 10.0, 110.0, description="QGIS Processing Initialized"

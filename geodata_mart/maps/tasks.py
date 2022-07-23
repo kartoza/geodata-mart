@@ -10,6 +10,8 @@ from qgis.core import *
 
 import processing
 
+import pickle
+import codecs
 from os.path import join, basename
 from os import environ, stat
 from pathlib import Path
@@ -118,17 +120,12 @@ def process_job_gdmclip(self, job_id):
 
     progress_recorder = ProgressRecorder(self)
 
-    progress_recorders = globals()["progress_recorders"]
-
-    if not progress_recorders:
-        progress_recorders = {}
-
-    progress_recorders[self.request.id.__str__()] = progress_recorder
-
     try:
         script = QgsApplication.processingRegistry().algorithmById("script:gdmclip")
         params = {
-            "PROGRESS_RECORDER": self.request.id.__str__(),
+            "PROGRESS_RECORDER": codecs.encode(
+                pickle.dumps(progress_recorder), "base64"
+            ).decode(),
             "PROJECTID": parameters["PROJECTID"],
             "VENDORID": parameters["VENDORID"],
             "USERID": parameters["USERID"],
