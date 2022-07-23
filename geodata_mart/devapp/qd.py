@@ -7,7 +7,6 @@ from PyQt5 import *
 from qgis.core import *
 
 import processing
-from concurrent.futures import ThreadPoolExecutor
 
 from os import environ
 from pathlib import Path
@@ -46,7 +45,7 @@ def do():
         )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
         # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
 
-        qgs.setMaxThreads(2)
+        qgs.setMaxThreads(1)
         qgs.initQgis()
 
         feedback = QgsProcessingFeedback()
@@ -100,13 +99,8 @@ def do():
         }
         task = script.create()
         task.prepare(params, context, feedback)
-
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(task.runPrepared, params, context, feedback)
-            return_value = future.result()
-            print(return_value)
-        # result = task.runPrepared(params, context, feedback)
-        # print(result["OUTPUT"])
+        result = task.runPrepared(params, context, feedback)
+        print(result["OUTPUT"])
 
     except Exception as e:
         print("exception")
