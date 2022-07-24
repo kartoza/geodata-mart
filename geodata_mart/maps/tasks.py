@@ -35,6 +35,12 @@ def process_job_gdmclip(self, job_id):
     else:
         logger.info(f"Processing Job: {job_id}")
 
+    progress_recorder = ProgressRecorder(self)
+
+    progress_recorder.set_progress(
+        1, 100, description="Processing started"
+    )  # current, total, description
+
     logger.info(f"Configuring environment")
     parameters = job.parameters
     environ[
@@ -118,7 +124,7 @@ def process_job_gdmclip(self, job_id):
 
     logger.info("Executing processing command")
 
-    progress_recorder = ProgressRecorder(self)
+    progress_recorder.set_progress(5, 100, description="Environment configured")
 
     try:
         script = QgsApplication.processingRegistry().algorithmById("script:gdmclip")
@@ -156,6 +162,8 @@ def process_job_gdmclip(self, job_id):
         with project_storage.open(results_file) as f:
             results_file_record.file_object.save(basename(results_file), f, save=True)
 
+        progress_recorder.set_progress(95, 100, description="Results saved")
+
         logger.info(f"Remove artifact")
         statinfo = stat(results_file)  # get stats on the output file
 
@@ -163,6 +171,8 @@ def process_job_gdmclip(self, job_id):
             f.write(
                 str(statinfo)
             )  # replace actual file (now duplicate) with file stats
+
+        progress_recorder.set_progress(100, 100, description="Task completed")
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
