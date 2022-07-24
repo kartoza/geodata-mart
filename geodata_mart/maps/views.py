@@ -67,7 +67,7 @@ def map(request, project_id):
 
 @login_required
 def cancel_job(request, job_id):
-    job = Job.objects.filter(job_id=job_id).first()
+    job = Job.objects.get(job_id=job_id)
     abandoned_state = Job.JobStateChoices.ABANDONED
     if not job:
         raise Http404("Job does not exist")
@@ -117,7 +117,7 @@ def create_job(request):
 @login_required
 def checkout(request, job_id):
     if request.method == "GET":
-        job = Job.objects.filter(job_id=job_id).first()
+        job = Job.objects.get(job_id=job_id)
         if not job:
             raise Http404("Job does not exist")
         form = JobForm(instance=job)
@@ -126,7 +126,7 @@ def checkout(request, job_id):
         # return render(request, "maps/checkout.html", context)
         return render(request, "maps/test_form.html", context)
     elif request.method == "POST":
-        job = Job.objects.filter(job_id=job_id).first()
+        job = Job.objects.get(job_id=job_id)
         if not job:
             raise Http404("Job does not exist")
         try:
@@ -150,7 +150,7 @@ def checkout(request, job_id):
 @login_required
 def job(request, job_id):
     if request.method == "GET":
-        job = Job.objects.filter(job_id=job_id).first()
+        job = Job.objects.get(job_id=job_id)
         if not job:
             raise Http404("Job does not exist")
         context = {"job": job}
