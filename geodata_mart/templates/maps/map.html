@@ -73,6 +73,12 @@
       <template x-for="i in $store.pageData.checkedLayers" :key="i">
         <option :value="i" selected="true"></option>
       </template>
+      <template x-for="i in $store.pageData.checkedBases" :key="i">
+        <option :value="i" selected="true"></option>
+      </template>
+      <template x-for="i in $store.pageData.checkedExcludes" :key="i">
+        <option :value="i" selected="true"></option>
+      </template>
     </select>
 
     <div class="d-flex flex-row">
