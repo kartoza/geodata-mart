@@ -4,7 +4,8 @@ from django.conf import settings
 
 from geodata_mart.devapp.views import (
     devapp_map_view,
-    nomap
+    nomap,
+    checkout,
 )
 
 app_name = "devapp"
@@ -22,4 +23,5 @@ urlpatterns = [
         name="map",
     ),
     path("nomap/<int:project_id>/", nomap, name="nomap"),
+    path("checkout/<job_id>", checkout, name="checkout"),
 ]

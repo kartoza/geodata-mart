@@ -122,9 +122,7 @@ def checkout(request, job_id):
             raise Http404("Job does not exist")
         form = JobForm(instance=job)
         context = {"job": job, "form": form}
-        # return HttpResponseRedirect(reverse("maps:results"))
-        # return render(request, "maps/checkout.html", context)
-        return render(request, "maps/test_form.html", context)
+        return render(request, "maps/checkout.html", context)
     elif request.method == "POST":
         job = Job.objects.get(job_id=job_id)
         if not job:
