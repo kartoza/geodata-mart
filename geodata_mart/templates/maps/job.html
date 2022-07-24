@@ -7,33 +7,74 @@
 <main>
   {% include "components/_authenticate.html" %}
 
+  {% if not job.tasks %}
   <div class="py-5">
     <div class="container">
       <div class="row py-lg-5">
-        <div class="col-lg-6 col-md-8 mx-auto">
-          <h1>{{ job.job_id }}</h1>
-          <h3>First Task: {{ job.job_id|getJobsFirstTask }}</h3>
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Job Details" %}</h1>
+          <h3>{{ job.job_id }}</h3>
+          <p class="text-muted">{% translate "This job has not been processed." %}</p>
+          <div class="row py-5">
+            <a href="{% url 'maps:results' %}" class="btn btn-primary btn-lg p-4">{% translate "Back" %}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Job Details" %}</h1>
+          <h3>{{ job.job_id }}</h3>
+          {% for task in job.tasks %}
+          <p class="text-muted">{% translate "Task ID: " %}{{ task }}</p>
           <div class="container">
             <div id="celery-result"></div>
           </div>
           <div class='progress-wrapper'>
             <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>
           </div>
-          <div id="progress-bar-message">Waiting for progress to start...</div>
+          <div id="progress-bar-message">{% translate "Fetching status" %}...</div>
+          {% if results %}
+          {% for result in results %}
+          <div class="row py-5">
+            <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
+            <a href="{{ result.file_object.url }}"
+              class="btn btn-primary btn-lg p-4">{% translate "Download Result" %}</a>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p>{% translate "No results are available for this job" %}</p>
+          {% endif %}
+          {% comment %} <div class="row py-4">
+            <a href="{% url 'vendor:message' job.job_id %}" class="btn btn-primary m-2">{% translate "Enquire" %}</a>
+          </div> {% endcomment %}
+          {% endfor %}
+          <div class="row py-5">
+            <a href="{% url 'maps:results' %}" class="btn btn-secondary btn-lg p-4">{% translate "Back" %}</a>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  {% endif %}
 
 </main>
 {% endblock content %}
 
 {% block inline_javascript %}
+{% if job.tasks %}
+{% for task in job.tasks %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    let progressUrl = "{% url 'celery_progress:task_status' job.job_id|getJobsFirstTask %}";
+    let progressUrl = "{% url 'celery_progress:task_status' task %}";
     CeleryProgressBar.initProgressBar(progressUrl);
   });
 
 </script>
+{% endfor %}
+{% endif %}
 {% endblock inline_javascript %}

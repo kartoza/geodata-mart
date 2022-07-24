@@ -35,11 +35,13 @@
           {% endfor %}
           {% for result in results %}
           {% if result.job_id == job %}
-          <li>
+          <li>Result:
             <a href="{{ result.file_object.url }}">
               {{ result.file_name }}
             </a>
           </li>
+          {% else %}
+          <li>No results for job</li>
           {% endif %}
           {% endfor %}
         </ul>

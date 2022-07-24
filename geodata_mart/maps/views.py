@@ -153,17 +153,19 @@ def job(request, job_id):
         job = Job.objects.get(job_id=job_id)
         if not job:
             raise Http404("Job does not exist")
-        context = {"job": job}
+        results = ResultFile.objects.filter(job_id=job.id)
+        context = {"job": job, "results": results}
         return render(request, "maps/job.html", context)
 
 
 @login_required
 def results(request):
-    try:
-        jobs = Job.objects.filter(user_id=request.user.id)
-    except Job.DoesNotExist:
-        raise Http404("There are no jobs for this user")
-    ids = [job.id for job in jobs]
-    results = ResultFile.objects.filter(job_id__in=ids)
-    context = {"jobs": jobs, "results": results}
-    return render(request, "maps/results.html", context)
+    if request.method == "GET":
+        try:
+            jobs = Job.objects.filter(user_id=request.user.id)
+        except Job.DoesNotExist:
+            raise Http404("There are no jobs for this user")
+        ids = [job.id for job in jobs]
+        results = ResultFile.objects.filter(job_id__in=ids)
+        context = {"jobs": jobs, "results": results}
+        return render(request, "maps/results.html", context)
