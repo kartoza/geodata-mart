@@ -10,6 +10,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.i18n import i18n_patterns
 
 from geodata_mart.maps import views as map_views
+from geodata_mart.vendors import views as vendor_views
 from geodata_mart.views import geodata as geodata_view
 
 urlpatterns = i18n_patterns(
@@ -25,6 +26,8 @@ urlpatterns = i18n_patterns(
     path("accounts/", include("allauth.urls")),
     # App url includes
     path("maps/", include("geodata_mart.maps.urls", namespace="maps")),
+    path("messages/", vendor_views.msg, name="messages"),
+    path("vendor/", include("geodata_mart.vendors.urls", namespace="vendors")),
     # path("geodata/assets/<str:file_uri>", geodata_view, name="geodata"),
     re_path(r"geodata/assets/(?P<path>.*)$", geodata_view, name="geodata"),
     re_path(r"^tasks/", include("celery_progress.urls")),
