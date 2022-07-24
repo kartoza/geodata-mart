@@ -240,6 +240,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         input_string = input_string.replace("[", "")
         input_string = input_string.replace("]", "")
         input_string = input_string.replace("\\", "")
+        input_string = input_string.replace('"', "")
         output_list = input_string.split(",")
         output_list = [
             a.replace(",", "").strip() for a in output_list if bool(a.strip())
