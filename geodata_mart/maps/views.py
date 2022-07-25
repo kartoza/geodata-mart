@@ -15,6 +15,8 @@ from geodata_mart.maps.forms import JobForm
 from geodata_mart.maps.tasks import process_job_gdmclip
 from geodata_mart.maps.models import Project, Layer, Job, ResultFile
 
+import json
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -121,7 +123,8 @@ def checkout(request, job_id):
         if not job:
             raise Http404("Job does not exist")
         form = JobForm(instance=job)
-        context = {"job": job, "form": form}
+        parameters = json.loads(form["parameters"].value())
+        context = {"job": job, "form": form, "parameters": parameters}
         return render(request, "maps/checkout.html", context)
     elif request.method == "POST":
         job = Job.objects.get(job_id=job_id)
@@ -142,7 +145,7 @@ def checkout(request, job_id):
             # job.tasks.append(task)
             job.tasks = Func(F("tasks"), Value(task.id), function="array_append")
             job.save()
-            return HttpResponseRedirect(reverse("maps:results"))
+            return HttpResponseRedirect(reverse("maps:job", kwargs={"job_id": job_id}))
 
 
 @login_required

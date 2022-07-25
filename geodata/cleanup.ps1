@@ -2,7 +2,7 @@
 cd (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
 # remove files by pattern
-Get-ChildItem -Path $pwd -Include *.zip, *.qgs, *.qgz, *.py, *.geojson -Recurse | Where {$_.fullname -notmatch "test" } | Where {$_.fullname -notmatch "seed" } | Remove-Item -Verbose
+Get-ChildItem -Path $pwd -Include *.zip, *.qgs, *.qgz, *.py, *.db, *.geojson -Recurse | Where {$_.fullname -notmatch "test" } | Where {$_.fullname -notmatch "seed" } | Remove-Item -Verbose
 
 # clobber blank directories
 # note that this needs to be iterated because empty directories with empty directories are not caught

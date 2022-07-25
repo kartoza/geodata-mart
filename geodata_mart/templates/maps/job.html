@@ -7,7 +7,7 @@
 <main>
   {% include "components/_authenticate.html" %}
 
-  {% if not job.tasks %}
+  {% if not job.tasks and not results %}
   <div class="py-5">
     <div class="container">
       <div class="row py-lg-5">
@@ -32,7 +32,7 @@
           {% for task in job.tasks %}
           <p class="text-muted">{% translate "Task ID: " %}{{ task }}</p>
           <div class="container">
-            <div id="celery-result"></div>
+            <div id="task-result-{{ forloop.counter }}"></div>
           </div>
           <div class='progress-wrapper'>
             <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>
@@ -54,7 +54,7 @@
           </div> {% endcomment %}
           {% endfor %}
           <div class="row py-5">
-            <a href="{% url 'maps:results' %}" class="btn btn-secondary btn-lg p-4">{% translate "Back" %}</a>
+            <a href="{% url 'maps:results' %}" class="btn btn-secondary btn-lg p-4">{% translate "My Data" %}</a>
           </div>
         </div>
       </div>
@@ -67,11 +67,22 @@
 
 {% block inline_javascript %}
 {% if job.tasks %}
+<script>
+  function doSomething(resultElement, result) {
+    //document.getElementById( resultElement )
+    //result
+  }
+
+</script>
+
 {% for task in job.tasks %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     let progressUrl = "{% url 'celery_progress:task_status' task %}";
-    CeleryProgressBar.initProgressBar(progressUrl);
+    CeleryProgressBar.initProgressBar(progressUrl, {
+      resultElementId: 'task-result-{{ forloop.counter }}',
+      //onSuccess: doSomething
+    });
   });
 
 </script>

@@ -1,3 +1,4 @@
+import uuid
 from config import celery_app
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -61,7 +62,18 @@ def process_job_gdmclip(self, job_id):
     registry = (
         qgs.processingRegistry()
     )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
-    # qgs.setAuthDatabaseDirPath(job.project_id.config_auth.file_object.path)
+
+    if job.project_id.config_auth:
+        auth_config_path = Path("/qgis/.auth/")
+        auth_config_path = Path.joinpath(auth_config_path, uuid.uuid4().hex)
+        auth_config_path.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(
+            job.project_id.config_auth.file_object.path,
+            Path.joinpath(auth_config_path, "qgis-auth.db"),
+        )
+        qgs.setAuthDatabaseDirPath(str(auth_config_path))
+        auth_manager = qgs.authManager()
+        auth_manager.setMasterPassword(job.project_id.config_auth.secret, True)
 
     qgs.setMaxThreads(1)
     qgs.initQgis()
@@ -173,6 +185,8 @@ def process_job_gdmclip(self, job_id):
             )  # replace actual file (now duplicate) with file stats
 
         progress_recorder.set_progress(100, 100, description="Task completed")
+        job.state = job.JobStateChoices.PROCESSED
+        job.save()
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
@@ -184,3 +198,5 @@ def process_job_gdmclip(self, job_id):
             if var in locals():
                 del var
         qgs.exitQgis()
+        if auth_config_path:
+            shutil.rmtree(auth_config_path)

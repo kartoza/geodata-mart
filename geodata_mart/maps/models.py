@@ -213,6 +213,12 @@ class AuthDbFile(ManagedFileObject):
 
     Config files for configuration of the projects QGIS processing environment."""
 
+    secret = models.CharField(
+        _("Master Key"),
+        max_length=255,
+        blank=True,
+        null=True,
+    )
     file_object = models.FileField(
         upload_to="./configs/authdb",
         storage=project_storage,
@@ -330,6 +336,9 @@ class Project(gismodels.Model):
     buffer_default = models.FloatField(
         default=1, verbose_name=_("Default Buffer (km)"), blank=False, null=False
     )
+    max_layers = models.IntegerField(
+        default=0, verbose_name=_("Maximum Layers"), blank=True, null=True
+    )
     coverage = gismodels.MultiPolygonField(
         default=None,
         verbose_name=_("Project Coverage Region"),
@@ -435,7 +444,7 @@ class Layer(models.Model):
     is_default = models.BooleanField(
         _("Default"),
         help_text=_("Define whether this layer should be checked by default"),
-        default=True,
+        default=False,
     )
     abstract = models.CharField(_("Layer Abstract"), max_length=255)
     created_date = models.DateTimeField(

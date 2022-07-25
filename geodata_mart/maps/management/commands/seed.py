@@ -7,6 +7,7 @@ from geodata_mart.maps.models import (
     QgisProjectFile,
     Project,
     Layer,
+    AuthDbFile,
     ProcessingScriptFile,
 )
 from django.conf import settings
@@ -87,7 +88,7 @@ class Command(BaseCommand):
         # Layer.objects.all().delete()
 
         self.stdout.write("create default project file...")
-        project_file = "seed/ngi_sample.qgs"
+        project_file = "seed/ngi.qgs"
         if not project_storage.exists(project_file):
             raise Exception(f"{project_storage.path(project_file)} not found")
         ngi_project_file = QgisProjectFile.objects.create(
@@ -98,65 +99,73 @@ class Command(BaseCommand):
         with project_storage.open(project_file) as f:
             ngi_project_file.file_object.save(basename(project_file), f, save=True)
 
+        self.stdout.write("load auth database...")
+        db_file = "seed/kartozagis_qgis.db"
+        if not project_storage.exists(db_file):
+            raise Exception(f"{project_storage.path(db_file)} not found")
+        db_record = AuthDbFile.objects.create(
+            file_name="kartozagis_qgis",
+            secret=settings.QGISAUTHDBSEEDPW,
+        )
+
+        with project_storage.open(db_file) as f:
+            db_record.file_object.save(basename(db_file), f, save=True)
+
         self.stdout.write("create default project object...")
         ngi_project = Project.objects.filter(project_name="NGI").first()
+        auth_db = AuthDbFile.objects.filter(file_name="kartozagis_qgis").first()
         if not ngi_project:
             ngi_project = Project.objects.create(
                 project_name="NGI",
                 state=StateChoices.ACTIVE,
                 max_area=400,  # 20x20 square kilometers
                 qgis_project_file=ngi_project_file,
+                config_auth=auth_db,
                 vendor_id=kartoza,
-                comment="Sample project with topographic data from the National Geospatial Information Catalog for the Republic of South Africa",
+                comment="Topographic data from the National Geospatial Information Catalog for the Republic of South Africa",
             )
 
             self.stdout.write("add project layers...")
             # make sure transformLabels is configured properly
-            # layers = {
-            #     "cult_barriers_exp": "cult_barriers_exp",
-            #     "cult_educational_exp_areal": "cult_educational_exp_areal",
-            #     "cult_educational_exp_linear": "cult_educational_exp_linear",
-            #     "cult_educational_exp_point": "cult_educational_exp_point",
-            #     "cult_industrial_exp_areal": "cult_industrial_exp_areal",
-            #     "cult_industrial_exp_linear": "cult_industrial_exp_linear",
-            #     "cult_industrial_exp_point": "cult_industrial_exp_point",
-            #     "cult_public_exp_areal": "cult_public_exp_areal",
-            #     "cult_public_exp_linear": "cult_public_exp_linear",
-            #     "cult_public_exp_point": "cult_public_exp_point",
-            #     "cult_recreational_exp_areal": "cult_recreational_exp_areal",
-            #     "cult_recreational_exp_linear": "cult_recreational_exp_linear",
-            #     "cult_recreational_exp_point": "cult_recreational_exp_point",
-            #     "cult_utilities_exp_linear": "cult_utilities_exp_linear",
-            #     "cult_utilities_exp_point": "cult_utilities_exp_point",
-            #     "hydr_areas_exp": "hydr_areas_exp",
-            #     "hydr_coastal_areas_exp_areal": "hydr_coastal_areas_exp_areal",
-            #     "hydr_coastal_lines_exp": "hydr_coastal_lines_exp",
-            #     "hydr_lines_exp": "hydr_lines_exp",
-            #     "hydr_points_exp": "hydr_points_exp",
-            #     "hyps_elevation_lines_exp": "hyps_elevation_lines_exp",
-            #     "hyps_elevation_points_exp": "hyps_elevation_points_exp",
-            #     "lclu_landcover_exp": "lclu_landcover_exp",
-            #     "lclu_landuse_exp": "lclu_landuse_exp",
-            #     "phys_landform_artific_exp_areal": "phys_landform_artific_exp_areal",
-            #     "phys_landform_artific_exp_linear": "phys_landform_artific_exp_linear",
-            #     "phys_landform_artific_exp_point": "phys_landform_artific_exp_point",
-            #     "phys_landform_natural_exp_areal": "phys_landform_natural_exp_areal",
-            #     "phys_landform_natural_exp_linear": "phys_landform_natural_exp_linear",
-            #     "phys_landform_natural_exp_point": "phys_landform_natural_exp_point",
-            #     "tran_crossings_exp_linear": "tran_crossings_exp_linear",
-            #     "tran_crossings_exp_point": "tran_crossings_exp_point",
-            #     "tran_facilities_exp_areal": "tran_facilities_exp_areal",
-            #     "tran_facilities_exp_linear": "tran_facilities_exp_linear",
-            #     "tran_facilities_exp_point": "tran_facilities_exp_point",
-            #     "tran_line_others_exp": "tran_line_others_exp",
-            #     "tran_railway_lines_exp": "tran_railway_lines_exp",
-            #     "roads": "roads",
-            # }
-
             layers = {
-                "roads": "National Road Network, including National, Provincial, District, and Local roads and paths.",
+                "cult_barriers_exp": "cult_barriers_exp",
+                "cult_educational_exp_areal": "cult_educational_exp_areal",
+                "cult_educational_exp_linear": "cult_educational_exp_linear",
                 "cult_educational_exp_point": "Educational Institutions, including Schools and Universities, from preschool to tertiary institutions.",
-                "lclu_landuse_exp": "Land cover and landuse, including residential regions, orchards & vineyards, and other physical landcover.",
+                "cult_industrial_exp_areal": "cult_industrial_exp_areal",
+                "cult_industrial_exp_linear": "cult_industrial_exp_linear",
+                "cult_industrial_exp_point": "cult_industrial_exp_point",
+                "cult_public_exp_areal": "cult_public_exp_areal",
+                "cult_public_exp_linear": "cult_public_exp_linear",
+                "cult_public_exp_point": "cult_public_exp_point",
+                "cult_recreational_exp_areal": "cult_recreational_exp_areal",
+                "cult_recreational_exp_linear": "cult_recreational_exp_linear",
+                "cult_recreational_exp_point": "cult_recreational_exp_point",
+                "cult_utilities_exp_linear": "cult_utilities_exp_linear",
+                "cult_utilities_exp_point": "cult_utilities_exp_point",
+                "hydr_areas_exp": "hydr_areas_exp",
+                "hydr_coastal_areas_exp_areal": "hydr_coastal_areas_exp_areal",
+                "hydr_coastal_lines_exp": "hydr_coastal_lines_exp",
+                "hydr_lines_exp": "hydr_lines_exp",
+                "hydr_points_exp": "hydr_points_exp",
+                "hyps_elevation_lines_exp": "hyps_elevation_lines_exp",
+                "hyps_elevation_points_exp": "hyps_elevation_points_exp",
+                "lclu_landcover_exp": "Land Cover, including barren land, cultivated land, and other landcover types.",
+                "lclu_landuse_exp": "Land Use, including residential regions, orchards & vineyards, and other physical land use types.",
+                "phys_landform_artific_exp_areal": "phys_landform_artific_exp_areal",
+                "phys_landform_artific_exp_linear": "phys_landform_artific_exp_linear",
+                "phys_landform_artific_exp_point": "phys_landform_artific_exp_point",
+                "phys_landform_natural_exp_areal": "phys_landform_natural_exp_areal",
+                "phys_landform_natural_exp_linear": "phys_landform_natural_exp_linear",
+                "phys_landform_natural_exp_point": "phys_landform_natural_exp_point",
+                "tran_crossings_exp_linear": "tran_crossings_exp_linear",
+                "tran_crossings_exp_point": "tran_crossings_exp_point",
+                "tran_facilities_exp_areal": "tran_facilities_exp_areal",
+                "tran_facilities_exp_linear": "tran_facilities_exp_linear",
+                "tran_facilities_exp_point": "tran_facilities_exp_point",
+                "tran_line_others_exp": "tran_line_others_exp",
+                "tran_railway_lines_exp": "tran_railway_lines_exp",
+                "roads": "National Road Network, including National, Provincial, District, and Local roads and paths.",
             }
 
             for key, value in layers.items():
@@ -172,6 +181,7 @@ class Command(BaseCommand):
             Layer.objects.create(
                 short_name="rsaortho",
                 layer_name="OSM-NGI-Ortho",
+                is_default=True,
                 abstract="NGI Imagery Mosaic generated and hosted as a WMS by the OpenStreetMap Team",
                 project_id=ngi_project,
                 lyr_class=Layer.LayerClass.BASE,
@@ -180,17 +190,19 @@ class Command(BaseCommand):
             Layer.objects.create(
                 short_name="osm",
                 layer_name="OpenStreetMap",
+                is_default=True,
                 abstract="OpenStreetMap Basic Global XYZ Tile Layer",
                 project_id=ngi_project,
-                lyr_class=Layer.LayerClass.EXCLUDE,
+                lyr_class=Layer.LayerClass.BASE,
                 lyr_type=Layer.LayerType.XYZ,
             )
             Layer.objects.create(
                 short_name="worlddem",
                 layer_name="Mapzen Global Terrain",
-                abstract="Mapzen Global Terrain, hosted by Amazon Web Services",
+                is_default=False,
+                abstract="Mapzen Global Terrain, hosted by Amazon Web Services. Note that this layer only renders properly on QGIS version 3.26 and higher.",
                 project_id=ngi_project,
-                lyr_class=Layer.LayerClass.OTHER,
+                lyr_class=Layer.LayerClass.EXCLUDE,
                 lyr_type=Layer.LayerType.XYZ,
             )
 

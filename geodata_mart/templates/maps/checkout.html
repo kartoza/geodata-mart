@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n maps_extras %}
 {% block extrahead %}
 {% endblock extrahead %}
 
@@ -9,32 +9,56 @@
 
   <div class="py-5">
     <div class="container">
-      <form action="{% url 'maps:checkout' job.job_id %}" class="form-horizontal" method="post">
-        {% csrf_token %}
-        <div class="row py-lg-5">
-          <div class="col-lg-6 col-md-8 mx-auto">
-            <legend>{{ job.job_id }}</legend>
-            <a href="{% url 'maps:checkout' job.job_id %}">
-              <button class="btn btn-secondary ml-0 mr-2 p-4 w-100" type="button" name="" value="{% translate 'Cancel' %}"
-                class></button>
-            </a>
-            <button class="btn btn-success ml-0 mr-2 p-4 w-100" type="submit" name="" value="{% translate 'Process' %}"
-              class></button>
-          </div>
-        </div>
-        <fieldset disabled>
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+          <legend>{{ job.job_id }}</legend>
           {% for field in form %}
-          <div class="mb-3">
-            <label for="FormControlInput{{ forloop.counter }}" class="form-label">{{ field.label_tag }}</label>
-            <input type="text" class="form-control" id="FormControlInput{{ forloop.counter }}"
-              placeholder="{{ field }}">
-            {% if field.errors %}
-            <div class="invalid-feedback">{{ field.errors }}</div>
-            {% endif %}
+          {% comment %}
+          UNSPECIFIED = 0, _("Unspecified")
+          ABANDONED = 1, _("Abandoned")
+          UNFULFILLED = 2, _("Unfulfilled")
+          PROCESSED = 3, _("Processed")
+          COMPLETED = 4, _("Completed")
+          FAILED = 5, _("Failed")
+          PROCESSING = 6, _("Processing")
+          UNKNOWN = 7, _("Unknown")
+          STALE = 8, _("Stale")
+          OTHER = 9, _("Other")
+          {% endcomment %}
+          {% if field.name == "state" and field.value == 1 %}
+          <p>This Job has been cancelled</p>
+          {% elif field.name == "state" and field.value > 3 %}
+          <p>This Job has already been processed</p>
+          {% elif field.name == "state" %}
+          <div>Map Layers:<br>{{parameters.LAYERS|getCsvStringAsList}}</div>
+          <div>Additional Layers:<br>{{parameters.EXCLUDES|getCsvStringAsList}}</div>
+          {% comment %} <div>Clipping Bounds:<br>{{parameters.CLIP_GEOM|getLeafletClipPreview}}</div> {% endcomment %}
+          {% comment %} <div>Comment:<br>{{parameters.OUTPUT_CRS}}</div> {% endcomment %}
+          {% comment %} <div>Comment:<br>{{parameters.PROJECT_CRS}}</div> {% endcomment %}
+          {% comment %} <div>Comment:<br>{{parameters.COMMENT}}</div> {% endcomment %}
+          <div class="container">
+            <div class="row align-items-center justify-content-between">
+              <a href="{% url 'maps:cancel_job' job.job_id %}">
+                <button class="btn btn-secondary ml-0 mr-2 my-2 p-4 w-100" type="button"
+                  name="cancel">{% translate 'Cancel' %}</button>
+              </a>
+              <button form="job-form" class="btn btn-success ml-0 mr-2 my-2 p-4 w-100" type="submit"
+                name="submit">{% translate 'Process' %}</button>
+            </div>
           </div>
-        </fieldset>
-        {% endfor %}
-      </form>
+
+          <form id="job-form" action="{% url 'maps:checkout' job.job_id %}" class="form-horizontal hidden"
+            method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            {{ form.field.as_hidden }}
+            {% endfor %}
+          </form>
+          {% endif %}
+          {% endfor %}
+
+        </div>
+      </div>
     </div>
   </div>
 

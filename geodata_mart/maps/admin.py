@@ -139,7 +139,13 @@ class QgisIniFileAdmin(ResultFileAdmin, admin.ModelAdmin):
 
 @admin.register(models.AuthDbFile)
 class AuthDbFileAdmin(ResultFileAdmin, admin.ModelAdmin):
-    pass
+    fields = [
+        "file_name",
+        "file_object",
+        "secret",
+        "version",
+        "comment",
+    ]
 
 
 @admin.register(models.ProcessingScriptFile)
