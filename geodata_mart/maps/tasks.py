@@ -51,7 +51,7 @@ def process_job_gdmclip(self, job_id):
     qgs = QgsApplication(
         argv=[],
         GUIenabled=False,
-        # profileFolder="profile/path",
+        profileFolder="/root/.local/share/profiles/default/",
         platformName="external",
         # platformName="qgis_process",
     )
@@ -63,17 +63,30 @@ def process_job_gdmclip(self, job_id):
         qgs.processingRegistry()
     )  # https://qgis.org/pyqgis/master/core/QgsProcessingRegistry.html
 
-    if job.project_id.config_auth:
-        auth_config_path = Path("/qgis/.auth/")
-        auth_config_path = Path.joinpath(auth_config_path, uuid.uuid4().hex)
-        auth_config_path.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(
-            job.project_id.config_auth.file_object.path,
-            Path.joinpath(auth_config_path, "qgis-auth.db"),
-        )
-        qgs.setAuthDatabaseDirPath(str(auth_config_path))
-        auth_manager = qgs.authManager()
-        auth_manager.setMasterPassword(job.project_id.config_auth.secret, True)
+    # qgs.qgisSettingsDirPath()
+    # if job.project_id.config_auth:
+    #     auth_config_path = Path("/qgis/.auth/")
+    #     auth_config_path = Path.joinpath(auth_config_path, uuid.uuid4().hex)
+    #     auth_config_path.mkdir(parents=True, exist_ok=True)
+    #     shutil.copy2(
+    #         job.project_id.config_auth.file_object.path,
+    #         Path.joinpath(auth_config_path, "qgis-auth.db"),
+    #     )
+    #     qgs.setAuthDatabaseDirPath(str(auth_config_path))
+    #     auth_manager = qgs.authManager()
+    #     auth_manager.setMasterPassword(job.project_id.config_auth.secret, True)
+
+    environ["PGSERVICEFILE"] = '/qgis/seed/pg_service.conf'
+    # environ["PGSERVICEFILE"] = job.project_id.config_pgservice.file_object.path
+    # https://www.postgresql.org/docs/current/libpq-envars.html
+    # PGSERVICEFILE
+    # -- alternatively
+    # PGSYSCONFDIR
+    # PGPASSWORD
+    # PGPASSFILE
+    # pg_service_file = job.project_id.config_pgservice.file_object.path
+    # settings_registry = qgs.settingsRegistryCore()
+    # settings_registry.addSettingsEntry()
 
     qgs.setMaxThreads(1)
     qgs.initQgis()
@@ -198,5 +211,5 @@ def process_job_gdmclip(self, job_id):
             if var in locals():
                 del var
         qgs.exitQgis()
-        if auth_config_path:
-            shutil.rmtree(auth_config_path)
+        # if auth_config_path:
+        #     shutil.rmtree(auth_config_path)
