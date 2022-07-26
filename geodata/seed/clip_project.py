@@ -41,6 +41,7 @@ from qgis import processing
 import os
 from pathlib import Path
 from datetime import date
+from math import floor
 
 
 class GdmClipProjectLayers(QgsProcessingAlgorithm):
@@ -257,7 +258,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         feedback.setProgress(feedback.progress() + self.increment)
         if self.progress_recorder:
             self.progress_recorder.set_progress(
-                (feedback.progress() * 0.8) + 10, 100, description=msg
+                floor(feedback.progress() * 0.8) + 10, 100, description=msg
             )  # current, total, description
 
     def zipOutputs(self, parameters, context, feedback, extensions, file_name):
