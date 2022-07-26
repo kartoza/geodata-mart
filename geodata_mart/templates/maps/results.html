@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 {% load static i18n %}
+{% load render_table from django_tables2 %}
 {% block extrahead %}
 {% endblock extrahead %}
 
 {% block content %}
 <main>
   {% include "components/_authenticate.html" %}
+
+  {% comment %} {% render_table jobs %} {% endcomment %}
+  {% render_table table %}
 
   {% if not jobs|length > 0 %}
   <section class="py-5 text-center container">
