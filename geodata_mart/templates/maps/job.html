@@ -29,6 +29,33 @@
         <div class="col-lg-6 col-md-8 mx-auto text-center">
           <h1>{% translate "Job Details" %}</h1>
           <h3>{{ job.job_id }}</h3>
+          {% comment %}
+          UNSPECIFIED = 0, _("Unspecified")
+          ABANDONED = 1, _("Abandoned")
+          UNFULFILLED = 2, _("Unfulfilled")
+          PROCESSED = 3, _("Processed")
+          COMPLETED = 4, _("Completed")
+          FAILED = 5, _("Failed")
+          PROCESSING = 6, _("Processing")
+          UNKNOWN = 7, _("Unknown")
+          STALE = 8, _("Stale")
+          OTHER = 9, _("Other")
+          {% endcomment %}
+          {% if job.state == 1 %}
+          <p>This Job has been cancelled</p>
+          {% elif job.state == 3 or job.state == 4 %}
+          {% if results %}
+          {% for result in results %}
+          <div class="row py-2">
+            <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
+            <a href="{{ result.file_object.url }}"
+              class="btn btn-primary btn-lg p-4">{% translate "Download Result" %}</a>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p>{% translate "No results are available for this job" %}</p>
+          {% endif %}
+          {% else %}
           {% for task in job.tasks %}
           <p class="text-muted">{% translate "Task ID: " %}{{ task }}</p>
           <div class="container">
@@ -38,22 +65,12 @@
             <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>
           </div>
           <div id="progress-bar-message">{% translate "Fetching status" %}...</div>
-          {% if results %}
-          {% for result in results %}
-          <div class="row py-5">
-            <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
-            <a href="{{ result.file_object.url }}"
-              class="btn btn-primary btn-lg p-4">{% translate "Download Result" %}</a>
-          </div>
-          {% endfor %}
-          {% else %}
-          <p>{% translate "No results are available for this job" %}</p>
-          {% endif %}
           {% comment %} <div class="row py-4">
             <a href="{% url 'vendor:message' job.job_id %}" class="btn btn-primary m-2">{% translate "Enquire" %}</a>
           </div> {% endcomment %}
           {% endfor %}
-          <div class="row py-5">
+          {% endif %}
+          <div class="row py-2">
             <a href="{% url 'maps:results' %}" class="btn btn-secondary btn-lg p-4">{% translate "My Data" %}</a>
           </div>
         </div>
@@ -68,9 +85,10 @@
 {% block inline_javascript %}
 {% if job.tasks %}
 <script>
-  function doSomething(resultElement, result) {
+  function refreshWindow(resultElement, result) {
     //document.getElementById( resultElement )
     //result
+    window.location.reload();
   }
 
 </script>
@@ -81,7 +99,7 @@
     let progressUrl = "{% url 'celery_progress:task_status' task %}";
     CeleryProgressBar.initProgressBar(progressUrl, {
       resultElementId: 'task-result-{{ forloop.counter }}',
-      //onSuccess: doSomething
+      onResult: refreshWindow
     });
   });
 

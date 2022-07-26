@@ -45,8 +45,9 @@
         <li><a class="dropdown-item nav-link disabled" href="#">{% translate "Settings" %}</a></li>
         <li>
           {# URL provided by django-allauth/account/urls.py #}
-          <a class="dropdown-item nav-link"
-            href="{% url 'users:detail' request.user.username  %}">{% translate "Profile" %}</a>
+          <a class="dropdown-item nav-link disabled" href="#">{% translate "Profile" %}</a>
+          {% comment %} <a class="dropdown-item nav-link"
+            href="{% url 'users:detail' request.user.username  %}">{% translate "Profile" %}</a> {% endcomment %}
         </li>
         {% if request.user.is_staff %}
         <li>
