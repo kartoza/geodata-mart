@@ -55,17 +55,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("starting seed...")
 
-        self.stdout.write("make credit account for admin...")
-        # Assuming that init has run, createsuperuser should make
-        # an admin with the id of 1, which needs an account.
-        admin = User.objects.get(pk=1)
-        # admin = User.objects.get(name="admin")
-        admin_accounts = Account.objects.filter(account_owner=admin)
-        if not admin_accounts:
-            account = Account.objects.create(account_owner=admin, account_balance=100.0)
-            del account
-        del admin, admin_accounts
-
         self.stdout.write("make default vendor account")
         kartoza = Vendor.objects.filter(name="Kartoza")
         if not kartoza:

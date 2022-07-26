@@ -1,7 +1,11 @@
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+
+from geodata_mart.credits.models import Account
 
 
 class User(AbstractUser):
@@ -38,3 +42,17 @@ class User(AbstractUser):
 
         """
         return reverse("users:detail", kwargs={"username": self.username})
+
+
+@receiver(post_save, sender=User)
+def createCreditAccount(sender, instance, **kwargs):
+    """Create a default credit account for new users"""
+    record_instance = sender.objects.get(pk=instance.pk)
+    account_exists = Account.objects.filter(account_owner=record_instance)
+    obj, created = Account.objects.get_or_create(
+        account_owner=record_instance,
+        defaults={"account_name": "Default"},
+    )
+    if not account_exists:
+        record_instance.active_account = obj
+        record_instance.save()

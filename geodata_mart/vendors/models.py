@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from geodata_mart.users.models import User
 
 import uuid
 
@@ -25,7 +24,7 @@ class Vendor(models.Model):
     )
     updated_date = models.DateTimeField(auto_now=True, verbose_name=_("Updated Date"))
     users = models.ForeignKey(
-        User,
+        "users.User",
         on_delete=models.CASCADE,
         verbose_name=_("Users"),
         null=True,
@@ -33,7 +32,7 @@ class Vendor(models.Model):
         related_name="users",
     )
     staff = models.ForeignKey(
-        User,
+        "users.User",
         on_delete=models.CASCADE,
         verbose_name=_("Employees"),
         null=True,
@@ -41,7 +40,7 @@ class Vendor(models.Model):
         related_name="staff",
     )
     admins = models.ForeignKey(
-        User,
+        "users.User",
         on_delete=models.CASCADE,
         verbose_name=_("Administrators"),
         null=True,
@@ -71,7 +70,7 @@ class VendorMessage(models.Model):
         blank=False,
         null=False,
     )
-    sender = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name="sender")
+    sender = models.ForeignKey("users.User", on_delete=models.DO_NOTHING, related_name="sender")
     receiver = models.ForeignKey(
         Vendor, on_delete=models.CASCADE, related_name="receiver"
     )
