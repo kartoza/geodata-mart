@@ -7,6 +7,16 @@ from django.utils.translation import gettext_lazy as _
 
 from geodata_mart.credits.models import Account
 
+from versatileimagefield.fields import VersatileImageField
+from PIL import Image
+
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+
+project_storage = FileSystemStorage(
+    location=settings.QGIS_DATA_ROOT, base_url="/geodata/assets"
+)
+
 
 class User(AbstractUser):
     """
@@ -15,14 +25,21 @@ class User(AbstractUser):
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
 
+    def getUserUploadPath(instance, filename):
+        """Get the users upload path as a callable
+
+        Return the upload path using the current instance detail.
+
+        Returns:
+            string: path to output file for image field
+        """
+        # return f"media/users/{instance.user.user.name}/{filename}"
+        return f"media/users/{instance.user.user.id}/{filename}"
+
     #: First and last name do not cover name patterns around the globe
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
     first_name = None  # type: ignore
     last_name = None  # type: ignore
-    name = models.CharField(_("Name of User"), blank=True, max_length=255)
-    first_name = None  # type: ignore
-    last_name = None  # type: ignore
-    # avatar = models.ImageField(upload_to=getAvatarUploadPath, blank=True, null=True)
     status = models.CharField(_("User Status"), blank=True, max_length=255)
     bio = models.CharField(_("User Bio"), blank=True, max_length=255)
     detail = models.TextField(verbose_name=_("User Detail"), blank=True, null=True)
@@ -32,6 +49,13 @@ class User(AbstractUser):
         null=True,
         related_name="active_user",
         on_delete=models.DO_NOTHING,
+    )
+    avatar = VersatileImageField(
+        _("Avatar"),
+        storage=project_storage,
+        upload_to=getUserUploadPath,
+        blank=True,
+        null=True,
     )
 
     def get_absolute_url(self):
@@ -56,3 +80,23 @@ def createCreditAccount(sender, instance, **kwargs):
     if not account_exists:
         record_instance.active_account = obj
         record_instance.save()
+
+
+@receiver(post_save, sender=User)
+def resize_avatar(sender, instance, **kwargs):
+    """Resize the provided image to a maximum size of 600x600"""
+    try:
+        record_instance = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
+
+    if not record_instance.avatar or not project_storage.exists(
+        record_instance.avatar.path
+    ):
+        return
+
+    size = (600, 600)
+    image = Image.open(record_instance.avatar.path)
+    if image.size[0] > size[0] or image.size[1] > size[1]:
+        image.thumbnail(size, resample=Image.Resampling.BICUBIC)
+        image.save(record_instance.media.path)

@@ -30,6 +30,8 @@ class VendorAdmin(admin.ModelAdmin):
         "name",
         "abstract",
         "description",
+        "logo",
+        "media",
         "users",
         "staff",
         "admins",

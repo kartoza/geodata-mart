@@ -143,32 +143,6 @@ class ManagedFileObject(models.Model):
         if not in_use:
             file_field.delete(False)
 
-    @receiver(post_delete)
-    def delete_files_with_model(sender, instance, **kwargs):
-        """Delete file from filesystem when corresponding model with FileField is removed"""
-        for field in sender._meta.concrete_fields:
-            if isinstance(field, models.FileField):
-                file_field = getattr(instance, field.name)
-                sender.delete_unused_file(sender, instance, field, file_field)
-
-    @receiver(pre_save)
-    def delete_replaced_files(sender, instance, **kwargs):
-        """Delete from filesystem when replaced with new file"""
-        if not instance.pk:  # exclude initial save
-            return
-        for field in sender._meta.concrete_fields:
-            if isinstance(field, models.FileField):
-                try:
-                    db_instance = sender.objects.get(pk=instance.pk)
-                except sender.DoesNotExist:
-                    return
-                db_instance_field = getattr(db_instance, field.name)
-                file_field = getattr(instance, field.name)
-                if db_instance_field.name != file_field.name:
-                    sender.delete_unused_file(
-                        sender, instance, field, db_instance_field
-                    )
-
 
 class PgServiceFile(ManagedFileObject):
     """PostgreSQL Service File Model
@@ -653,6 +627,32 @@ class ProjectCoverageFile(ManagedFileObject):
     class Meta(ManagedFileObject.Meta):
         verbose_name = _("Project Coverage File")
         verbose_name_plural = _("Project Coverage Files")
+
+
+@receiver(post_delete, sender=ManagedFileObject)
+def delete_files_with_model(sender, instance, **kwargs):
+    """Delete file from filesystem when corresponding model with FileField is removed"""
+    for field in sender._meta.concrete_fields:
+        if isinstance(field, models.FileField):
+            file_field = getattr(instance, field.name)
+            sender.delete_unused_file(sender, instance, field, file_field)
+
+
+@receiver(pre_save, sender=ManagedFileObject)
+def delete_replaced_files(sender, instance, **kwargs):
+    """Delete from filesystem when replaced with new file"""
+    if not instance.pk:  # exclude initial save
+        return
+    for field in sender._meta.concrete_fields:
+        if isinstance(field, models.FileField):
+            try:
+                db_instance = sender.objects.get(pk=instance.pk)
+            except sender.DoesNotExist:
+                return
+            db_instance_field = getattr(db_instance, field.name)
+            file_field = getattr(instance, field.name)
+            if db_instance_field.name != file_field.name:
+                sender.delete_unused_file(sender, instance, field, db_instance_field)
 
 
 @receiver(post_save, sender=ProjectCoverageFile)

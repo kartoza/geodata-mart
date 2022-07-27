@@ -3,8 +3,8 @@
 # # define an alias for the specfic python version used in this file.
 # FROM python:${PYTHON_VERSION} as python
 
-# FROM qgis/qgis:final-3_22_8 as python
-FROM qgis/qgis:final-3_26_1 as python
+FROM qgis/qgis:final-3_22_8 as python
+# FROM qgis/qgis:final-3_26_1 as python
 
 # Alias the python command with the interpreter used with qgis
 # note RUN alias python="/usr/bin/python3" will not work between build steps
@@ -52,6 +52,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   libpq-dev \
   # Translations dependencies
   gettext \
+  # install additional app dependencies
+  libmagic1 \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
