@@ -26,9 +26,9 @@
           OTHER = 9, _("Other")
           {% endcomment %}
           {% if field.name == "state" and field.value == 1 %}
-          <p>This Job has been cancelled</p>
+          <p>{% translate "This Job has been cancelled" %}</p>
           {% elif field.name == "state" and field.value > 3 %}
-          <p>This Job has already been processed</p>
+          <p>{% translate "This Job has already been processed" %}</p>
           {% elif field.name == "state" %}
           <div>Map Layers:<br>{{parameters.LAYERS|getCsvStringAsList}}</div>
           <div>Additional Layers:<br>{{parameters.EXCLUDES|getCsvStringAsList}}</div>

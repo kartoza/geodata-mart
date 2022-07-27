@@ -15,8 +15,12 @@
           <h1>{% translate "Job Details" %}</h1>
           <h3>{{ job.job_id }}</h3>
           <p class="text-muted">{% translate "This job has not been processed." %}</p>
-          <div class="row py-5">
-            <a href="{% url 'maps:results' %}" class="btn btn-primary btn-lg p-4">{% translate "Back" %}</a>
+          <div class="row py-2">
+            <a href="{% url 'maps:checkout' job.job_id %}"
+              class="btn btn-success btn-lg p-4">{% translate "Checkout Now" %}</a>
+          </div>
+          <div class="row py-2">
+            <a href="{% url 'maps:results' %}" class="btn btn-primary btn-lg p-4">{% translate "My Data" %}</a>
           </div>
         </div>
       </div>

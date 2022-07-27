@@ -36,6 +36,9 @@ def process_job_gdmclip(self, job_id):
     else:
         logger.info(f"Processing Job: {job_id}")
 
+    job.state = job.JobStateChoices.PROCESSING
+    job.save()
+
     progress_recorder = ProgressRecorder(self)
 
     progress_recorder.set_progress(
@@ -76,7 +79,7 @@ def process_job_gdmclip(self, job_id):
     #     auth_manager = qgs.authManager()
     #     auth_manager.setMasterPassword(job.project_id.config_auth.secret, True)
 
-    environ["PGSERVICEFILE"] = '/qgis/seed/pg_service.conf'
+    environ["PGSERVICEFILE"] = "/qgis/seed/pg_service.conf"
     # environ["PGSERVICEFILE"] = job.project_id.config_pgservice.file_object.path
     # https://www.postgresql.org/docs/current/libpq-envars.html
     # PGSERVICEFILE
@@ -203,9 +206,16 @@ def process_job_gdmclip(self, job_id):
 
     except SoftTimeLimitExceeded:
         feedback.cancel()
+        job.state = job.JobStateChoices.UNKNOWN
+        job.save()
+
+    except Exception as e:
+        logger.error(f"Encountered error {e}")
+        job.state = job.JobStateChoices.FAILED
+        job.save()
 
     finally:
-        logger.info(f"Closing QGIS")
+        logger.info("Closing QGIS")
         # manual cleanup to prevent segmentation fault
         for var in [registry, project, task, feedback, context]:
             if var in locals():

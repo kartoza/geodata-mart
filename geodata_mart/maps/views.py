@@ -164,31 +164,10 @@ def job(request, job_id):
 def results(request):
     if request.method == "GET":
         try:
-            jobs = Job.objects.filter(user_id=request.user.id)
+            jobs = Job.objects.filter(user_id=request.user.id).order_by("-created_date")
         except Job.DoesNotExist:
             raise Http404("There are no jobs for this user")
         ids = [job.id for job in jobs]
         results = ResultFile.objects.filter(job_id__in=ids)
-        table = JobTable(
-            data=jobs,
-            order_by="created_date",
-            # orderable=None,
-            # empty_text=None,
-            # exclude=None,
-            # attrs=None,
-            # row_attrs=None,
-            # pinned_row_attrs=None,
-            # sequence=None,
-            # prefix=None,
-            # order_by_field=None,
-            # page_field=None,
-            # per_page_field=None,
-            # template_name=None,
-            # default=None,
-            # request=None,
-            # show_header=None,
-            # show_footer=True,
-            # extra_columns=None,
-        )
-        context = {"jobs": jobs, "results": results, "table": table}
+        context = {"jobs": jobs, "results": results}
         return render(request, "maps/results.html", context)
