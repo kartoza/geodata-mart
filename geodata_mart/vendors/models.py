@@ -106,11 +106,11 @@ def resize_logo(sender, instance, **kwargs):
     ):
         return
 
-    size = (600, 600)
+    logo_size = (600, 600)
     logo_image = Image.open(record_instance.logo.path)
-    if logo_image.size[0] > size[0] or logo_image.size[1] > size[1]:
-        logo_image.thumbnail(size, resample=Image.Resampling.BICUBIC)
-        logo_image.save(record_instance.media.path)
+    if logo_image.size[0] > logo_size[0] or logo_image.size[1] > logo_size[1]:
+        logo_image.thumbnail(logo_size, resample=Image.Resampling.BICUBIC)
+        logo_image.save(record_instance.logo.path)
 
 
 @receiver(post_save, sender=Vendor)
@@ -128,8 +128,8 @@ def resize_media(sender, instance, **kwargs):
 
     media_size = (1200, 1200)
     media_image = Image.open(record_instance.media.path)
-    if media_image.size[0] > size[0] or media_image.size[1] > size[1]:
-        media_image.thumbnail(size, resample=Image.Resampling.BICUBIC)
+    if media_image.size[0] > media_size[0] or media_image.size[1] > media_size[1]:
+        media_image.thumbnail(media_size, resample=Image.Resampling.BICUBIC)
         media_image.save(record_instance.media.path)
 
 
