@@ -14,7 +14,6 @@ from django.core.paginator import (
 from geodata_mart.maps.forms import JobForm
 from geodata_mart.maps.tasks import process_job_gdmclip
 from geodata_mart.maps.models import Project, Layer, Job, ResultFile
-from geodata_mart.maps.tables import JobTable
 
 import json
 
