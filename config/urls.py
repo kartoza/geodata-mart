@@ -25,7 +25,7 @@ urlpatterns = i18n_patterns(
     path("users/", include("geodata_mart.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     # App url includes
-    path("maps/", include("geodata_mart.maps.urls", namespace="maps")),
+    path("data/", include("geodata_mart.maps.urls", namespace="maps")),
     path("messages/", vendor_views.msg, name="messages"),
     path("vendor/", include("geodata_mart.vendors.urls", namespace="vendors")),
     # path("geodata/assets/<str:file_uri>", geodata_view, name="geodata"),

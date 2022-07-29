@@ -446,3 +446,69 @@ class ProjectCoverageFileAdmin(admin.ModelAdmin):
         "project_id",
         "state",
     ]
+
+
+@admin.register(models.ProjectDataFile)
+class ProjectDataFileAdmin(ResultFileAdmin, admin.ModelAdmin):
+    """Manage data files for projects."""
+
+    list_display = (
+        "id",
+        "file_name",
+        "file_object",
+        "version",
+        "project_id",
+        "comment",
+        "file_size",
+        "file_stored",
+        "created_date",
+        "updated_date",
+    )
+    fields = [
+        "file_name",
+        "file_object",
+        "version",
+        "comment",
+    ]
+
+
+@admin.register(models.DownloadableDataItem)
+class DownloadableDataItemAdmin(ResultFileAdmin, admin.ModelAdmin):
+    """Manage data files for download."""
+
+    list_display = (
+        "id",
+        "vendor_id",
+        "file_name",
+        "file_object",
+        "file_stored",
+        "type",
+        "state",
+        "cost",
+        "version",
+        "comment",
+        "file_size",
+        "created_date",
+        "updated_date",
+    )
+    fields = [
+        "file_name",
+        "file_object",
+        "vendor_id",
+        "type",
+        "state",
+        "cost",
+        "data_license",
+        "data_attribution",
+        "data_metadata",
+        "abstract",
+        "external_link",
+        "description",
+        "kudos",
+        "tags",
+        "icon",
+        "coverage",
+        "preview_image",
+        "version",
+        "comment",
+    ]

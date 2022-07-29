@@ -13,9 +13,16 @@ from django.core.paginator import (
 
 from geodata_mart.maps.forms import JobForm
 from geodata_mart.maps.tasks import process_job_gdmclip
-from geodata_mart.maps.models import Project, Layer, Job, ResultFile
+from geodata_mart.maps.models import (
+    Project,
+    DownloadableDataItem,
+    Layer,
+    Job,
+    ResultFile,
+)
 
 import json
+from itertools import chain
 
 import logging
 
@@ -26,7 +33,33 @@ def gallery(request):
     default_page = 1
     page = request.GET.get("page", default_page)
     projects_list = Project.objects.order_by("id")
-    items_per_page = 9
+    data_list = DownloadableDataItem.objects.order_by("id")
+    items_list = list(chain(projects_list, data_list))
+    items_list.sort(key=lambda x: x.id, reverse=False)
+    for i in items_list:
+        logger.error(f"{i}")
+    # items_list = sorted(items_list)
+    items_per_page = request.GET.get("items", 6)
+    items_per_page = items_per_page if isinstance(items_per_page, int) else 6
+    paginator = Paginator(items_list, items_per_page)
+
+    try:
+        item_page = paginator.page(page)
+    except PageNotAnInteger:
+        item_page = paginator.page(default_page)
+    except EmptyPage:
+        item_page = paginator.page(paginator.num_pages)
+
+    context = {"items": item_page}
+    return render(request, "maps/gallery.html", context)
+
+
+def projects(request):
+    default_page = 1
+    page = request.GET.get("page", default_page)
+    projects_list = Project.objects.order_by("id")
+    items_per_page = request.GET.get("items", 6)
+    items_per_page = items_per_page if isinstance(items_per_page, int) else 6
     paginator = Paginator(projects_list, items_per_page)
 
     try:
@@ -36,7 +69,26 @@ def gallery(request):
     except EmptyPage:
         projects_page = paginator.page(paginator.num_pages)
 
-    context = {"projects": projects_page}
+    context = {"items": projects_page}
+    return render(request, "maps/gallery.html", context)
+
+
+def data(request):
+    default_page = 1
+    page = request.GET.get("page", default_page)
+    data_list = DownloadableDataItem.objects.order_by("id")
+    items_per_page = request.GET.get("items", 6)
+    items_per_page = items_per_page if isinstance(items_per_page, int) else 6
+    paginator = Paginator(data_list, items_per_page)
+
+    try:
+        data_page = paginator.page(page)
+    except PageNotAnInteger:
+        data_page = paginator.page(default_page)
+    except EmptyPage:
+        data_page = paginator.page(paginator.num_pages)
+
+    context = {"items": data_page}
     return render(request, "maps/gallery.html", context)
 
 

@@ -916,7 +916,7 @@ class DownloadableDataItem(ManagedFileObject):
         Returns:
             string: path to output file for image field
         """
-        return f"./data/{instance.vendor_id.name}/{instance.item_name}/{filename}"
+        return f"./data/{instance.vendor_id.name}/{instance.file_name}/{filename}"
 
     def getImageUploadPath(instance, filename):
         """Get the image media upload path as a callable
