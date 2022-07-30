@@ -138,5 +138,6 @@
 {% endblock content %}
 
 {% block footer %}
+<a href="{% url 'maps:projects'%}{% urlparams items='12' tags='projects,za' search='ngi' %}">Test Link</a>
 {% include "components/_footer_to_top.html" %}
 {% endblock footer %}

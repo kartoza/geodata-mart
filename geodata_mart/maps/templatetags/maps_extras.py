@@ -1,6 +1,7 @@
 from django import template
 from django.template.defaultfilters import stringfilter
 from django.utils.safestring import mark_safe
+from urllib.parse import urlencode
 
 from geodata_mart.maps.models import Job
 
@@ -33,3 +34,11 @@ def getCsvStringAsList(csv_string):
         markup += '<li class="list-group-item">' + i.strip() + "</li>"
     markup += "</ul>"
     return mark_safe(markup)
+
+
+@register.simple_tag
+def urlparams(*_, **kwargs):
+    safe_args = {k: v for k, v in kwargs.items() if v is not None}
+    if safe_args:
+        return "?{}".format(urlencode(safe_args))
+    return ""

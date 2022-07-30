@@ -77,6 +77,7 @@ DJANGO_APPS = [
     "django.contrib.admin",
     "django.forms",
     "django.contrib.gis",
+    "django.contrib.postgres",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",

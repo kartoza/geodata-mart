@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db.models import Func, F, Value
 
 from django.core.paginator import (
@@ -32,15 +33,41 @@ logger = logging.getLogger(__name__)
 def gallery(request):
     default_page = 1
     page = request.GET.get("page", default_page)
-    projects_list = Project.objects.order_by("id")
-    data_list = DownloadableDataItem.objects.order_by("id")
+    search_term = request.GET.get("search")
+    if bool(search_term):
+        project_vector = (
+            SearchVector("project_name", weight="A")
+            + SearchVector("abstract", weight="B")
+            + SearchVector("description", weight="C")
+            + SearchVector("comment", weight="D")
+        )
+        data_vector = (
+            SearchVector("file_name", weight="A")
+            + SearchVector("abstract", weight="B")
+            + SearchVector("description", weight="C")
+            + SearchVector("comment", weight="D")
+        )
+        query = SearchQuery(search_term)
+        projects_list = (
+            Project.objects.annotate(rank=SearchRank(project_vector, query))
+            .filter(rank__gt=0)
+            .order_by("rank")
+        )
+        data_list = (
+            DownloadableDataItem.objects.annotate(rank=SearchRank(data_vector, query))
+            .filter(rank__gt=0)
+            .order_by("rank")
+        )
+    else:
+        projects_list = Project.objects.order_by("id")
+        data_list = DownloadableDataItem.objects.order_by("id")
     items_list = list(chain(projects_list, data_list))
     items_list.sort(key=lambda x: x.id, reverse=False)
-    for i in items_list:
-        logger.error(f"{i}")
-    # items_list = sorted(items_list)
     items_per_page = request.GET.get("items", 6)
-    items_per_page = items_per_page if isinstance(items_per_page, int) else 6
+    try:
+        items_per_page = int(items_per_page)
+    except:
+        items_per_page = 6
     paginator = Paginator(items_list, items_per_page)
 
     try:
@@ -57,9 +84,28 @@ def gallery(request):
 def projects(request):
     default_page = 1
     page = request.GET.get("page", default_page)
-    projects_list = Project.objects.order_by("id")
+    search_term = request.GET.get("search")
+    if bool(search_term):
+        # vector = SearchVector("project_name", "abstract", "description", "comment")
+        vector = (
+            SearchVector("project_name", weight="A")
+            + SearchVector("abstract", weight="B")
+            + SearchVector("description", weight="C")
+            + SearchVector("comment", weight="D")
+        )
+        query = SearchQuery(search_term)
+        projects_list = (
+            Project.objects.annotate(rank=SearchRank(vector, query))
+            .filter(rank__gt=0)
+            .order_by("rank")
+        )
+    else:
+        projects_list = Project.objects.order_by("id")
     items_per_page = request.GET.get("items", 6)
-    items_per_page = items_per_page if isinstance(items_per_page, int) else 6
+    try:
+        items_per_page = int(items_per_page)
+    except:
+        items_per_page = 6
     paginator = Paginator(projects_list, items_per_page)
 
     try:
@@ -76,9 +122,27 @@ def projects(request):
 def data(request):
     default_page = 1
     page = request.GET.get("page", default_page)
-    data_list = DownloadableDataItem.objects.order_by("id")
+    search_term = request.GET.get("search")
+    if bool(search_term):
+        vector = (
+            SearchVector("file_name", weight="A")
+            + SearchVector("abstract", weight="B")
+            + SearchVector("description", weight="C")
+            + SearchVector("comment", weight="D")
+        )
+        query = SearchQuery(search_term)
+        data_list = (
+            DownloadableDataItem.objects.annotate(rank=SearchRank(vector, query))
+            .filter(rank__gt=0)
+            .order_by("rank")
+        )
+    else:
+        data_list = DownloadableDataItem.objects.order_by("id")
     items_per_page = request.GET.get("items", 6)
-    items_per_page = items_per_page if isinstance(items_per_page, int) else 6
+    try:
+        items_per_page = int(items_per_page)
+    except:
+        items_per_page = 6
     paginator = Paginator(data_list, items_per_page)
 
     try:
