@@ -5,4 +5,5 @@ from geodata_mart.vendors import views
 app_name = "vendors"
 urlpatterns = [
     path("messages/", views.msg, name="msg"),
+    path("contact/", views.contact, name="contact"),
 ]

@@ -1,9 +1,10 @@
 {% load static i18n compress %}
+{% url 'maps:results' as results_url %}
 <ul class="navbar-nav ml-auto">
   <li class="nav-item mx-2">
     <button id="toggle-darkmode-btn" x-data @click="$store.darkMode.toggle()" class="btn btn-dark nav-link"
-      title="Toggle Dark Mode">
-      <i class="bi bi-lightbulb-fill nav-link" alt="dark mode" width="32" height="32"></i>
+      title="{% translate "Toggle Dark Mode" %}">
+      <i class="bi bi-lightbulb-fill nav-link" alt="{% translate "dark mode" %}" width="32" height="32"></i>
     </button>
   </li>
 
@@ -12,9 +13,9 @@
     {% get_available_languages as LANGUAGES %}
     {% get_language_info_list for LANGUAGES as languages %}
     <div class="dropdown dropstart">
-      <button id="languageMenu" class="btn btn-dark nav-link" title="Change Language" data-bs-toggle="dropdown"
-        aria-expanded="false">
-        <i class="bi bi-translate nav-link" alt="language" width="32" height="32"></i>
+      <button id="languageMenu" class="btn btn-dark nav-link" title="{% translate "Change Language" %}"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-translate nav-link" alt="{% translate "language" %}" width="32" height="32"></i>
       </button>
       <ul class="dropdown-menu text-small bg-dark" role="menu" aria-labelledby="languageMenu">
         {% for language in languages %}
@@ -34,13 +35,14 @@
   {% if request.user.is_authenticated %}
   <li class="nav-item mx-2">
     <div class="dropdown dropstart">
-      <button id="userMenu" class="btn btn-dark nav-link" title="User Settings" data-bs-toggle="dropdown"
-        aria-expanded="false">
-        <i class="bi bi-person-circle nav-link" alt="user" width="32" height="32"></i>
+      <button id="userMenu" class="btn btn-dark nav-link" title="{% translate "User Settings" %}"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-person-circle nav-link" alt="{% translate "user" %}" width="32" height="32"></i>
       </button>
       <ul class="dropdown-menu text-small bg-dark" role="menu" aria-labelledby="userMenu">
         <li>
-          <a class="dropdown-item nav-link" href="{% url 'maps:results' %}">{% translate "My Data" %}</a>
+          <a class="dropdown-item nav-link{% if request.path == results_url %} active{% endif %}"
+            href="{{ results_url }}">{% translate "My Data" %}</a>
         </li>
         <li><a class="dropdown-item nav-link disabled" href="#">{% translate "Settings" %}</a></li>
         <li>
@@ -68,10 +70,10 @@
 {% else %}
 
 <li class="nav-item mx-2">
-  <a href="{% url 'account_login' %}" id="log-in-link" class="btn btn-dark nav-link" title="Sign In">
+  <a href="{% url 'account_login' %}" id="log-in-link" class="btn btn-dark nav-link" title="{% translate "Sign In" %}">
     {# URL provided by django-allauth/account/urls.py #}
     <span class="mx-1 d-inline-block">
-      <i class="bi d-inline-block bi-person-circle nav-link" alt="sign in" width="32" height="32"></i>
+      <i class="bi d-inline-block bi-person-circle nav-link" alt="{% translate "sign in" %}" width="32" height="32"></i>
       <span class="mx-1 d-inline-block">{% translate "Sign In" %}</span>
     </span>
   </a>

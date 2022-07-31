@@ -9,6 +9,8 @@ from geodata_mart.maps.models import (
     Layer,
     AuthDbFile,
     ProcessingScriptFile,
+    DownloadableDataItem,
+    ProjectDataFile,
 )
 from django.conf import settings
 from geodata_mart.vendors.models import Vendor
@@ -206,11 +208,34 @@ class Command(BaseCommand):
         with project_storage.open(script_file) as f:
             script_record.file_object.save(basename(script_file), f, save=True)
 
+        self.stdout.write("load natural earth data item...")
+        data_file = "seed/natural_earth.gpkg"
+        if not project_storage.exists(data_file):
+            raise Exception(f"{project_storage.path(data_file)} not found")
+        data_record = DownloadableDataItem.objects.create(
+            file_name="Natural Earth",
+            vendor_id = kartoza,
+            kudos="Charlie, Natural Earth Data",
+            description=("Simple global base map made from high level data ")
+            + ("from the Natural Earth data collection. Includes a QGIS project ")
+            + ("and source data in Geopackage Format and includes dark and light themes.")
+        )
+
+        with project_storage.open(data_file) as f:
+            data_record.file_object.save(basename(data_file), f, save=True)
+
+        preview_image = "seed/natural_earth.png"
+        if not project_storage.exists(preview_image):
+            raise Exception(f"{project_storage.path(preview_image)} not found")
+
+        with project_storage.open(preview_image) as f:
+            data_record.preview_image.save(basename(preview_image), f, save=True)
+
         self.stdout.write("create placeholder projects...")
 
-        for i in range(26):
+        for i in range(25):
             Project.objects.create(
-                project_name="Blank" + str(i + 2),
+                project_name="Blank " + str(i + 2),
                 state=StateChoices.ACTIVE,
                 vendor_id=kartoza,
                 comment="Blank project spec for testing gallery view, number: "
