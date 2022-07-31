@@ -372,7 +372,6 @@ class ProjectAdmin(admin.ModelAdmin):
         "max_area",
         "type",
         "state",
-        "coverage",
         "comment",
         "created_date",
         "updated_date",

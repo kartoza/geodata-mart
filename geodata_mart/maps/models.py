@@ -212,7 +212,7 @@ class PgServiceFile(ManagedFileObject):
             if not instance.project_id:
                 return f"./configs/pgservice/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/configs/pgservice/{filename}"
         else:
             return f"./configs/pgservice/{filename}"
@@ -248,7 +248,7 @@ class QgisIniFile(ManagedFileObject):
             if not instance.project_id:
                 return f"./configs/qgis/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/configs/qgis/{filename}"
         else:
             return f"./configs/qgis/{filename}"
@@ -284,7 +284,7 @@ class AuthDbFile(ManagedFileObject):
             if not instance.project_id:
                 return f"./configs/authdb/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/configs/authdb/{filename}"
         else:
             return f"./configs/authdb/{filename}"
@@ -366,7 +366,7 @@ class QgisProjectFile(ManagedFileObject):
             if not instance.project_id:
                 return f"./projects/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/{filename}"
         else:
             return f"./projects/{filename}"
@@ -567,7 +567,7 @@ class ProjectDataFile(ManagedFileObject):
             if not instance.project_id:
                 return f"./projects/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/{filename}"
         else:
             return f"./projects/{filename}"
@@ -616,7 +616,7 @@ class Layer(models.Model):
             if not instance.project_id:
                 return f"./projects/layers/images/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/layers/images/{filename}"
         else:
             return f"./projects/layers/images/{filename}"
@@ -865,7 +865,7 @@ class ProjectCoverageFile(ManagedFileObject):
             if not instance.project_id:
                 return f"./projects/coverages/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/coverages/{filename}"
         else:
             return f"./projects/{filename}"
@@ -930,7 +930,7 @@ class DownloadableDataItem(ManagedFileObject):
             if not instance.project_id:
                 return f"./projects/{filename}"
             else:
-                vendor = instance.project_id.vendor_id.first()
+                vendor = instance.project_id.vendor_id
                 return f"./projects/{vendor.name}/{instance.project_id.project_name}/{filename}"
         else:
             return f"./projects/{filename}"

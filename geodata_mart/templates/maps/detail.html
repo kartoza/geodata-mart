@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static i18n maps_extras %}
+{% block extrahead %}
+
+<link rel="stylesheet" href="{% static 'leaflet/leaflet/leaflet.css' %}" />
+<style>
+  #map {
+    margin: 0;
+    height: 200px;
+    width: 200px;
+  }
+
+</style>
+<script src="{% static 'leaflet/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'js/turf.min.js' %}"></script>
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  {% if not project %}
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Project Details Unavailable" %}</h1>
+          <h3>{% translate "The selected project doesn't seem to exist." %}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Project Details" %}</h1>
+          <h2>{{ project.project_name }}</h2>
+          {% if project.abstract %}<h3>{{ project.abstract }}</h3>{% endif %}
+          {% if coverage %}
+          <div class="w-100 mx-auto justify-center align-center">
+            <div id="map" class="mx-auto justify-center align-center"></div>
+          </div>
+          {% endif %}
+          {% if map_layers|length > 0 %}
+          {% translate "Map Layers" %}
+          <ul>
+            {% for layer in map_layers %}
+            <li>{{layer.layer_name}}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if map_layers|length > 0 %}
+          {% translate "Base Layers" %}
+          <ul>
+            {% for layer in base_layers %}
+            <li>{{layer.layer_name}}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if map_layers|length > 0 %}
+          {% translate "Exclusion Layers" %}
+          <ul>
+            {% for layer in excluded_layers %}
+            <li>{{layer.layer_name}}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+      </div>
+      <div class="row">
+        <a href="{% url 'maps:map' project.id %}" class="btn btn-primary">
+          {% translate "Get Data" %}
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</main>
+{% endblock content %}
+L.map("map", {
+  zoomControl: false,
+}
+{% block inline_javascript %}
+<script>
+  {% if coverage %}
+  const map = L.map("map", {
+    zoomControl: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    dragging: false,
+  }).setView(
+    [-34.35, 18.48],
+    15
+  )
+
+  let coverage_geojson = '{{ coverage }}'
+  coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
+  let bounds = turf.bbox(JSON.parse(coverage_geojson))
+  
+  let coverageLayer = new L.FeatureGroup().addTo(map)
+  L.geoJson(JSON.parse(coverage_geojson), {
+    onEachFeature: function (feature, layer) {
+      layer.setStyle({
+        "color": "#f00",
+        "weight": 2,
+        "opacity": 0.5,
+        "fillOpacity": 0.25,
+      })
+      coverageLayer.addLayer(layer)
+    }
+  })
+
+  map.fitBounds(
+    L.latLngBounds(
+      L.latLng(bounds[1], bounds[0]),
+      L.latLng(bounds[3], bounds[2])
+    )
+  )
+
+  let zoomLevel = map.getZoom()
+  if (zoomLevel > 0) {map.setZoom(zoomLevel-1)}
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+  }).addTo(map)
+
+  {% endif %}
+</script>
+{% endblock inline_javascript %}

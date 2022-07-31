@@ -34,6 +34,7 @@ def search(request):
     if request.method == "GET":
         return render(request, "maps/search.html")
 
+
 def gallery(request):
     default_page = 1
     page = request.GET.get("page", default_page)
@@ -185,6 +186,33 @@ def map(request, project_id):
         "excluded_layers": excluded_layers,
     }
     return render(request, "maps/map.html", context)
+
+
+@login_required
+def detail(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+    project_layers = Layer.objects.filter(project_id=project)
+    std_classes = [
+        Layer.LayerClass.UNSPECIFIED,
+        Layer.LayerClass.STANDARD,
+        Layer.LayerClass.OTHER,
+    ]
+    map_layers = [layer for layer in project_layers if layer.lyr_class in std_classes]
+    base_layers = [
+        layer for layer in project_layers if layer.lyr_class == Layer.LayerClass.BASE
+    ]
+    excluded_layers = [
+        layer for layer in project_layers if layer.lyr_class == Layer.LayerClass.EXCLUDE
+    ]
+    coverage = project.coverage.geojson if project.coverage else None
+    context = {
+        "project": project,
+        "coverage": coverage,
+        "map_layers": map_layers,
+        "base_layers": base_layers,
+        "excluded_layers": excluded_layers,
+    }
+    return render(request, "maps/detail.html", context)
 
 
 @login_required
