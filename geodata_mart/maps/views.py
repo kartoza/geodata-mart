@@ -30,6 +30,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def search(request):
+    if request.method == "GET":
+        return render(request, "maps/search.html")
+
 def gallery(request):
     default_page = 1
     page = request.GET.get("page", default_page)

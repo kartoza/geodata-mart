@@ -13,5 +13,5 @@ urlpatterns = [
     path("checkout/<job_id>", views.checkout, name="checkout"),
     path("cancel/<job_id>", views.cancel_job, name="cancel_job"),
     path("home/", views.results, name="results"),
-    path("search/", views.gallery, name="search"),
+    path("search/", views.search, name="search"),
 ]

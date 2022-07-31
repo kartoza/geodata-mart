@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n maps_extras %}
+{% load i18n maps_extras %}
 {% block extrahead %}
 <style>
   .bd-gallery-img {
@@ -138,6 +138,5 @@
 {% endblock content %}
 
 {% block footer %}
-<a href="{% url 'maps:projects'%}{% urlparams items='12' tags='projects,za' search='ngi' %}">Test Link</a>
 {% include "components/_footer_to_top.html" %}
 {% endblock footer %}

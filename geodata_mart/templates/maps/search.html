@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n maps_extras %}
+{% block content %}
+<section class="py-5 text-center container">
+  <div class="row py-lg-5">
+    <div class="col-lg-6 col-md-8 mx-auto">
+      <h1 class="fw-light">{% translate "About" %}</h1>
+      <div>
+        {% blocktranslate %}
+        <p class="lead text-muted">
+          Search available projects and downloads.
+        </p>
+        {% endblocktranslate %}
+        <div x-data="{ queryString: '' }">
+          <input class="form-control py-2 my-4 w-100" placeholder="Search" aria-label="Search" type="text"
+            x-model="queryString"
+            @keydown.enter="window.location.assign('{% url 'gallery' %}{% urlparams items='60' %}'+'&search='+queryString)">
+          <a :href="'{% url 'gallery' %}{% urlparams items='60' %}'+'&search='+queryString"
+            class="btn btn-block btn-primary btn-block m-2 p-4 w-100">{% translate "Search All Items" %}</a>
+          <a :href="'{% url 'maps:projects' %}{% urlparams items='60' %}'+'&search='+queryString"
+            class="btn btn-block btn-secondary btn-block m-2 p-4 w-100">{% translate "Search Projects" %}</a>
+          <a :href="'{% url 'maps:data' %}{% urlparams items='60' %}'+'&search='+queryString"
+            class="btn btn-block btn-secondary btn-block m-2 p-4 w-100">{% translate "Search Datasets" %}</a>
+          {% comment %} <a :href="'{% url 'maps:layers' %}{% urlparams items='60' %}'+'&search='+queryString"
+            class="btn btn-block btn-warning btn-block m-2 p-4 w-100">{% translate "Search Layers (Slow)" %}</a>
+          {% endcomment %}
+        </div>
+      </div>
+      {% if not request.user.is_authenticated %}
+      <div class="d-flex justify-content-between">
+        <div class="p-2 flex-fill">
+          <a href="{% url 'account_signup' %}"
+            class="btn btn-block btn-secondary btn-block m-2 p-4 w-100">{% translate "Sign Up" %}</a>
+        </div>
+        <div class="p-2 flex-fill">
+          <a href="{% url 'account_login' %}"
+            class="btn btn-primary btn-block m-2 p-4 w-100">{% translate "Sign In" %}</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock content %}
