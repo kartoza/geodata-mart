@@ -171,7 +171,7 @@
           <h2>{{ item.file_name }}<span class="fs-6 text-muted">{% translate " by " %}{{ item.vendor_id.name }}</span>
           </h2>
           {% if item.abstract %}<h3>{{ item.abstract }}</h3>{% endif %}
-          {% if item.description %}<h3 class="text-muted">{{ item.description }}</h3>{% endif %}
+          {% if item.description %}<h6 class="text-muted">{{ item.description }}</h6>{% endif %}
         </div>
       </div>
       {% if item.preview_image %}
