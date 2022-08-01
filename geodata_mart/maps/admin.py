@@ -403,6 +403,8 @@ class ProjectAdmin(admin.ModelAdmin):
         "buffer_max",
         "buffer_step",
         "buffer_default",
+        "icon",
+        "preview_image",
         "coverage",
         "state",
         "comment",

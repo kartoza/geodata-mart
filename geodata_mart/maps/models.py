@@ -1,6 +1,7 @@
 from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django.db import models
+from django.utils.encoding import smart_str
 from django.contrib.gis.db import models as gismodels
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.geos import MultiPolygon
@@ -156,7 +157,7 @@ class ManagedFileObject(models.Model):
         return self.name()
 
     def __unicode__(self):
-        return self.name()
+        return smart_str(self.name())
 
     def preview(self):
         return self.comment[:100]
@@ -549,6 +550,16 @@ class Project(gismodels.Model):
     def preview(self):
         return self.comment[:100]
 
+    def gdm_type(self):
+        return "project"
+
+    def get_fields(self):
+        fields = []
+        for field in Job._meta.fields:
+            if not field.get_internal_type() == "ArrayField":
+                fields.append((field.name, field.value_to_string(self)))
+        return fields
+
 
 class ProjectDataFile(ManagedFileObject):
     """Flat File data for Projects."""
@@ -721,6 +732,13 @@ class Layer(models.Model):
 
     def preview(self):
         return self.comment[:100]
+
+    def get_fields(self):
+        fields = []
+        for field in Job._meta.fields:
+            if not field.get_internal_type() == "ArrayField":
+                fields.append((field.name, field.value_to_string(self)))
+        return fields
 
 
 class Job(models.Model):
@@ -1006,6 +1024,16 @@ class DownloadableDataItem(ManagedFileObject):
     class Meta(ManagedFileObject.Meta):
         verbose_name = _("Downloadable Data Item")
         verbose_name_plural = _("Downloadable Data Items")
+
+    def gdm_type(self):
+        return "download"
+
+    def get_fields(self):
+        fields = []
+        for field in Job._meta.fields:
+            if not field.get_internal_type() == "ArrayField":
+                fields.append((field.name, field.value_to_string(self)))
+        return fields
 
 
 @receiver(post_delete, sender=ManagedFileObject)
