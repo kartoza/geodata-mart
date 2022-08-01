@@ -83,21 +83,14 @@
               {% endif %}
               {% endfor %} {% endcomment %}
 
-              {% if results|length > 1 and job.tasks|length > 1 %}
-              <td class="table-error rounded">
-                {% translate "Too many results" %}
-                <br>
-                {% translate "Too many tasks" %}
-              </td>
-              {% elif not results|length > 1 and job.tasks|length > 1 %}
+              {% if job.tasks|length > 1 %}
               <td class="table-error rounded">{% translate "Too many tasks" %}</td>
-              {% elif results|length > 1 and not job.tasks|length > 1 %}
-              <td class="table-error rounded">{% translate "Too many results" %}</td>
-              {% elif not results|length > 1 and not job.tasks|length > 1 %}
+              {% else %}
               <td></td>
               {% endif %}
 
               {% for result in results %}
+              {% if forloop.first %}
               {% if result.job_id == job and result.file_object.file_available %}
               <td><a class="btn btn-success" href="{{ result.file_object.url|urlencode }}">
                   <i class="bi bi-download"></i>
@@ -114,6 +107,7 @@
                   <i class="bi bi-download"></i>
                 </a>
               </td>
+              {% endif %}
               {% endif %}
               {% endfor %}
             </tr>
