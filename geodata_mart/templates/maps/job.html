@@ -50,11 +50,19 @@
           {% elif job.state == 3 or job.state == 4 %}
           {% if results %}
           {% for result in results %}
+          {% if result.file_object.file_available %}
           <div class="row py-2">
             <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
             <a href="{{ result.file_object.url|urlencode }}"
-              class="btn btn-primary btn-lg p-4">{% translate "Download Result" %}</a>
+              class="btn btn-success btn-lg p-4">{% translate "Download Result" %}</a>
           </div>
+          {% else %}
+          <div class="row py-2">
+            <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
+            <a href="{{ result.file_object.url|urlencode }}"
+              class="btn btn-primary disabled btn-lg p-4">{% translate "Download Removed" %}</a>
+          </div>
+          {% endif %}
           {% endfor %}
           {% else %}
           <p>{% translate "No results are available for this job" %}</p>
