@@ -33,4 +33,4 @@ def msg(request):
 
 def contact(request):
     if request.method == "GET":
-        return render(request, "vendors/msg-sent.html")
+        return render(request, "vendors/msg-main.html")
