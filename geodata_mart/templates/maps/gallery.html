@@ -45,14 +45,13 @@
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
 
         {% for item in items %}
+        {% if item.gdm_type == 'project' %}
         <div class="col">
-          <a href="{% url 'maps:detail' item.id %}">
+          <a href="{% url 'maps:project-detail' item.id %}">
             <div class="card shadow-sm">
               <svg class="bd-gallery-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg"
                 role="img" aria-label="Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
                 <title>{{ item.project_name }}</title>
-                <title>{{ item.file_name }}</title>
-                <subtitle>{{ item.id }}</subtitle>
                 <rect width="100%" height="100%" fill="#55595c"></rect><text x="50%" y="30%" fill="#eceeef"
                   dy=".3em">{{ item.project_name }}</text>
                 <text x="50%" y="60%" fill="#e0e2e2" dy=".2em">Preview Unavailable</text>
@@ -60,7 +59,7 @@
           </a>
 
           <div class="card-body">
-            <p class="card-text">{{ item.comment }}</p>
+            <p class="card-text">{% if item.comment %}{{ item.comment }}{% endif %}</p>
             <div class="d-flex justify-content-between align-items-center">
               <div class="btn-group">
                 <a href="{% url 'maps:map' item.id %}">
@@ -72,10 +71,37 @@
           </div>
         </div>
       </div>
-      {% endfor %}
+      {% elif item.gdm_type == 'download' %}
+      <div class="col">
+        <a href="{% url 'maps:data-detail' item.id %}">
+          <div class="card shadow-sm">
+            <svg class="bd-gallery-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-label="Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
+              <title>{{ item.file_name }}</title>
+              <rect width="100%" height="100%" fill="#55595c"></rect><text x="50%" y="30%" fill="#eceeef"
+                dy=".3em">{{ item.file_name }}</text>
+              <text x="50%" y="60%" fill="#e0e2e2" dy=".2em">Preview Unavailable</text>
+            </svg>
+        </a>
 
-
+        <div class="card-body">
+          <p class="card-text">{% if item.comment %}{{ item.comment }}{% endif %}</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="btn-group">
+              <a href="{{ item.file_object.url|urlencode }}">
+                <button type="button" class="btn btn-sm btn-outline-secondary">{% translate "Get Item" %}</button>
+              </a>
+            </div>
+            <small class="text-muted">{{ item.vendor_id.name }}</small>
+          </div>
+        </div>
+      </div>
     </div>
+    {% endif %}
+    {% endfor %}
+
+
+  </div>
   </div>
   <div class="py-5">
     <div class="container">

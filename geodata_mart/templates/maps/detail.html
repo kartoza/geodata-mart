@@ -6,8 +6,21 @@
 <style>
   #map {
     margin: 0;
-    height: 200px;
-    width: 200px;
+    width: 100%;
+    min-height: 200px;
+    min-width: 200px;
+  }
+
+  .legend-image {
+    width: 40px;
+    height: 60px;
+    background-color: #ccc
+  }
+
+  .item-detail-preview-image {
+    width: 800px;
+    height: 400px;
+    maxwidth: 100%;
   }
 
 </style>
@@ -19,6 +32,7 @@
 <main>
   {% include "components/_authenticate.html" %}
 
+  {% if type == "project" %}
   {% if not project %}
   <div class="py-5">
     <div class="container">
@@ -36,56 +50,157 @@
       <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto text-center">
           <h1>{% translate "Project Details" %}</h1>
-          <h2>{{ project.project_name }}</h2>
+          {% if project.icon %}
+          <img src="{{ project.icon.url }}" alt="">
+          {% endif %}
+          <h2 class="text-center align-middle">{{ project.project_name }}<span
+              class="fs-6 text-muted">{% translate " by " %}{{ project.vendor_id.name }}</span></h2>
           {% if project.abstract %}<h3>{{ project.abstract }}</h3>{% endif %}
+        </div>
+      </div>
+
+      {% if project.preview_image %}
+      <div class="row py-lg-5">
+        <img src="{{ project.preview_image.url }}" alt="">
+      </div>
+      {% endif %}
+      <div class="row g-5">
+        <div class="col-lg-6 col-md-8 mx-auto justify-content-center align-items-center order-md-last">
+          <a href="{% url 'maps:map' project.id %}" class="btn btn-xl btn-outline-primary w-100 my-4">
+            {% translate "View Map" %}
+          </a>
           {% if coverage %}
-          <div class="w-100 mx-auto justify-center align-center">
+          <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span>{% translate "Coverage" %}</span>
+          </h4>
+          <div class="w-100 mx-auto justify-center align-center mb-3">
             <div id="map" class="mx-auto justify-center align-center"></div>
           </div>
           {% endif %}
-          {% if map_layers|length > 0 %}
-          {% translate "Map Layers" %}
-          <ul>
-            {% for layer in map_layers %}
-            <li>{{layer.layer_name}}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-          {% if map_layers|length > 0 %}
-          {% translate "Base Layers" %}
-          <ul>
+          {% if base_layers|length > 0 %}
+          <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">{% translate "Base Layers" %}</span>
+          </h4>
+          <ul class="list-group mb-3">
             {% for layer in base_layers %}
-            <li>{{layer.layer_name}}</li>
+            <li class="list-group-item d-flex justify-content-start lh-sm">
+              {% if layer.legend_image %}
+              <div class="legend-image"><img src="{{ layer.legend_image }}" alt="{% translate "legend" %}"></div>
+              {% else %}
+              <div class="legend-image"></div>
+              {% endif %}
+              <div class="p-2">
+                <h6 class="my-0">{{ layer.layer_name }}</h6>
+                <small class="text-muted">{{ layer.abstract }}</small>
+              </div>
+            </li>
             {% endfor %}
           </ul>
           {% endif %}
-          {% if map_layers|length > 0 %}
-          {% translate "Exclusion Layers" %}
-          <ul>
+          {% if excluded_layers|length > 0 %}
+          <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">{% translate "Base Layers" %}</span>
+          </h4>
+          <ul class="list-group mb-3">
             {% for layer in excluded_layers %}
-            <li>{{layer.layer_name}}</li>
+            <li class="list-group-item d-flex justify-content-start lh-sm">
+              {% if layer.legend_image %}
+              <div class="legend-image"><img src="{{ layer.legend_image }}" alt="{% translate "legend" %}"></div>
+              {% else %}
+              <div class="legend-image"></div>
+              {% endif %}
+              <div class="p-2">
+                <h6 class="my-0">{{ layer.layer_name }}</h6>
+                <small class="text-muted">{{ layer.abstract }}</small>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        <div class="col-lg-6 col-md-8 mx-auto justify-content-center align-items-center">
+          {% if project.comment %}
+          <h4 class="mb-3">{% translate "Comment" %}</h4>
+          <h6 class="mb-3 text-muted">{{ project.comment }}</h6>
+          {% endif %}
+          <h4 class="mb-3">{% translate "Map Layers" %}</h4>
+          {% if map_layers|length > 0 %}
+          <ul class="list-group mb-3">
+            {% for layer in map_layers %}
+            <li class="list-group-item d-flex justify-content-start lh-sm">
+              {% if layer.legend_image %}
+              <div class="legend-image"><img src="{{ layer.legend_image }}" alt="{% translate "legend" %}"></div>
+              {% else %}
+              <div class="legend-image"></div>
+              {% endif %}
+              <div class="p-2">
+                <h6 class="my-0">{{ layer.layer_name }}</h6>
+                <small class="text-muted">{{ layer.abstract }}</small>
+              </div>
+            </li>
             {% endfor %}
           </ul>
           {% endif %}
         </div>
       </div>
-      <div class="row">
-        <a href="{% url 'maps:map' project.id %}" class="btn btn-primary">
-          {% translate "Get Data" %}
-        </a>
+    </div>
+  </div>
+  {% endif %}
+  {% elif type == "download" %}
+  {% if not item %}
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Item Unavailable" %}</h1>
+          <h3>{% translate "The selected item doesn't seem to exist." %}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Item Details" %}</h1>
+          {% comment %} {% for name, value in item.get_fields %}
+          <h1>{{name}}</h1>
+          <h6>{{value}}</h6>
+          {% endfor %} {% endcomment %}
+          <h2>{{ item.file_name }}<span class="fs-6 text-muted">{% translate " by " %}{{ item.vendor_id.name }}</span>
+          </h2>
+          {% if item.abstract %}<h3>{{ item.abstract }}</h3>{% endif %}
+          {% if item.comment %}<h3 class="text-muted">{{ item.comment }}</h3>{% endif %}
+        </div>
+      </div>
+      {% if item.preview_image %}
+      <div class="row py-1 justify-content-center">
+        <img class="item-detail-preview-image" src="{{ item.preview_image.crop.800x400 }}" alt="">
+      </div>
+      {% endif %}
+      <div class="row py-1 justify-content-center text-center">
+        {% if item.kudos %}<h6 class="text-muted"><strong>{% translate "Credits:" %}</strong> {{ item.kudos }}</h6>
+      </div>
+      {% endif %}
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto justify-content-center align-items-center">
+          <a href="{{ item.file_object.url }}" class="btn btn-xl btn-outline-primary w-100 py-6 my-4">
+            {% translate "Download Now" %}
+          </a>
+        </div>
       </div>
     </div>
   </div>
   {% endif %}
+  {% endif %}
 
 </main>
 {% endblock content %}
-L.map("map", {
-  zoomControl: false,
-}
+
 {% block inline_javascript %}
+{% if coverage %}
 <script>
-  {% if coverage %}
   const map = L.map("map", {
     zoomControl: false,
     touchZoom: false,
@@ -101,7 +216,7 @@ L.map("map", {
   let coverage_geojson = '{{ coverage }}'
   coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
   let bounds = turf.bbox(JSON.parse(coverage_geojson))
-  
+
   let coverageLayer = new L.FeatureGroup().addTo(map)
   L.geoJson(JSON.parse(coverage_geojson), {
     onEachFeature: function (feature, layer) {
@@ -123,12 +238,14 @@ L.map("map", {
   )
 
   let zoomLevel = map.getZoom()
-  if (zoomLevel > 0) {map.setZoom(zoomLevel-1)}
+  if (zoomLevel > 0) {
+    map.setZoom(zoomLevel - 1)
+  }
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
   }).addTo(map)
 
-  {% endif %}
 </script>
+{% endif %}
 {% endblock inline_javascript %}

@@ -189,7 +189,7 @@ def map(request, project_id):
 
 
 @login_required
-def detail(request, project_id):
+def project_detail(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
     project_layers = Layer.objects.filter(project_id=project)
     std_classes = [
@@ -206,11 +206,22 @@ def detail(request, project_id):
     ]
     coverage = project.coverage.geojson if project.coverage else None
     context = {
+        "type": "project",
         "project": project,
         "coverage": coverage,
         "map_layers": map_layers,
         "base_layers": base_layers,
         "excluded_layers": excluded_layers,
+    }
+    return render(request, "maps/detail.html", context)
+
+
+@login_required
+def data_detail(request, item_id):
+    item = get_object_or_404(DownloadableDataItem, pk=item_id)
+    context = {
+        "type": "download",
+        "item": item,
     }
     return render(request, "maps/detail.html", context)
 
