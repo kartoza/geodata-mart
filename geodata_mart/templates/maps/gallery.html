@@ -23,7 +23,7 @@
 <main>
   {% include "components/_authenticate.html" %}
 
-  {% if not items %}
+  {% if not items and not search %}
   <section class="py-5 text-center container">
     <div class="row py-lg-5">
       <div class="col-lg-6 col-md-8 mx-auto">
@@ -34,6 +34,17 @@
         <p class="lead text-muted">
           {% translate "Please" %} {% translate "add content or contact a system administrator" %}.
         </p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if not items and search %}
+  <section class="py-5 text-center container">
+    <div class="row py-lg-5">
+      <div class="col-lg-6 col-md-8 mx-auto">
+        <h1 class="fw-light">{% translate "No Matches Found" %}</h1>
+        <p class="lead text-muted">{% translate "Please try again." %}</p>
       </div>
     </div>
   </section>

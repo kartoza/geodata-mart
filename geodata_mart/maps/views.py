@@ -40,6 +40,7 @@ def gallery(request):
     page = request.GET.get("page", default_page)
     search_term = request.GET.get("search")
     if bool(search_term):
+        search=True
         project_vector = (
             SearchVector("project_name", weight="A")
             + SearchVector("abstract", weight="B")
@@ -64,6 +65,7 @@ def gallery(request):
             .order_by("rank")
         )
     else:
+        search=False
         projects_list = Project.objects.order_by("id")
         data_list = DownloadableDataItem.objects.order_by("id")
     items_list = list(chain(projects_list, data_list))
@@ -82,7 +84,7 @@ def gallery(request):
     except EmptyPage:
         item_page = paginator.page(paginator.num_pages)
 
-    context = {"items": item_page}
+    context = {"items": item_page, "search": search}
     return render(request, "maps/gallery.html", context)
 
 
@@ -91,6 +93,7 @@ def projects(request):
     page = request.GET.get("page", default_page)
     search_term = request.GET.get("search")
     if bool(search_term):
+        search=True
         # vector = SearchVector("project_name", "abstract", "description", "comment")
         vector = (
             SearchVector("project_name", weight="A")
@@ -105,6 +108,7 @@ def projects(request):
             .order_by("rank")
         )
     else:
+        search=False
         projects_list = Project.objects.order_by("id")
     items_per_page = request.GET.get("items", 6)
     try:
@@ -120,7 +124,7 @@ def projects(request):
     except EmptyPage:
         projects_page = paginator.page(paginator.num_pages)
 
-    context = {"items": projects_page}
+    context = {"items": projects_page, "search": search}
     return render(request, "maps/gallery.html", context)
 
 
@@ -129,6 +133,7 @@ def data(request):
     page = request.GET.get("page", default_page)
     search_term = request.GET.get("search")
     if bool(search_term):
+        search=True
         vector = (
             SearchVector("file_name", weight="A")
             + SearchVector("abstract", weight="B")
@@ -142,6 +147,7 @@ def data(request):
             .order_by("rank")
         )
     else:
+        search=False
         data_list = DownloadableDataItem.objects.order_by("id")
     items_per_page = request.GET.get("items", 6)
     try:
@@ -157,7 +163,7 @@ def data(request):
     except EmptyPage:
         data_page = paginator.page(paginator.num_pages)
 
-    context = {"items": data_page}
+    context = {"items": data_page, "search": search}
     return render(request, "maps/gallery.html", context)
 
 
