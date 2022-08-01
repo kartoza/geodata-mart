@@ -1,19 +1,28 @@
 # change to this parent directory
-cd (Split-Path -Parent $MyInvocation.MyCommand.Path)
+Set-Location (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
 # remove files by pattern
-Get-ChildItem -Path $pwd -Include *.zip, *.qgs, *.qgz, *.py, *.db, *.geojson -Recurse | Where {$_.fullname -notmatch "test" } | Where {$_.fullname -notmatch "seed" } | Remove-Item -Verbose
+$patterns = (
+  "*.zip",
+  "*.qgs",
+  "*.qgz",
+  "*.py",
+  "*.db",
+  "*.geojson",
+  "*.gpkg")
+
+Get-ChildItem -Path $pwd -Include $patterns -Recurse | Where-Object { $_.fullname -notmatch "test" } | Where-Object { $_.fullname -notmatch "seed" } | Remove-Item -Verbose
 
 # clobber blank directories
 # note that this needs to be iterated because empty directories with empty directories are not caught
 function ClobberBlankDirs {
-  Get-ChildItem -Path $pwd -Recurse | foreach {
-    if( $_.psiscontainer -eq $true){
-      if((gci $_.FullName) -eq $null){
+  Get-ChildItem -Path $pwd -Recurse | ForEach-Object {
+    if ( $_.psiscontainer -eq $true) {
+      if ($null -eq (Get-ChildItem $_.FullName)) {
         $_.FullName | Remove-Item -Force -Verbose
       }
     }
   }
 }
 
-for ($i = 1 ; $i -le 10 ; $i++) {ClobberBlankDirs}
+for ($i = 1 ; $i -le 10 ; $i++) { ClobberBlankDirs }
