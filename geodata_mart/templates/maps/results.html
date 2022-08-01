@@ -99,7 +99,7 @@
 
               {% for result in results %}
               {% if result.job_id == job %}
-              <td><a class="btn btn-primary" href="{{ result.file_object.url }}">
+              <td><a class="btn btn-primary" href="{{ result.file_object.url|urlencode }}">
                   <i class="bi bi-download"></i>
                 </a>
               </td>

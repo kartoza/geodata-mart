@@ -52,7 +52,7 @@
           {% for result in results %}
           <div class="row py-2">
             <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
-            <a href="{{ result.file_object.url }}"
+            <a href="{{ result.file_object.url|urlencode }}"
               class="btn btn-primary btn-lg p-4">{% translate "Download Result" %}</a>
           </div>
           {% endfor %}
