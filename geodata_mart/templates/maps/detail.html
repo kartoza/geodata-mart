@@ -119,9 +119,9 @@
           {% endif %}
         </div>
         <div class="col-lg-6 col-md-8 mx-auto justify-content-center align-items-center">
-          {% if project.comment %}
-          <h4 class="mb-3">{% translate "Comment" %}</h4>
-          <h6 class="mb-3 text-muted">{{ project.comment }}</h6>
+          {% if project.description %}
+          <h4 class="mb-3">{% translate "Description" %}</h4>
+          <h6 class="mb-3 text-muted">{{ project.description }}</h6>
           {% endif %}
           <h4 class="mb-3">{% translate "Map Layers" %}</h4>
           {% if map_layers|length > 0 %}
@@ -171,7 +171,7 @@
           <h2>{{ item.file_name }}<span class="fs-6 text-muted">{% translate " by " %}{{ item.vendor_id.name }}</span>
           </h2>
           {% if item.abstract %}<h3>{{ item.abstract }}</h3>{% endif %}
-          {% if item.comment %}<h3 class="text-muted">{{ item.comment }}</h3>{% endif %}
+          {% if item.description %}<h3 class="text-muted">{{ item.description }}</h3>{% endif %}
         </div>
       </div>
       {% if item.preview_image %}

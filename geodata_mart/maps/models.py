@@ -160,7 +160,7 @@ class ManagedFileObject(models.Model):
         return smart_str(self.name())
 
     def preview(self):
-        return self.comment[:100]
+        return self.description[:100]
 
     def file_available(self):
         if self.file_object.storage.exists(self.file_object.name):
@@ -548,7 +548,7 @@ class Project(gismodels.Model):
         return self.project_name
 
     def preview(self):
-        return self.comment[:100]
+        return self.description[:100]
 
     def gdm_type(self):
         return "project"
@@ -731,7 +731,7 @@ class Layer(models.Model):
         return self.short_name
 
     def preview(self):
-        return self.comment[:100]
+        return self.description[:100]
 
     def get_fields(self):
         fields = []
