@@ -20,6 +20,7 @@ from geodata_mart.maps.models import (
     Layer,
     Job,
     ResultFile,
+    SpatialReferenceSystem,
 )
 
 import json
@@ -40,7 +41,7 @@ def gallery(request):
     page = request.GET.get("page", default_page)
     search_term = request.GET.get("search")
     if bool(search_term):
-        search=True
+        search = True
         project_vector = (
             SearchVector("project_name", weight="A")
             + SearchVector("abstract", weight="B")
@@ -65,7 +66,7 @@ def gallery(request):
             .order_by("rank")
         )
     else:
-        search=False
+        search = False
         projects_list = Project.objects.order_by("id")
         data_list = DownloadableDataItem.objects.order_by("id")
     items_list = list(chain(projects_list, data_list))
@@ -93,7 +94,7 @@ def projects(request):
     page = request.GET.get("page", default_page)
     search_term = request.GET.get("search")
     if bool(search_term):
-        search=True
+        search = True
         # vector = SearchVector("project_name", "abstract", "description", "comment")
         vector = (
             SearchVector("project_name", weight="A")
@@ -108,7 +109,7 @@ def projects(request):
             .order_by("rank")
         )
     else:
-        search=False
+        search = False
         projects_list = Project.objects.order_by("id")
     items_per_page = request.GET.get("items", 6)
     try:
@@ -133,7 +134,7 @@ def data(request):
     page = request.GET.get("page", default_page)
     search_term = request.GET.get("search")
     if bool(search_term):
-        search=True
+        search = True
         vector = (
             SearchVector("file_name", weight="A")
             + SearchVector("abstract", weight="B")
@@ -147,7 +148,7 @@ def data(request):
             .order_by("rank")
         )
     else:
-        search=False
+        search = False
         data_list = DownloadableDataItem.objects.order_by("id")
     items_per_page = request.GET.get("items", 6)
     try:
@@ -184,12 +185,14 @@ def map(request, project_id):
         layer for layer in project_layers if layer.lyr_class == Layer.LayerClass.EXCLUDE
     ]
     coverage = project.coverage.geojson if project.coverage else None
+    srs_list = SpatialReferenceSystem.objects.all()
     context = {
         "project": project,
         "coverage": coverage,
         "map_layers": map_layers,
         "base_layers": base_layers,
         "excluded_layers": excluded_layers,
+        "srs_list": srs_list,
     }
     return render(request, "maps/map.html", context)
 
