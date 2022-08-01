@@ -11,6 +11,7 @@ from geodata_mart.maps.models import (
     ProcessingScriptFile,
     DownloadableDataItem,
     ProjectDataFile,
+    SpatialReferenceSystem,
 )
 from django.conf import settings
 from geodata_mart.vendors.models import Vendor
@@ -78,6 +79,18 @@ class Command(BaseCommand):
         # QgisProjectFile.objects.all().delete()
         # Layer.objects.all().delete()
 
+        crs_list = ["4326", "3587", "9221"]
+        for crs in crs_list:
+            srs = SpatialReferenceSystem.objects.create(
+                short_name=crs,
+                idstring="EPSG:" + crs,
+            )
+            srs.save()
+
+        crs4326 = SpatialReferenceSystem.objects.get(short_name="4326")
+        crs3587 = SpatialReferenceSystem.objects.get(short_name="3587")
+        crs9221 = SpatialReferenceSystem.objects.get(short_name="9221")
+
         self.stdout.write("create default project file...")
         project_file = "seed/ngi.qgs"
         if not project_storage.exists(project_file):
@@ -90,30 +103,33 @@ class Command(BaseCommand):
         with project_storage.open(project_file) as f:
             ngi_project_file.file_object.save(basename(project_file), f, save=True)
 
-        self.stdout.write("load auth database...")
-        db_file = "seed/kartozagis_qgis.db"
-        if not project_storage.exists(db_file):
-            raise Exception(f"{project_storage.path(db_file)} not found")
-        db_record = AuthDbFile.objects.create(
-            file_name="kartozagis_qgis",
-            secret=settings.QGISAUTHDBSEEDPW,
-        )
+        # self.stdout.write("load auth database...")
+        # db_file = "seed/kartozagis_qgis.db"
+        # if not project_storage.exists(db_file):
+        #     raise Exception(f"{project_storage.path(db_file)} not found")
+        # db_record = AuthDbFile.objects.create(
+        #     file_name="kartozagis_qgis",
+        #     secret=settings.QGISAUTHDBSEEDPW,
+        # )
 
-        with project_storage.open(db_file) as f:
-            db_record.file_object.save(basename(db_file), f, save=True)
+        # with project_storage.open(db_file) as f:
+        #     db_record.file_object.save(basename(db_file), f, save=True)
 
-        self.stdout.write("create default project object...")
+        self.stdout.write("get default project object...")
         ngi_project = Project.objects.filter(project_name="NGI").first()
-        auth_db = AuthDbFile.objects.filter(file_name="kartozagis_qgis").first()
+        # auth_db = AuthDbFile.objects.filter(file_name="kartozagis_qgis").first()
         if not ngi_project:
+            self.stdout.write("create default project object...")
             ngi_project = Project.objects.create(
                 project_name="NGI",
                 state=StateChoices.ACTIVE,
                 max_area=400,  # 20x20 square kilometers
                 qgis_project_file=ngi_project_file,
-                config_auth=auth_db,
+                # config_auth=auth_db,
                 vendor_id=kartoza,
-                comment="Topographic data from the National Geospatial Information Catalog for the Republic of South Africa",
+                project_srs=crs9221,
+                layer_srs=crs9221,
+                description="Topographic data from the National Geospatial Information Catalog for the Republic of South Africa",
             )
 
             self.stdout.write("add project layers...")
@@ -197,6 +213,14 @@ class Command(BaseCommand):
                 lyr_type=Layer.LayerType.XYZ,
             )
 
+            self.stdout.write("add project preview...")
+            preview_image = "seed/ngi_preview.png"
+            if not project_storage.exists(preview_image):
+                raise Exception(f"{project_storage.path(preview_image)} not found")
+
+            with project_storage.open(preview_image) as f:
+                ngi_project.preview_image.save(basename(preview_image), f, save=True)
+
         self.stdout.write("load processing script...")
         script_file = "seed/clip_project.py"
         if not project_storage.exists(script_file):
@@ -214,11 +238,13 @@ class Command(BaseCommand):
             raise Exception(f"{project_storage.path(data_file)} not found")
         data_record = DownloadableDataItem.objects.create(
             file_name="Natural Earth",
-            vendor_id = kartoza,
+            vendor_id=kartoza,
             kudos="Charlie, Natural Earth Data",
             description=("Simple global base map made from high level data ")
             + ("from the Natural Earth data collection. Includes a QGIS project ")
-            + ("and source data in Geopackage Format and includes dark and light themes.")
+            + (
+                "and source data in Geopackage Format and includes dark and light themes."
+            ),
         )
 
         with project_storage.open(data_file) as f:
@@ -238,7 +264,7 @@ class Command(BaseCommand):
                 project_name="Blank " + str(i + 2),
                 state=StateChoices.ACTIVE,
                 vendor_id=kartoza,
-                comment="Blank project spec for testing gallery view, number: "
+                description="Blank project spec for testing gallery view, number: "
                 + str(i + 2),
             )
 
