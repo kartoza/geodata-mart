@@ -61,16 +61,16 @@
               OTHER = 9, _("Other")
               {% endcomment %}
               {% for name, value in job.get_fields %}
-              {% if name == 'state' and value == 0 %}
-              <td><a class="btn btn-primary" href="{% url 'maps:checkout' value %}">
+              {% if name == 'state' and value == '0' %}
+              <td><a class="btn btn-primary" href="{% url 'maps:checkout' job.job_id %}">
                   {% translate "Ready" %}</a></td>
-              {% elif name == 'state' and value == 1 %}
+              {% elif name == 'state' and value == '1' %}
               <td class="text-muted">{% translate "Cancelled" %}</td>
-              {% elif name == 'state' and value == 3 %}
+              {% elif name == 'state' and value == '3' %}
               <td class="table-success rounded">{% translate "Completed" %}</td>
-              {% elif name == 'state' and value == 4 %}
+              {% elif name == 'state' and value == '4' %}
               <td class="table-success rounded">{% translate "Completed" %}</td>
-              {% elif name == 'state' and value == 5 %}
+              {% elif name == 'state' and value == '5' %}
               <td class="table-error rounded">{% translate "ERROR" %}</td>
               {% elif name == 'state' %}
               <td class="table-warning rounded fs-6 m-3">{% translate "Other" %}</td>
