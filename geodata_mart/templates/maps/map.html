@@ -286,7 +286,7 @@
           <div class="w-100">
             <button class="btn btn-outline-success rounded-pill w-100" form="map-form"
               {% comment %} https://github.com/alpinejs/alpine/discussions/2681 {% endcomment %}
-              :class="$store.pageData.getInvalidExtents ? 'disabled' : ''" type="submit">
+              :class="$store.pageData.getIsFormInvalid ? 'disabled' : ''" type="submit">
               {% translate "Clip & Ship" %}
               <i class="bi bi-send-fill"></i>
             </button>
@@ -677,9 +677,11 @@
         return valid
       },
 
-      get getInvalidExtents() {
+      get getIsFormInvalid() {
         nullValue = this.trigger  // see "refresh" store for more info
-        value = this.invalidExtents()
+        extents = this.invalidExtents()
+        layers = ((this.checkedLayers.length > 0) ? false : true)
+        value = (extents || layers)
         return value
       },
 
