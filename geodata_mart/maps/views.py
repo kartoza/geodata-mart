@@ -185,7 +185,11 @@ def map(request, project_id):
         layer for layer in project_layers if layer.lyr_class == Layer.LayerClass.EXCLUDE
     ]
     coverage = project.coverage.geojson if project.coverage else None
-    srs_list = SpatialReferenceSystem.objects.all()
+    allowed_srs = project.allowed_srs.all()
+    if not allowed_srs:
+        srs_list = SpatialReferenceSystem.objects.all()
+    else:
+        srs_list = allowed_srs
     context = {
         "project": project,
         "coverage": coverage,

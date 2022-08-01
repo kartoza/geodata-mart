@@ -530,6 +530,13 @@ class Project(gismodels.Model):
         null=True,
         blank=True,
     )
+    allowed_srs = models.ManyToManyField(
+        SpatialReferenceSystem,
+        verbose_name=_("SRS List"),
+        related_name="allowed_srs",
+        null=True,
+        blank=True,
+    )
     siblings = models.ManyToManyField("self", blank=True)
     tags = models.ManyToManyField(MetaTags, blank=True)
 
