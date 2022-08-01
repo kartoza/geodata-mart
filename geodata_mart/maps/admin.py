@@ -28,6 +28,36 @@ class MetaTagsAdmin(admin.ModelAdmin):
     ]
 
 
+@admin.register(models.SpatialReferenceSystem)
+class SpatialReferenceSystemAdmin(admin.ModelAdmin):
+    """Manage spatial reference system definitions tags."""
+
+    list_display = (
+        "id",
+        "short_name",
+        "idstring",
+        "full_name",
+        "abstract",
+        "description",
+        "comment",
+    )
+    list_display_links = ("id", "short_name", "idstring")
+    list_filter = ("short_name", "idstring")
+    search_fields = ("short_name", "idstring", "abstract", "description", "comment")
+    ordering = ("id", "idstring")
+    fields = [
+        "short_name",
+        "idstring",
+        "full_name",
+        "abstract",
+        "description",
+        "proj",
+        "wkt",
+        "type",
+        "comment",
+    ]
+
+
 @admin.register(models.ResultFile)
 class ResultFileAdmin(admin.ModelAdmin):
     """Upload, review, manage, and process Result Files"""
