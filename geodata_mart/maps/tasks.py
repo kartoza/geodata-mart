@@ -27,7 +27,7 @@ logger = get_task_logger(__name__)
 import shutil
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, max_retries=3)
 def process_job_gdmclip(self, job_id):
 
     job = Job.objects.filter(job_id=job_id).first()
