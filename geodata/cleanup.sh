@@ -4,7 +4,7 @@ THISDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 cd $THISDIR
 
-patterns = ( "*.zip" "*.qgs" "*.qgz" "*.py" "*.db" "*.geojson" "*.gpkg" )
+patterns = ( "*.zip" "*.qgs" "*.qgz" "*.py" "*.db" "*.geojson" "*.gpkg" "*.png" "*.tif" "*.jpg" "*.jpeg" )
 
 for i in "${patterns[@]}"
 do

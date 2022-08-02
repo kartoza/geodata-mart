@@ -3,7 +3,10 @@ Set-Location (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
 # remove files by pattern
 $patterns = (
-  "*.zip",
+  "*.png",
+  "*.tif",
+  "*.jpg",
+  "*.jpeg",
   "*.qgs",
   "*.qgz",
   "*.py",
