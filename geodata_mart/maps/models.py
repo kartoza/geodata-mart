@@ -534,7 +534,6 @@ class Project(gismodels.Model):
         SpatialReferenceSystem,
         verbose_name=_("SRS List"),
         related_name="allowed_srs",
-        null=True,
         blank=True,
     )
     siblings = models.ManyToManyField("self", blank=True)
