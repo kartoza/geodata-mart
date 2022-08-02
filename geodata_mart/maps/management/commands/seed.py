@@ -43,7 +43,7 @@ class Command(BaseCommand):
             "educational": "Education",
             # OSM Stuff
             "_a_": " Areas",
-            "_free_1": "",
+            "free_1": "",
             "gis_osm": "",
             "pofw": "Places of Worship",
             "pois": "Places of Interest",
