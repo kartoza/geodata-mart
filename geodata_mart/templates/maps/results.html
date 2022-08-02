@@ -91,12 +91,12 @@
 
               {% for result in results %}
               {% if forloop.first %}
-              {% if result.job_id == job and result.file_object.file_available %}
+              {% if result.job_id == job and result.file_available %}
               <td><a class="btn btn-success" href="{{ result.file_object.url|urlencode }}">
                   <i class="bi bi-download"></i>
                 </a>
               </td>
-              {% elif result.job_id == job and not result.file_object.file_available %}
+              {% elif result.job_id == job and not result.file_available %}
               <td>
                 <div class="btn btn-primary disabled">
                   <i class="bi bi-download"></i>

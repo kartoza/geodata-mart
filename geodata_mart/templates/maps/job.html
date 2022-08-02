@@ -54,7 +54,7 @@
           {% elif job.state == 3 or job.state == 4 %}
           {% if results %}
           {% for result in results %}
-          {% if result.file_object.file_available %}
+          {% if result.file_available %}
           <div class="row py-2">
             <p class="text-muted">{% translate "File: " %}{{ result.file_name }}</p>
             <a href="{{ result.file_object.url|urlencode }}"
