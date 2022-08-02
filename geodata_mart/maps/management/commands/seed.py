@@ -231,6 +231,9 @@ class Command(BaseCommand):
         with project_storage.open(project_file) as f:
             ngi_project_file.file_object.save(basename(project_file), f, save=True)
 
+        ngi_project.qgis_project_file = ngi_project_file
+        ngi_project.save()
+
         # self.stdout.write("add default project coverage...")
         # if not ngi_project.coverage:
 
@@ -361,6 +364,8 @@ class Command(BaseCommand):
             state=StateChoices.OTHER,
             project_id=osm_project,
         )
+        osm_project.qgis_project_file = osm_project_file
+        osm_project.save()
 
         with project_storage.open(project_file) as f:
             osm_project_file.file_object.save(basename(project_file), f, save=True)
