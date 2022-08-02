@@ -1,3 +1,4 @@
+from asyncore import file_dispatcher
 from django.core.management.base import BaseCommand
 from geodata_mart.users.models import User
 from geodata_mart.credits.models import Account
@@ -10,6 +11,7 @@ from geodata_mart.maps.models import (
     AuthDbFile,
     ProcessingScriptFile,
     DownloadableDataItem,
+    ProjectCoverageFile,
     ProjectDataFile,
     SpatialReferenceSystem,
 )
@@ -24,6 +26,7 @@ class Command(BaseCommand):
 
     def transformLabels(self, label):
         mapping = {
+            # NGI stuff
             "_exp": "",
             "exp_": "",
             "_exp_": "_",
@@ -38,6 +41,13 @@ class Command(BaseCommand):
             "point": "Points",
             "areal": "Areas",
             "educational": "Education",
+            # OSM Stuff
+            "_a_": " Areas",
+            "_free_1": "",
+            "gis_osm": "",
+            "pofw": "Places of Worship",
+            "pois": "Places of Interest",
+            # character stuff
             "_": " ",
             "-": " ",
             "  ": " ",  # replace any double spaces
@@ -221,6 +231,21 @@ class Command(BaseCommand):
             with project_storage.open(preview_image) as f:
                 ngi_project.preview_image.save(basename(preview_image), f, save=True)
 
+        # self.stdout.write("add default project coverage...")
+        # if not ngi_project.coverage:
+
+        #     coverage_file = "seed/rsa_aoi_4326.geojson"
+        #     if not project_storage.exists(coverage_file):
+        #         raise Exception(f"{project_storage.path(coverage_file)} not found")
+
+        #     coverage = ProjectCoverageFile.objects.create(
+        #         file_name="rsa_aoi_4326",
+        #         project_id=ngi_project,
+        #     )
+
+        #     with project_storage.open(coverage_file) as f:
+        #         coverage.file_object.save(basename(coverage_file), f, save=True)
+
         self.stdout.write("load processing script...")
         script_file = "seed/clip_project.py"
         if not project_storage.exists(script_file):
@@ -257,15 +282,87 @@ class Command(BaseCommand):
         with project_storage.open(preview_image) as f:
             data_record.preview_image.save(basename(preview_image), f, save=True)
 
-        self.stdout.write("create placeholder projects...")
+        self.stdout.write("create osm project file...")
+        project_file = "seed/rsa_osm.qgs"
+        if not project_storage.exists(project_file):
+            raise Exception(f"{project_storage.path(project_file)} not found")
+        osm_project_file = QgisProjectFile.objects.create(
+            file_name="RSA OSM Project File",
+            state=StateChoices.OTHER,
+        )
 
-        for i in range(25):
-            Project.objects.create(
-                project_name="Blank " + str(i + 2),
+        with project_storage.open(project_file) as f:
+            osm_project_file.file_object.save(basename(project_file), f, save=True)
+
+        self.stdout.write("get osm project object...")
+        osm_project = Project.objects.filter(project_name="RSA OSM").first()
+        # auth_db = AuthDbFile.objects.filter(file_name="kartozagis_qgis").first()
+        if not osm_project:
+            self.stdout.write("create osm project object...")
+            osm_project = Project.objects.create(
+                project_name="RSA OSM",
                 state=StateChoices.ACTIVE,
+                max_area=400,  # 20x20 square kilometers
+                qgis_project_file=osm_project_file,
+                # config_auth=auth_db,
                 vendor_id=kartoza,
-                description="Blank project spec for testing gallery view, number: "
-                + str(i + 2),
+                project_srs=crs9221,
+                layer_srs=crs9221,
+                description="OpenStreetMap data project produced from GeoFabrik regional downloads for South Africa.",
             )
+
+            self.stdout.write("add project layers...")
+            # make sure transformLabels is configured properly
+            layers = {
+                "gis_osm_buildings_a_free_1": "gis_osm_buildings_a_free_1",
+                "gis_osm_landuse_a_free_1": "gis_osm_landuse_a_free_1",
+                "gis_osm_natural_a_free_1": "gis_osm_natural_a_free_1",
+                "gis_osm_natural_free_1": "gis_osm_natural_free_1",
+                "gis_osm_places_a_free_1": "gis_osm_places_a_free_1",
+                "gis_osm_places_free_1": "gis_osm_places_free_1",
+                "gis_osm_pofw_a_free_1": "gis_osm_pofw_a_free_1",
+                "gis_osm_pofw_free_1": "gis_osm_pofw_free_1",
+                "gis_osm_pois_a_free_1": "gis_osm_pois_a_free_1",
+                "gis_osm_pois_free_1": "gis_osm_pois_free_1",
+                "gis_osm_railways_free_1": "gis_osm_railways_free_1",
+                "gis_osm_roads_free_1": "gis_osm_roads_free_1",
+                "gis_osm_traffic_a_free_1": "gis_osm_traffic_a_free_1",
+                "gis_osm_traffic_free_1": "gis_osm_traffic_free_1",
+                "gis_osm_transport_a_free_1": "gis_osm_transport_a_free_1",
+                "gis_osm_transport_free_1": "gis_osm_transport_free_1",
+                "gis_osm_water_a_free_1": "gis_osm_water_a_free_1",
+                "gis_osm_waterways_free_1": "gis_osm_waterways_free_1",
+                "land_polygons": "land_polygons",
+                "water_polygons": "water_polygons",
+            }
+
+            for key, value in layers.items():
+                Layer.objects.create(
+                    short_name=key,
+                    layer_name=self.transformLabels(key),
+                    abstract=value,
+                    project_id=osm_project,
+                    lyr_class=Layer.LayerClass.STANDARD,
+                )
+
+            self.stdout.write("add osm project preview...")
+            preview_image = "seed/rsa_osm_preview.png"
+            if not project_storage.exists(preview_image):
+                raise Exception(f"{project_storage.path(preview_image)} not found")
+
+            with project_storage.open(preview_image) as f:
+                osm_project.preview_image.save(basename(preview_image), f, save=True)
+
+            self.stdout.write("add osm source geopackage...")
+            gpkg_file = "seed/rsa_osm.gpkg"
+            if not project_storage.exists(gpkg_file):
+                raise Exception(f"{project_storage.path(gpkg_file)} not found")
+            gpkg_record = ProjectDataFile.objects.create(
+                file_name="rsa_osm.gpkg",
+                project_id=osm_project,
+            )
+
+            with project_storage.open(gpkg_file) as f:
+                gpkg_record.file_object.save(basename(gpkg_file), f, save=True)
 
         self.stdout.write("time to party...")
