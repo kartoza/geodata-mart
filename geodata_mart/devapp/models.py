@@ -9,6 +9,7 @@ class DevAppExample(models.Model):
     abstract = models.TextField(
         verbose_name="Test Item Abstract", blank=True, null=True
     )
+    file_upload = models.FileField(upload_to="dev/media", blank=True, null=True)
     created_date = models.DateTimeField(auto_now_add=True, verbose_name="Created Date")
     updated_date = models.DateTimeField(auto_now=True, verbose_name="Updated Date")
 

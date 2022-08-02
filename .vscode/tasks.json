@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run docker-compose up",
+      "type": "docker-compose",
+      "dockerCompose": {
+        "up": {
+          "detached": true,
+          "build": true,
+          "services": [
+            ""
+          ]
+        },
+        "files": [
+          "${workspaceFolder}/docker-compose.yml"
+        ]
+      }
+    },
+    {
+      "label": "Run docker-compose down",
+      "type": "docker-compose",
+      "dockerCompose": {
+        "down": {
+          "removeVolumes": true
+        },
+        "files": [
+          "${workspaceFolder}/docker-compose.yml"
+        ]
+      }
+    }
+  ],
+}

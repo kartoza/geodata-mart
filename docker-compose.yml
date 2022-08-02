@@ -32,6 +32,7 @@ services:
       - .env
     ports:
       - "${DJANGO_PORT}:8000"
+      - 9999:9999
     command: /start
 
   postgres:
@@ -81,6 +82,9 @@ services:
     volumes:
       - ./geodata:/qgis:z
     command: /start-celeryworker
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
 
   celerybeat:
     <<: *django
@@ -147,6 +151,7 @@ services:
         /usr/bin/mc config host add gdm ${DJANGO_AWS_S3_CUSTOM_DOMAIN}
         ${DJANGO_AWS_ACCESS_KEY_ID} ${DJANGO_AWS_SECRET_ACCESS_KEY};
         /usr/bin/mc mb gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME};
+        /usr/bin/mc policy set download gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME};
         exit 0
     depends_on:
       - minio

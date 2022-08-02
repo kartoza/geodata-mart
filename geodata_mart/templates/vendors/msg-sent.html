@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Message Sent" %}</h1>
+          <p class="text-muted">{% translate "Thank you for your feedback." %}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+{% endblock content %}
+
+{% block inline_javascript %}
+{% endblock inline_javascript %}

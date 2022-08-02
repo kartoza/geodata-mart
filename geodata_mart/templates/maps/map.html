@@ -13,7 +13,8 @@
 {% compress js %}
 <script src="{% static 'leaflet/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-draw/leaflet.draw.js' %}"></script>
-{% comment %} <script src="{% static 'leaflet/leaflet-draw-drag/Leaflet.draw.drag.js' %}"></script> {% endcomment %}
+<script src="{% static 'leaflet/leaflet-draw-drag/Leaflet.draw.drag.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-path-drag/L.Path.Drag.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.js' %}"></script>
@@ -62,7 +63,8 @@
 {% endif %}
 
 <div class="map-page" x-data>
-  <form action="{% url 'maps:create_job' %}" method="post">
+  <form id="msg-form" action="{% url 'vendors:msg' %}" method="post">{% csrf_token %}</form>
+  <form id="map-form" action="{% url 'maps:create_job' %}" method="post">
     {% csrf_token %}
     <input type="hidden" id="user_id" name="user_id" :value="$store.pageData.user_id">
     <input type="hidden" id="project_id" name="project_id" :value="$store.pageData.project_id">
@@ -72,120 +74,230 @@
       <template x-for="i in $store.pageData.checkedLayers" :key="i">
         <option :value="i" selected="true"></option>
       </template>
+      <template x-for="i in $store.pageData.checkedBases" :key="i">
+        <option :value="i" selected="true"></option>
+      </template>
+      <template x-for="i in $store.pageData.checkedExcludes" :key="i">
+        <option :value="i" selected="true"></option>
+      </template>
     </select>
+  </form>
 
-    <div class="d-flex flex-row">
-      <div id="map-sidebar" class="d-flex flex-column align-items-stretch flex-shrink-0 col-3" style="overflow: auto;">
-        <ul class="nav nav-tabs">
-          <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'layers' }"
-              @click.prevent="$store.pageData.tab = 'layers'" href="#">{{ project.vendor_id.name }}</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'settings' }"
-              @click.prevent="$store.pageData.tab = 'settings'" href="#">{% translate "Settings" %}</a>
-          </li>
-        </ul>
-        <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
-          <div class="d-flex flex-column">
-            <div class="d-flex flex-row text-muted">
-              <img src="{% static 'images/map/map-icon-pure.svg' %}" class="me-2 mt-1" width="30" height="24" />
-              <span class="fs-5 mb-1 fw-semibold">{{ project.project_name }}</span>
-            </div>
-            <div class="d-flex flex-row text-muted">
-              <div class="mb-1 ms-0 small">
-                {{ project.comment }}
-              </div>
-            </div>
+  <div class="d-flex flex-row">
+    <div id="map-sidebar" class="d-flex flex-column align-items-stretch flex-shrink-0 col-3" style="overflow: auto;">
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'layers' }"
+            @click.prevent="$store.pageData.tab = 'layers'" href="#">{% translate "Map" %}</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'settings' }"
+            @click.prevent="$store.pageData.tab = 'settings'" href="#">{% translate "Settings" %}</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'more' }"
+            @click.prevent="$store.pageData.tab = 'more'" href="#">{% translate "More" %}</a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
+        <div class="d-flex flex-column">
+          <div class="d-flex flex-row text-muted">
+            <img src="{% static 'images/map/map-icon-pure.svg' %}" class="me-2 mt-1" width="30" height="24" />
+            <span class="fs-5 mb-1 fw-semibold">{{ project.project_name }}
+              <span class="text-muted fs-6"> {% translate "by" %} {{ project.vendor_id.name }}</span></span>
           </div>
-        </div>
-        <div id="map-sidebar-legend" class="list-group list-group-flush border-bottom scrollarea">
-          <div x-show="$store.pageData.tab === 'layers'">
-            <template x-for="layer in $store.pageData.mapLayers" :key="layer.id">
-              <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
-                <label :for="layer.short_name">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                      :id="layer.short_name"
-                      :checked="$store.pageData.layerChecked(layer.id, $store.pageData.checkedLayers)"
-                      @click="$store.pageData.toggleLayer(layer.id, $store.pageData.checkedLayers)"
-                      />
-                    <label class="form-check-label" x-text="layer.layer_name"></label>
-                  </div>
-                  <div class="mb-1 small" x-text="layer.abstract"></div>
-                </label>
-              </div>
-            </template>
-          </div>
-          <div x-show="$store.pageData.tab === 'settings'">
-            <div class="d-flex flex-row text-muted">
-              <div class="w-100">
-                <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
-                <input class="form-range mr-2 px-2" type="range" min="{{ project.buffer_min }}" max="{{ project.buffer_max }}"
-                  step="{{ project.buffer_step }}" id="clipBuffer" x-model="$store.pageData.buffer_distance" aria-label="Clip buffer"
-                  x-init="$watch('$store.pageData.buffer_distance', value => $store.pageData.reDraw())" />
-                <label for="clipBuffer" class="col-form-label px-2">
-                  <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
-                      data-bs-target="#bufferInfoModal">
-                      <i class="bi bi-info rounded-circle"></i>
-                    </button> {% translate "Clipping Buffer (km)" %}</span>
-                </label>
-              </div>
+          <div class="d-flex flex-row text-muted">
+            <div class="mb-1 ms-0 small">
+              {{ project.description }}
             </div>
-            <div class="text-center w-100 text-muted">{% translate "Base Layers" %}</div>
-            <template x-for="layer in $store.pageData.baseLayers" :key="layer.id">
-              <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
-                <label :for="layer.short_name">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                      :id="layer.short_name"
-                      :checked="$store.pageData.layerChecked(layer.id, $store.pageData.checkedBases)"
-                      @click="$store.pageData.toggleLayer(layer.id, $store.pageData.checkedBases)"
-                      />
-                    <label class="form-check-label" x-text="layer.layer_name"></label>
-                  </div>
-                  <div class="mb-1 small" x-text="layer.abstract"></div>
-                </label>
-              </div>
-            </template>
-            <div class="text-center w-100 text-muted">{% translate "Excludes" %}</div>
-            <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
-              <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
-                <label :for="layer.short_name">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                      :id="layer.short_name"
-                      :checked="$store.pageData.layerChecked(layer.id, $store.pageData.checkedExcludes)"
-                      @click="$store.pageData.toggleLayer(layer.id, $store.pageData.checkedExcludes)"
-                      />
-                    <label class="form-check-label" x-text="layer.layer_name"></label>
-                  </div>
-                  <div class="mb-1 small" x-text="layer.abstract"></div>
-                </label>
-              </div>
-            </template>
           </div>
         </div>
       </div>
-      <div class="d-flex flex-column align-items-stretch flex-shrink-0 col-9">
-        <main role="main" class="container" style="width: 100%; height: 100%">
-          <div class="form-group row m-2 justify-content-between">
-            <div class="w-100">
-              <button class="btn btn-outline-success rounded-pill w-100"
-                {% comment %} https://github.com/alpinejs/alpine/discussions/2681 {% endcomment %}
-                :class="$store.pageData.getInvalidExtents ? 'disabled' : ''" type="submit">
-                {% translate "Clip & Ship" %}
-                <i class="bi bi-send-fill"></i>
-              </button>
+      <div id="map-sidebar-legend" class="list-group list-group-flush border-bottom scrollarea">
+        <div x-show="$store.pageData.tab === 'layers'">
+          <template x-for="layer in $store.pageData.mapLayers" :key="layer.id">
+            <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+              <label :for="layer.short_name">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                    :id="layer.short_name"
+                    :checked="$store.pageData.layerChecked(layer.id)"
+                    @click="$store.pageData.toggleLayer(layer.id)"
+                    />
+                  <label class="form-check-label" x-text="layer.layer_name"></label>
+                </div>
+                <div class="mb-1 small" x-text="layer.abstract"></div>
+              </label>
             </div>
-            <div class="map-container mt-2">
-              <div id="map"></div>
+          </template>
+        </div>
+        <div x-show="$store.pageData.tab === 'settings'">
+          <div class="d-flex flex-row text-muted">
+            <div class="w-100">
+              <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
+              <input class="form-range mr-2 px-2" type="range" min="{{ project.buffer_min }}" max="{{ project.buffer_max }}"
+                step="{{ project.buffer_step }}" id="clipBuffer" x-model="$store.pageData.buffer_distance" aria-label="Clip buffer"
+                x-init="$watch('$store.pageData.buffer_distance', value => $store.pageData.reDraw())" />
+              <label for="clipBuffer" class="col-form-label px-2">
+                <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
+                    data-bs-target="#bufferInfoModal">
+                    <i class="bi bi-info rounded-circle"></i>
+                  </button> {% translate "Clipping Buffer (km)" %}</span>
+              </label>
             </div>
           </div>
-        </main>
+          <hr class="m-0 p-0">
+          <div class="w-100 p-2 form-floating">
+            <label for="srs-p-category" class="text-muted fs-6 p-2">{% translate "Project SRS" %}</label>
+            <select id="srs-p-category" name="category" class="form-control w-100 pt-6"
+            x-model="$store.pageData.project_srs">
+            {% if  project.project_srs %}
+            <option value="">None</option>
+            <option value="{{ project.project_srs.idstring }}" selected>{% translate "Default" %} ({{ project.project_srs.idstring }})</option>
+            {% else %}
+            <option value="" selected>None</option>
+            {% endif %}
+            <template x-for="srs in $store.pageData.srs_list" :key="srs.id">
+              <option :value="srs.name" x-text="srs.name"></option>
+            </template>
+            </select>
+          </div>
+          <hr class="m-0 p-0">
+          <div class="w-100 p-2 form-floating">
+            <label for="srs-l-category" class="text-muted fs-6 p-2">{% translate "Layer SRS" %}</label>
+            <select id="srs-l-category" name="category" class="form-control w-100 pt-6"
+            x-model="$store.pageData.layer_srs">
+            {% if  project.layer_srs %}
+            <option value="">None</option>
+            <option value="{{ project.layer_srs.idstring }}" selected>{% translate "Default" %} ({{ project.layer_srs.idstring }})</option>
+            {% else %}
+            <option value="" selected>None</option>
+            {% endif %}
+            <template x-for="srs in $store.pageData.srs_list" :key="srs.id">
+              <option :value="srs.name" x-text="srs.name"></option>
+            </template>
+            </select>
+          </div>
+          <hr class="m-0 p-0">
+          {% if base_layers|length > 0 %}
+          <div class="text-center w-100 text-muted">{% translate "Base Layers" %}</div>
+          <template x-for="layer in $store.pageData.baseLayers" :key="layer.id">
+            <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+              <label :for="layer.short_name">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                    :id="layer.short_name"
+                    :checked="$store.pageData.baseChecked(layer.id)"
+                    @click="$store.pageData.toggleBase(layer.id)"
+                    />
+                  <label class="form-check-label" x-text="layer.layer_name"></label>
+                </div>
+                <div class="mb-1 small" x-text="layer.abstract"></div>
+              </label>
+            </div>
+          </template>
+          {% endif %}
+          {% if excluded_layers|length > 0 %}
+          <div class="text-center w-100 text-muted">{% translate "Additional Layers" %}</div>
+          <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
+            <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+              <label :for="layer.short_name">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                    :id="layer.short_name"
+                    :checked="$store.pageData.excludeChecked(layer.id)"
+                    @click="$store.pageData.toggleExclude(layer.id)"
+                    />
+                  <label class="form-check-label" x-text="layer.layer_name"></label>
+                </div>
+                <div class="mb-1 small" x-text="layer.abstract"></div>
+              </label>
+            </div>
+          </template>
+          {% endif %}
+        </div>
+        <div x-show="$store.pageData.tab === 'more'">
+          <div class="text-center w-100 text-muted">{% translate "Mapping Mode" %}</div>
+          <div class="p-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" id="mode-bounds" name="bounds" checked>
+              <label class="form-check-label" for="mode-bounds">
+                {% translate "User Defined Bounds" %}
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" id="mode-upload" name="upload" disabled>
+              <label class="form-check-label" for="mode-upload">
+                {% translate "User Data Upload" %}
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" id="mode-freedraw" name="freedraw" disabled>
+              <label class="form-check-label" for="mode-freedraw">
+                {% translate "Freedraw Geometry" %}
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" id="mode-aoi" name="aoi" disabled>
+              <label class="form-check-label" for="mode-aoi">
+                {% translate "Area of Interest" %}
+              </label>
+            </div>
+          </div>
+          <hr class="m-0 p-0">
+          <div class="p-2">
+            <div class="text-center w-100 text-muted">{% translate "Feedback" %}</div>
+            <input form="msg-form" type="hidden" id="msg-sender" name="sender" value="{{ request.user.id }}">
+            <input form="msg-form" type="hidden" id="msg-receiver" name="receiver" value="{{ project.vendor_id.id }}">
+            <input form="msg-form" type="hidden" id="msg-project" name="project" value="{{ project.id }}">
+            <div class="w-100 p-1">
+              <div class="w-100 py-1">
+                <input form="msg-form" type="text" id="msg-subject" name="subject"
+                  class="form-control w-100 p-1" placeholder="{% translate "Subject" %}">
+              </div>
+              <div class="w-100 py-1">
+                <textarea form="msg-form" type="textarea" id="msg-content" name="content"
+                  class="form-control w-100 p-1" placeholder="{% translate "Message" %}"></textarea>
+              </div>
+              <div class="w-100 py-1 form-floating">
+                <label for="msg-category" class="text-muted fs-6 p-2">{% translate "Category" %}</label>
+                <select form="msg-form" id="msg-category" name="category" class="form-control w-100 pt-6">
+                  <option value="enquiry" selected="true">{% translate "General Enquiry" %}</option>
+                  <option value="kudos">{% translate "Kudos" %}</option>
+                  <option value="bulk">{% translate "Bulk Data" %}</option>
+                  <option value="data">{% translate "Data Request" %}</option>
+                  <option value="error">{% translate "Error Report" %}</option>
+                </select>
+              </div>
+              <div class="w-100 py-1">
+                <button class="btn btn-primary rounded w-100" form="msg-form" type="submit">
+                  <i class="bi bi-envelope-fill"></i>
+                  {% translate "Send Message" %}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </form>
+    <div class="d-flex flex-column align-items-stretch flex-shrink-0 col-9">
+      <main role="main" class="container" style="width: 100%; height: 100%">
+        <div class="form-group row m-2 justify-content-between">
+          <div class="w-100">
+            <button class="btn btn-outline-success rounded-pill w-100" form="map-form"
+              {% comment %} https://github.com/alpinejs/alpine/discussions/2681 {% endcomment %}
+              :class="$store.pageData.getIsFormInvalid ? 'disabled' : ''" type="submit">
+              {% translate "Clip & Ship" %}
+              <i class="bi bi-send-fill"></i>
+            </button>
+          </div>
+          <div class="map-container mt-2">
+            <div id="map"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
 </div>
 
 {% endblock page %}
@@ -257,7 +369,7 @@
 
   map.removeLayer(coverageLayer)
 
-  var layerController = L.control.layers(
+  const layerController = L.control.layers(
     null,
     {
       "Project Coverage": coverageLayer,
@@ -266,6 +378,34 @@
     },
     { position: 'bottomleft' }
   ).addTo(map)
+
+  const viewBox = '\''+bounds[0]+','+bounds[3]+','+bounds[2]+','+bounds[1]+'\''
+  const nominatimGeocoder = L.Control.Geocoder.nominatim({
+    geocodingQueryParams: {
+      bounded:1,
+      viewbox: viewBox
+    }
+  });
+  const geocoderControl = L.Control.geocoder({
+    defaultMarkGeocode: false,
+    geocoder: nominatimGeocoder
+  })
+  .on('markgeocode', function (e) {
+    drawnItems.clearLayers()
+    errorItems.clearLayers()
+    annotationItems.clearLayers()
+    Alpine.store('refresh').refresh()
+    let bbox = e.geocode.bbox;
+    let poly = L.polygon([
+      bbox.getSouthEast(),
+      bbox.getNorthEast(),
+      bbox.getNorthWest(),
+      bbox.getSouthWest()
+    ]);
+    map.fitBounds(poly.getBounds());
+  })
+  .addTo(map);
+
   {% else %}
   const map = L.map("map", {
     zoomControl: false,
@@ -281,7 +421,7 @@
     position: "bottomleft"
   }).addTo(map)
 
-  var layerController = L.control.layers(
+  const layerController = L.control.layers(
     null,
     {
       "Buffered Extent": annotationItems,
@@ -289,9 +429,8 @@
     },
     { position: 'bottomleft' }
   ).addTo(map)
-  {% endif %}
 
-  var geocoder = L.Control.geocoder({
+  const geocoderControl = L.Control.geocoder({
     defaultMarkGeocode: false
   })
   .on('markgeocode', function (e) {
@@ -299,8 +438,8 @@
     errorItems.clearLayers()
     annotationItems.clearLayers()
     Alpine.store('refresh').refresh()
-    var bbox = e.geocode.bbox;
-    var poly = L.polygon([
+    let bbox = e.geocode.bbox;
+    let poly = L.polygon([
       bbox.getSouthEast(),
       bbox.getNorthEast(),
       bbox.getNorthWest(),
@@ -309,6 +448,8 @@
     map.fitBounds(poly.getBounds());
   })
   .addTo(map);
+
+  {% endif %}
 
   let drawnItems = new L.FeatureGroup().addTo(map),
     editActions = [
@@ -361,7 +502,7 @@
           Alpine.store('refresh').refresh()
         })
 
-      var controlUI = L.DomUtil.create(
+      const controlUI = L.DomUtil.create(
         "a",
         "leaflet-draw-edit-remove",
         controlDiv
@@ -409,6 +550,11 @@
       comment: 'Generated by GeoData Mart Map Tool',
       mode:'user',
       modes: ['user', 'feature', 'layer'],
+      project_srs: {% if  project.project_srs %}'{{ project.project_srs.idstring }}'{% else %}''{% endif %},
+      layer_srs: {% if  project.layer_srs %}'{{ project.layer_srs.idstring }}'{% else %}''{% endif %},
+      srs_list: [{% for srs in srs_list %}
+      {id: {{ forloop.counter }}, name: '{{ srs.idstring }}'},
+      {% endfor %}],
       checkedLayers: [{% for layer in map_layers %}
       {% if layer.is_default %}{{ layer.id }},{% endif %}
       {% endfor %}],
@@ -441,16 +587,48 @@
       ],
       buffer_distance: {{ project.buffer_default }},
 
-      toggleLayer(id, layerList) {
-        if (this.layerChecked(id, layerList)) {
-          layerList = layerList.filter(h => h !== id)
+      toggleLayer(id) {
+        if (this.layerChecked(id, this.checkedLayers)) {
+          this.checkedLayers = this.checkedLayers.filter(h => h !== id)
         } else {
-          layerList.push(id)
+          this.checkedLayers.push(id)
         }
       },
 
-      layerChecked(id, layerList) {
-        if (layerList.indexOf(id) > -1) {
+      layerChecked(id) {
+        if (this.checkedLayers.indexOf(id) > -1) {
+          return "checked"
+        } else {
+          return false
+        }
+      },
+
+      toggleBase(id) {
+        if (this.baseChecked(id, this.checkedBases)) {
+          this.checkedBases = this.checkedBases.filter(h => h !== id)
+        } else {
+          this.checkedBases.push(id)
+        }
+      },
+
+      baseChecked(id) {
+        if (this.checkedBases.indexOf(id) > -1) {
+          return "checked"
+        } else {
+          return false
+        }
+      },
+
+      toggleExclude(id) {
+        if (this.excludeChecked(id, this.checkedExcludes)) {
+          this.checkedExcludes = this.checkedExcludes.filter(h => h !== id)
+        } else {
+          this.checkedExcludes.push(id)
+        }
+      },
+
+      excludeChecked(id) {
+        if (this.checkedExcludes.indexOf(id) > -1) {
           return "checked"
         } else {
           return false
@@ -499,9 +677,11 @@
         return valid
       },
 
-      get getInvalidExtents() {
+      get getIsFormInvalid() {
         nullValue = this.trigger  // see "refresh" store for more info
-        value = this.invalidExtents()
+        extents = this.invalidExtents()
+        layers = ((this.checkedLayers.length > 0) ? false : true)
+        value = (extents || layers)
         return value
       },
 
@@ -537,37 +717,37 @@
       },
       
       get getCheckedBaseNames() {
-        let checkedBaseItems = this.mapLayers.filter((obj) => {
+        let checkedBaseItems = this.baseLayers.filter((obj) => {
             return this.checkedBases.indexOf(obj.id) > -1;
           })
         let checkedBaseNames = checkedBaseItems.map((obj) => obj.short_name)
           .filter((value) => {
             return value !== undefined;
           })
-        return JSON.stringify(checkedBaseNames)
+        return checkedBaseNames
       },
       
       get getCheckedExcludedNames() {
-        let checkedExcludeItems = this.mapLayers.filter((obj) => {
+        let checkedExcludeItems = this.excludedLayers.filter((obj) => {
             return this.checkedExcludes.indexOf(obj.id) > -1;
           })
         let checkedExcludeNames = checkedExcludeItems.map((obj) => obj.short_name)
           .filter((value) => {
             return value !== undefined;
           })
-        return JSON.stringify(checkedExcludeNames)
+        return checkedExcludeNames
       },
 
       get excludesParameterValue() {
         if (Object.keys(this.checkedBases).length === 0 && Object.keys(this.checkedExcludes).length === 0) {
           return ''
         } else if (Object.keys(this.checkedBases).length === 0) {
-          return this.getCheckedExcludedNames
+          return this.getCheckedExcludedNames.toString()
         } else if (Object.keys(this.checkedExcludes).length === 0) {
-        return this.getCheckedBaseNames
+        return this.getCheckedBaseNames.toString()
         } else {
-          let basenames = this.getCheckedBaseNames
-          let exclnames = this.getCheckedExcludedNames
+          let basenames = this.getCheckedBaseNames.toString()
+          let exclnames = this.getCheckedExcludedNames.toString()
           result = basenames + ", " + exclnames
           return result
         }
@@ -581,8 +761,8 @@
           'LAYERS': this.getCheckedLayerNames,
           'EXCLUDES': this.excludesParameterValue,
           'CLIP_GEOM': this.getBufferedGeomWKT,
-          'OUTPUT_CRS': 'EPSG:9221',
-          'PROJECT_CRS': 'EPSG:9221',
+          'OUTPUT_CRS': this.project_srs,
+          'PROJECT_CRS': this.layer_srs,
           'COMMENT': this.comment
         }
         return JSON.stringify(params)
@@ -612,7 +792,8 @@
         if (Object.keys(drawnItems._layers).length === 0 && type == "marker") {
           // buffer the point if it is the first drawn item
           drawnItems.addLayer(L.geoJson(turf.buffer(turf.point([layer._latlng.lng, layer._latlng.lat]),
-          this.minimalBufferDist, {
+          //this.minimalBufferDist, {
+          1, {
               units: 'kilometers'
           })))
         }
@@ -690,6 +871,9 @@
       }
     })
   })
+
+  // make sure initial values are set right
+  window.onload = function(){Alpine.store('refresh').refresh()}
 
 </script>
 

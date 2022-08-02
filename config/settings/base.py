@@ -14,6 +14,8 @@ ROOT_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 APPS_DIR = ROOT_DIR / "geodata_mart"
 env = environ.Env()
 
+QGISAUTHDBSEEDPW = env("QGISAUTHDBSEEDPW")
+
 READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=False)
 if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
@@ -75,6 +77,7 @@ DJANGO_APPS = [
     "django.contrib.admin",
     "django.forms",
     "django.contrib.gis",
+    "django.contrib.postgres",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",
@@ -88,6 +91,9 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "django_htmx",
+    "django_tables2",
+    "celery_progress",
+    "versatileimagefield",
 ]
 
 LOCAL_APPS = [
@@ -342,5 +348,5 @@ SPECTACULAR_SETTINGS = {
         {"url": "https://geodata.kartoza.com", "description": "Production server"},
     ],
 }
-# Your stuff...
-# ------------------------------------------------------------------------------
+
+VERSATILEIMAGEFIELD_SETTINGS = {"progressive_jpeg": True}

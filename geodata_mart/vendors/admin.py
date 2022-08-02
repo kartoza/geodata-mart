@@ -30,7 +30,46 @@ class VendorAdmin(admin.ModelAdmin):
         "name",
         "abstract",
         "description",
+        "logo",
+        "media",
         "users",
         "staff",
         "admins",
+    ]
+
+
+@admin.register(models.VendorMessage)
+class VendorMessageAdmin(admin.ModelAdmin):
+    """Messages"""
+
+    list_display = (
+        "id",
+        "sender",
+        "receiver",
+        "subject",
+        "category",
+        "preview",
+        "project",
+        "job",
+        "parent",
+        "created_date",
+    )
+    list_display_links = ("id",)
+    list_filter = (
+        "sender",
+        "receiver",
+        "category",
+        "project",
+    )
+    search_fields = ("sender", "receiver", "content")
+    ordering = ("-created_date", "id", "receiver", "sender")
+    fields = [
+        "sender",
+        "receiver",
+        "subject",
+        "category",
+        "content",
+        "project",
+        "job",
+        "parent",
     ]

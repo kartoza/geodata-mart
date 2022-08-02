@@ -41,6 +41,7 @@ from qgis import processing
 import os
 from pathlib import Path
 from datetime import date
+from math import floor
 
 
 class GdmClipProjectLayers(QgsProcessingAlgorithm):
@@ -63,7 +64,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
     CLIP_GEOM = "CLIP_GEOM"
     OUTPUT_CRS = "OUTPUT_CRS"
     PROJECT_CRS = "PROJECT_CRS"
-    BUFFER_DIST_KM = "BUFFER_DIST_KM"
+    PROGRESS_RECORDER = "PROGRESS_RECORDER"
     OUTPUT = "OUTPUT"
 
     def tr(self, string):
@@ -205,6 +206,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             )
         )
 
+        self.addParameter(
+            QgsProcessingParameterString(
+                name=self.PROGRESS_RECORDER,
+                description=self.tr(
+                    "Celery Progress Recorder Object. GeoData Mart Use Only."
+                ),
+                optional=True,
+            )
+        )
+
         # Output geopackage
         self.addParameter(
             QgsProcessingParameterString(
@@ -215,7 +226,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
 
     def getParameterValue(self, parameters, parameter_name):
         """Test whether an input parameter is available and truthy,
-        then return the retrieved paramter value"""
+        then return the retrieved parameter value"""
         if parameter_name in parameters:
             if bool(parameters[parameter_name]):
                 return_value = parameters[parameter_name]
@@ -230,6 +241,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         input_string = input_string.replace("[", "")
         input_string = input_string.replace("]", "")
         input_string = input_string.replace("\\", "")
+        input_string = input_string.replace('"', "")
         output_list = input_string.split(",")
         output_list = [
             a.replace(",", "").strip() for a in output_list if bool(a.strip())
@@ -242,7 +254,14 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         ]
         return output_list
 
-    def zipOutputs(self, parameters, context, feedback, file_name):
+    def incrementProgress(self, feedback, msg="Processing step complete"):
+        feedback.setProgress(feedback.progress() + self.increment)
+        if self.progress_recorder:
+            self.progress_recorder.set_progress(
+                floor(feedback.progress() * 0.8) + 10, 100, description=msg
+            )  # current, total, description
+
+    def zipOutputs(self, parameters, context, feedback, extensions, file_name):
         """
         Compile the outputs from the processing tool into a single zip file
         """
@@ -257,6 +276,14 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     for filename in files:
                         filepath = os.path.join(root, filename)
                         file_paths.append(filepath)
+
+            # Exclude redundant files from output
+            for extension in extensions:
+                file_paths = [
+                    filepath
+                    for filepath in file_paths
+                    if not filepath.endswith(extension)
+                ]
 
             with ZipFile(file_name, "w") as zip:
                 for file in file_paths:
@@ -407,7 +434,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             else:
                 clipping_geometry = clip_layer
 
-            feedback.setProgress(feedback.progress() + self.increment)
+            self.incrementProgress(feedback, msg="Clipping geometry created")
 
             # Store clipping bounds as layer
             clip_file_output = os.path.join(self.output_path, self.jobid + ".gpkg")
@@ -451,6 +478,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer (QgsMapLayer): Input layer to be clipped
             clip_layer (QgsGeometry): Masking geometry to use for clipping
         """
+
+        # Try and resolve invalid layers
+        if not layer.isValid():
+            layer.dataProvider.forceReload()  # Attempt reload
+            if not layer.isValid():
+                QgsProject.instance().removeMapLayer(layer.id())
+                feedback.reportError(
+                    str(f"Layer {layer.name()} is not valid"), fatalError=False
+                )
+
         layer_name = layer.name().replace('"', "")
         output_gpkg = os.path.join(self.output_path, self.jobid + ".gpkg")
 
@@ -458,7 +495,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             clipped_vector = processing.run(
                 "native:clip",
                 {
-                    "INPUT": layer.source(),
+                    "INPUT": layer,
                     "OVERLAY": clip_layer,
                     "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
                 },
@@ -466,7 +503,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 feedback=feedback,
             )["OUTPUT"]
 
-            feedback.setProgress(feedback.progress() + self.increment)
+            self.incrementProgress(
+                feedback,
+                msg=f"Vector layer {layer.name()} clipped",
+            )
 
             if self.output_crs:
                 output_vector = processing.run(
@@ -480,7 +520,11 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                     feedback=feedback,
                 )["OUTPUT"]
 
-                feedback.setProgress(feedback.progress() + self.increment)
+                self.incrementProgress(
+                    feedback,
+                    msg=f"Vector layer {layer.name()} processed",
+                )
+
             else:
                 output_vector = clipped_vector
 
@@ -509,7 +553,12 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             del filesave_error
 
         except Exception as e:
+            QgsProject.instance().removeMapLayer(layer.id())
             feedback.reportError(str(e), fatalError=False)
+
+            self.incrementProgress(
+                feedback, msg=f"Vector layer {layer.name()} encountered an error"
+            )
 
         finally:
             # Change the project layers source to the clipped output
@@ -539,10 +588,20 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer (QgsMapLayer): Input layer to be clipped
             clip_layer (QgsGeometry): Masking geometry to use for clipping
         """
+
+        # Try and resolve invalid layers
+        if not layer.isValid():
+            layer.dataProvider.forceReload()  # Attempt reload
+            if not layer.isValid():
+                QgsProject.instance().removeMapLayer(layer.id())
+                feedback.reportError(
+                    str(f"Layer {layer.name()} is not valid"), fatalError=False
+                )
+
         layer_name = layer.name().replace('"', "")
         output_img = os.path.join(self.output_path, f"{layer_name}.tif")
-        try:
 
+        try:
             if self.output_crs:
                 crs = QgsCoordinateReferenceSystem(self.output_crs)
             else:
@@ -550,7 +609,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             clipped_raster = processing.run(
                 "gdal:cliprasterbymasklayer",
                 {
-                    "INPUT": layer.source(),
+                    "INPUT": layer,
                     "MASK": clip_layer,
                     "SOURCE_CRS": None,
                     "TARGET_CRS": None,
@@ -572,10 +631,17 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
                 feedback=feedback,
             )["OUTPUT"]
 
-            feedback.setProgress(feedback.progress() + self.increment)
+            self.incrementProgress(
+                feedback,
+                msg=f"Raster layer {layer.name()} clipped",
+            )
 
         except Exception as e:
+            QgsProject.instance().removeMapLayer(layer.id())
             feedback.reportError(str(e), fatalError=False)
+            self.incrementProgress(
+                feedback, msg=f"Raster layer {layer.name()} encountered an error"
+            )
 
         finally:
             # Change the project layers source to the clipped output
@@ -630,6 +696,25 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         self.output_crs = self.getParameterValue(parameters, "OUTPUT_CRS")
         self.project_crs = self.getParameterValue(parameters, "PROJECT_CRS")
 
+        # Setup Progress recorder
+        self.progress_recorder = self.getParameterValue(parameters, "PROGRESS_RECORDER")
+
+        if self.progress_recorder:  # Should be the Celery Async task ID
+
+            import pickle  # pylint: disable=import-outside-toplevel
+            import codecs  # pylint: disable=import-outside-toplevel
+
+            self.progress_recorder = pickle.loads(
+                codecs.decode(self.progress_recorder.encode(), "base64")
+            )
+
+            try:
+                self.progress_recorder.set_progress(
+                    10, 100, description="QGIS Processing Initialized"
+                )  # current, total, description
+            except:
+                raise ValueError("Invalid progress recorder definition")
+
         # Assess project layers and requested layers
         map_layers = self.getCleanListFromCsvString(parameters["LAYERS"])
 
@@ -674,16 +759,22 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             layer
             for layer in QgsProject.instance().mapLayers().values()
             if layer.type() == QgsMapLayer.VectorLayer
+            and (not layer.shortName() in exclude_layers)
+            and (not layer.name() in exclude_layers)
+            and (not layer.source() in exclude_layers)
         ]
-        rasters_lyrs = [
+        raster_lyrs = [
             layer
             for layer in QgsProject.instance().mapLayers().values()
             if layer.type() == QgsMapLayer.RasterLayer
+            and (not layer.shortName() in exclude_layers)
+            and (not layer.name() in exclude_layers)
+            and (not layer.source() in exclude_layers)
         ]
 
         child_processes = (
             (len(vector_lyrs) * vector_child_alg_steps)
-            + (len(rasters_lyrs) * raster_child_alg_steps)
+            + (len(raster_lyrs) * raster_child_alg_steps)
             + additional_steps
         )
 
@@ -697,7 +788,7 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
             vector_child_alg_steps,
             raster_child_alg_steps,
             vector_lyrs,
-            rasters_lyrs,
+            raster_lyrs,
         )
 
         # Set jobid (defines output filenames) and destination path
@@ -765,8 +856,10 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         self.setProjectExtent(parameters, context, feedback, clipping_geometry)
 
         for layer in QgsProject.instance().mapLayers().values():
-            if not layer.name() in exclude_layers and (
-                not layer.source() in exclude_layers
+            if (
+                not layer.shortName() in exclude_layers
+                and (not layer.name() in exclude_layers)
+                and (not layer.source() in exclude_layers)
             ):
                 feedback.pushInfo(f"Processing Layer {layer.name()}")
                 self.clipLayer(
@@ -783,8 +876,16 @@ class GdmClipProjectLayers(QgsProcessingAlgorithm):
         QgsProject.instance().clear()
         # Package the outputs
         output_zip_path = str(os.path.join(self.output_path, self.jobid + ".zip"))
-        zip = self.zipOutputs(parameters, context, feedback, output_zip_path)
+        exclude_files_ext = [".gpkg-shm", ".gpkg-wal", ".gpkg-wal", ".gpkg-journal"]
+        zip = self.zipOutputs(
+            parameters, context, feedback, exclude_files_ext, output_zip_path
+        )
+        if self.progress_recorder:
+            self.progress_recorder.set_progress(
+                90, 100, description="QGIS Processing Complete"
+            )  # current, total, description
         # Remove obsolete files
-        self.removeOutputs(parameters, context, feedback, [".gpkg", ".tif"])
+        remove_files_ext = [".gpkg", ".gpkg-shm", ".gpkg-wal", ".gpkg-journal", ".tif"]
+        self.removeOutputs(parameters, context, feedback, remove_files_ext)
 
         return {self.OUTPUT: output_zip_path}

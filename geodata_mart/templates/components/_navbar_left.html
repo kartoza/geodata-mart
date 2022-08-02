@@ -1,14 +1,60 @@
 {% load static i18n compress %}
+{% url 'gallery' as gallery_url %}
+{% url 'maps:projects' as projects_url %}
+{% url 'maps:data' as data_url %}
+{% url 'maps:search' as search_url %}
+{% url 'vendors:contact' as contact_url %}
+{% url 'about' as about_url %}
+{% url 'devapp:dev' as dev_url %}
 <ul class="navbar-nav mr-auto">
-  <li class="nav-item active">
-    <a class="nav-link" href="{% url 'gallery' %}">Home <span class="visually-hidden">(current)</span></a>
+  <li id="data-view-selector" class="nav-item">
+    <div class="dropdown">
+      <a class="nav-link{% if request.path == gallery_url or request.path == projects_url or request.path == data_url %} active{% endif %}"
+        id="dataMenu" title="{% translate "Data Menu" %}" data-bs-toggle="dropdown"
+        aria-expanded="false">{% translate "Data" %}</a>
+      <ul class="dropdown-menu text-small bg-dark" role="menu" aria-labelledby="dataMenu">
+        <li>
+          <a class="dropdown-item nav-link{% if request.path == gallery_url %} active{% endif %}"
+            href="{{ gallery_url }}">{% translate "All Data" %}
+            {% if request.path == gallery_url %}<span class="visually-hidden">(current)</span>{% endif %}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item nav-link{% if request.path == projects_url %} active{% endif %}"
+            href="{{ projects_url }}">{% translate "Projects" %}
+            {% if request.path == projects_url %}<span class="visually-hidden">(current)</span>{% endif %}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item nav-link{% if request.path == data_url %} active{% endif %}"
+            href="{{ data_url }}">{% translate "Data" %}
+            {% if request.path == data_url %}<span class="visually-hidden">(current)</span>{% endif %}
+          </a>
+        </li>
+      </ul>
+    </div>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="{% url 'about' %}">About</a>
+    <a class="nav-link{% if request.path == about_url%} active{% endif %}"
+      href="{{ about_url }}">{% translate "About" %}
+      {% if request.path == about_url %}<span class="visually-hidden">(current)</span class=>{% endif %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link{% if request.path == search_url%} active{% endif %}"
+      href="{{ search_url }}">{% translate "Search" %}
+      {% if request.path == search_url %}<span class="visually-hidden">(current)</span class=>{% endif %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link{% if request.path == contact_url%} active{% endif %}"
+      href="{{ contact_url }}">{% translate "Contact" %}
+      {% if request.path == contact_url %}<span class="visually-hidden">(current)</span class=>{% endif %}
+    </a>
   </li>
   {% if debug %}
   <li class="nav-item">
-    <a class="nav-link" href="{% url 'devapp:dev' %}">Dev</a>
+    <a class="nav-link{% if request.path == dev_url%} active{% endif %}" href="{{ dev_url }}">Dev</a>
   </li>
   {% endif %}
 </ul>

@@ -1,5 +1,46 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block content %}
-{{ block.super }}
-<p>This project is still in an early alpha state.</p>
+<section class="py-5 text-center container">
+  <div class="row py-lg-5">
+    <div class="col-lg-6 col-md-8 mx-auto">
+      <h1 class="fw-light">{% translate "About" %}</h1>
+      <div>
+        {% blocktranslate %}
+        <p class="lead text-muted">
+          The GeoData Mart is a marketplace platform for discovering and retrieving spatial datasets for a particular
+          region of interest.
+        </p>
+        <p class="lead text-muted">
+          It is completely Open Source and available <a href="https://github.com/kartoza/geodata-mart">on GitHub</a>.
+        </p>
+        <p class="lead text-muted">
+          It allows users to select, clip, and ship collections of geodata quickly and conveniently, providing a single
+          zipped geopackage output that includes a QGIS project which is ready to use immediately.
+        </p>
+        <p class="lead text-muted">
+          <strong>
+            Please note that this platform is currently in the very early (experimental) stages of development.
+          </strong>
+        </p>
+        <p>If you are looking for alternative data sources, you can review (or contribute) to the list of publicly
+          available data sets for your region of interest from <a
+            href="https://github.com/kartoza/awesome-geodata">Awesome GeoData</a> list.</p>
+        {% endblocktranslate %}
+      </div>
+      {% if not request.user.is_authenticated %}
+      <div class="d-flex justify-content-between">
+        <div class="p-2 flex-fill">
+          <a href="{% url 'account_signup' %}"
+            class="btn btn-block btn-secondary btn-block m-2 p-4 w-100">{% translate "Sign Up" %}</a>
+        </div>
+        <div class="p-2 flex-fill">
+          <a href="{% url 'account_login' %}"
+            class="btn btn-primary btn-block m-2 p-4 w-100">{% translate "Sign In" %}</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
 {% endblock content %}

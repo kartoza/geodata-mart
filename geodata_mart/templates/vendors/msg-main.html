@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block extrahead %}
+{% endblock extrahead %}
+
+{% block content %}
+<main>
+  {% include "components/_authenticate.html" %}
+
+  {% if not request.user.is_authenticated %}
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <h1>{% translate "Please sign in to submit feedback" %}</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if request.user.is_authenticated %}
+  <form id="msg-form" action="{% url 'vendors:msg' %}" method="post">{% csrf_token %}</form>
+  <div class="py-5">
+    <div class="container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto text-center">
+          <div class="text-center w-100 text-muted">{% translate "Feedback" %}</div>
+          <input form="msg-form" type="hidden" id="msg-sender" name="sender" value="{{ request.user.id }}">
+          <input form="msg-form" type="hidden" id="msg-receiver" name="receiver" value="1">
+          <div class="w-100 p-1">
+            <div class="w-100 py-1">
+              <input form="msg-form" type="text" id="msg-subject" name="subject" class="form-control w-100 p-1"
+                placeholder="{% translate "Subject" %}">
+            </div>
+            <div class="w-100 py-1">
+              <textarea form="msg-form" type="textarea" id="msg-content" name="content" class="form-control w-100 p-1"
+                placeholder="{% translate "Message" %}"></textarea>
+            </div>
+            <div class="w-100 py-1 form-floating">
+              <label for="msg-category" class="text-muted fs-6 p-2">{% translate "Category" %}</label>
+              <select form="msg-form" id="msg-category" name="category" class="form-control w-100 pt-6">
+                <option value="enquiry" selected="true">{% translate "General Enquiry" %}</option>
+                <option value="kudos">{% translate "Kudos" %}</option>
+                <option value="bulk">{% translate "Bulk Data" %}</option>
+                <option value="data">{% translate "Data Request" %}</option>
+                <option value="error">{% translate "Error Report" %}</option>
+              </select>
+            </div>
+            <div class="w-100 py-1">
+              <button class="btn btn-primary rounded w-100" form="msg-form" type="submit">
+                <i class="bi bi-envelope-fill"></i>
+                {% translate "Send Message" %}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</main>
+{% endblock content %}
+
+{% block inline_javascript %}
+{% endblock inline_javascript %}

@@ -7,32 +7,115 @@
 <main>
   {% include "components/_authenticate.html" %}
 
+  {% if not jobs|length > 0 %}
+  <section class="py-5 text-center container">
+    <div class="row py-lg-5">
+      <div class="col-lg-6 col-md-8 mx-auto">
+        <h1 class="fw-light">{% translate "My Data" %}</h1>
+        <p class="lead text-muted">
+          {% translate "You do not seem to have any orders yet." %}
+        </p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <div class="py-5">
     <div class="container">
-      {% for job in jobs %}
       <div>
-        <ul>
-          {% for name, value in job.get_fields %}
-          {% if name == 'job_id' %}
-          <li>{{ name }}: <a href="{% url 'maps:checkout' value %}">{{ value }}</a></li>
-          {% else %}
-          <li>{{ name }}: {{ value }}</li>
-          {% endif %}
-          {% endfor %}
-          {% for result in results %}
-          {% if result.job_id == job %}
-          <li>
-            <a href="{{ result.file_object.url }}">
-              {{ result.file_name }}
-            </a>
-          </li>
-          {% endif %}
-          {% endfor %}
-        </ul>
+        <table class="table text-center align-middles">
+          <thead>
+            <tr>
+              <th scope="col">{% translate "Project" %}</th>
+              <th scope="col">{% translate "Job" %}</th>
+              <th scope="col">{% translate "State" %}</th>
+              <th scope="col">{% translate "Cost" %}</th>
+              {% comment %} <th scope="col">{% translate "Comment" %}</th> {% endcomment %}
+              <th scope="col">{% translate "Issues" %}</th>
+              <th scope="col">{% translate "Data" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+            <tr>
+              {% for name, value in job.get_fields %}
+              {% if name == 'project_id' %}
+              <th scope="row">{{ job.project_id.project_name }}</th>
+              {% endif %}
+              {% endfor %}
+              {% for name, value in job.get_fields %}
+              {% if name == 'job_id' %}
+              <td><a href="{% url 'maps:job' value %}">{{ value }}</a></td>
+              {% endif %}
+              {% endfor %}
+              {% comment %}
+              UNSPECIFIED = 0, _("Unspecified")
+              ABANDONED = 1, _("Abandoned")
+              UNFULFILLED = 2, _("Unfulfilled")
+              PROCESSED = 3, _("Processed")
+              COMPLETED = 4, _("Completed")
+              FAILED = 5, _("Failed")
+              PROCESSING = 6, _("Processing")
+              UNKNOWN = 7, _("Unknown")
+              STALE = 8, _("Stale")
+              OTHER = 9, _("Other")
+              {% endcomment %}
+              {% for name, value in job.get_fields %}
+              {% if name == 'state' and value == '0' %}
+              <td><a class="btn btn-primary" href="{% url 'maps:checkout' job.job_id %}">
+                  {% translate "Ready" %}</a></td>
+              {% elif name == 'state' and value == '1' %}
+              <td class="text-muted">{% translate "Cancelled" %}</td>
+              {% elif name == 'state' and value == '3' %}
+              <td class="table-success rounded">{% translate "Completed" %}</td>
+              {% elif name == 'state' and value == '4' %}
+              <td class="table-success rounded">{% translate "Completed" %}</td>
+              {% elif name == 'state' and value == '5' %}
+              <td class="table-error rounded">{% translate "ERROR" %}</td>
+              {% elif name == 'state' %}
+              <td class="table-warning rounded fs-6 m-3">{% translate "Other" %}</td>
+              {% endif %}
+              {% endfor %}
+              <td>0</td>
+              {% comment %} {% for name, value in job.get_fields %}
+              {% if name == 'comment' %}
+              <td>{{ value }}</td>
+              {% endif %}
+              {% endfor %} {% endcomment %}
+
+              {% if job.tasks|length > 1 %}
+              <td class="table-error rounded">{% translate "Too many tasks" %}</td>
+              {% else %}
+              <td></td>
+              {% endif %}
+
+              {% for result in results %}
+              {% if forloop.first %}
+              {% if result.job_id == job and result.file_available %}
+              <td><a class="btn btn-success" href="{{ result.file_object.url|urlencode }}">
+                  <i class="bi bi-download"></i>
+                </a>
+              </td>
+              {% elif result.job_id == job and not result.file_available %}
+              <td>
+                <div class="btn btn-primary disabled">
+                  <i class="bi bi-download"></i>
+                </div>
+              </td>
+              {% else %}
+              <td><a class="btn btn-secondary disabled">
+                  <i class="bi bi-download"></i>
+                </a>
+              </td>
+              {% endif %}
+              {% endif %}
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      {% endfor %}
     </div>
-  </div>
 
 </main>
 {% endblock content %}

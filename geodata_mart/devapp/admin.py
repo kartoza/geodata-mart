@@ -24,4 +24,4 @@ class VendorAdmin(admin.ModelAdmin):
     )
     search_fields = ("short_name", "full_name", "abstract")
     ordering = ("-updated_date", "id", "short_name")
-    fields = ["short_name", "full_name", "abstract"]
+    fields = ["file_upload", "short_name", "full_name", "abstract"]

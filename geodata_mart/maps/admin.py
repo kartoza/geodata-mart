@@ -28,6 +28,36 @@ class MetaTagsAdmin(admin.ModelAdmin):
     ]
 
 
+@admin.register(models.SpatialReferenceSystem)
+class SpatialReferenceSystemAdmin(admin.ModelAdmin):
+    """Manage spatial reference system definitions tags."""
+
+    list_display = (
+        "id",
+        "short_name",
+        "idstring",
+        "full_name",
+        "abstract",
+        "description",
+        "comment",
+    )
+    list_display_links = ("id", "short_name", "idstring")
+    list_filter = ("short_name", "idstring")
+    search_fields = ("short_name", "idstring", "abstract", "description", "comment")
+    ordering = ("id", "idstring")
+    fields = [
+        "short_name",
+        "idstring",
+        "full_name",
+        "abstract",
+        "description",
+        "proj",
+        "wkt",
+        "type",
+        "comment",
+    ]
+
+
 @admin.register(models.ResultFile)
 class ResultFileAdmin(admin.ModelAdmin):
     """Upload, review, manage, and process Result Files"""
@@ -139,7 +169,13 @@ class QgisIniFileAdmin(ResultFileAdmin, admin.ModelAdmin):
 
 @admin.register(models.AuthDbFile)
 class AuthDbFileAdmin(ResultFileAdmin, admin.ModelAdmin):
-    pass
+    fields = [
+        "file_name",
+        "file_object",
+        "secret",
+        "version",
+        "comment",
+    ]
 
 
 @admin.register(models.ProcessingScriptFile)
@@ -366,7 +402,6 @@ class ProjectAdmin(admin.ModelAdmin):
         "max_area",
         "type",
         "state",
-        "coverage",
         "comment",
         "created_date",
         "updated_date",
@@ -398,8 +433,16 @@ class ProjectAdmin(admin.ModelAdmin):
         "buffer_max",
         "buffer_step",
         "buffer_default",
+        "icon",
+        "preview_image",
         "coverage",
         "state",
+        "config_qgis",
+        "config_auth",
+        "config_pgservice",
+        "project_srs",
+        "layer_srs",
+        "allowed_srs",
         "comment",
         "siblings",
         "tags",
@@ -439,4 +482,70 @@ class ProjectCoverageFileAdmin(admin.ModelAdmin):
         "file_object",
         "project_id",
         "state",
+    ]
+
+
+@admin.register(models.ProjectDataFile)
+class ProjectDataFileAdmin(ResultFileAdmin, admin.ModelAdmin):
+    """Manage data files for projects."""
+
+    list_display = (
+        "id",
+        "file_name",
+        "file_object",
+        "version",
+        "project_id",
+        "comment",
+        "file_size",
+        "file_stored",
+        "created_date",
+        "updated_date",
+    )
+    fields = [
+        "file_name",
+        "file_object",
+        "version",
+        "comment",
+    ]
+
+
+@admin.register(models.DownloadableDataItem)
+class DownloadableDataItemAdmin(ResultFileAdmin, admin.ModelAdmin):
+    """Manage data files for download."""
+
+    list_display = (
+        "id",
+        "vendor_id",
+        "file_name",
+        "file_object",
+        "file_stored",
+        "type",
+        "state",
+        "cost",
+        "version",
+        "comment",
+        "file_size",
+        "created_date",
+        "updated_date",
+    )
+    fields = [
+        "file_name",
+        "file_object",
+        "vendor_id",
+        "type",
+        "state",
+        "cost",
+        "data_license",
+        "data_attribution",
+        "data_metadata",
+        "abstract",
+        "external_link",
+        "description",
+        "kudos",
+        "tags",
+        "icon",
+        "coverage",
+        "preview_image",
+        "version",
+        "comment",
     ]

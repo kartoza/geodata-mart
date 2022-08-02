@@ -1,6 +1,4 @@
 from django.db import models
-from django.contrib.postgres.fields import JSONField
-from geodata_mart.vendors.models import Vendor
 from django.utils.translation import gettext_lazy as _
 
 
@@ -45,7 +43,7 @@ class Account(models.Model):
         null=True,
     )
     account_organization = models.ForeignKey(
-        Vendor,
+        "vendors.Vendor",
         on_delete=models.DO_NOTHING,
         verbose_name=_("Organization"),
         null=True,
