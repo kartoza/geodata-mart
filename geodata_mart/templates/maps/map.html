@@ -792,7 +792,8 @@
         if (Object.keys(drawnItems._layers).length === 0 && type == "marker") {
           // buffer the point if it is the first drawn item
           drawnItems.addLayer(L.geoJson(turf.buffer(turf.point([layer._latlng.lng, layer._latlng.lat]),
-          this.minimalBufferDist, {
+          //this.minimalBufferDist, {
+          1, {
               units: 'kilometers'
           })))
         }
