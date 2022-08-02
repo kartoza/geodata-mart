@@ -101,18 +101,6 @@ class Command(BaseCommand):
         crs3587 = SpatialReferenceSystem.objects.get(short_name="3587")
         crs9221 = SpatialReferenceSystem.objects.get(short_name="9221")
 
-        self.stdout.write("create default project file...")
-        project_file = "seed/ngi.qgs"
-        if not project_storage.exists(project_file):
-            raise Exception(f"{project_storage.path(project_file)} not found")
-        ngi_project_file = QgisProjectFile.objects.create(
-            file_name="NGI Project File",
-            state=StateChoices.OTHER,
-        )
-
-        with project_storage.open(project_file) as f:
-            ngi_project_file.file_object.save(basename(project_file), f, save=True)
-
         # self.stdout.write("load auth database...")
         # db_file = "seed/kartozagis_qgis.db"
         # if not project_storage.exists(db_file):
@@ -134,7 +122,6 @@ class Command(BaseCommand):
                 project_name="NGI",
                 state=StateChoices.ACTIVE,
                 max_area=400,  # 20x20 square kilometers
-                qgis_project_file=ngi_project_file,
                 # config_auth=auth_db,
                 vendor_id=kartoza,
                 project_srs=crs9221,
@@ -231,6 +218,19 @@ class Command(BaseCommand):
             with project_storage.open(preview_image) as f:
                 ngi_project.preview_image.save(basename(preview_image), f, save=True)
 
+        self.stdout.write("create default project file...")
+        project_file = "seed/ngi.qgs"
+        if not project_storage.exists(project_file):
+            raise Exception(f"{project_storage.path(project_file)} not found")
+        ngi_project_file = QgisProjectFile.objects.create(
+            file_name="NGI Project File",
+            state=StateChoices.OTHER,
+            project_id=ngi_project,
+        )
+
+        with project_storage.open(project_file) as f:
+            ngi_project_file.file_object.save(basename(project_file), f, save=True)
+
         # self.stdout.write("add default project coverage...")
         # if not ngi_project.coverage:
 
@@ -282,18 +282,6 @@ class Command(BaseCommand):
         with project_storage.open(preview_image) as f:
             data_record.preview_image.save(basename(preview_image), f, save=True)
 
-        self.stdout.write("create osm project file...")
-        project_file = "seed/rsa_osm.qgs"
-        if not project_storage.exists(project_file):
-            raise Exception(f"{project_storage.path(project_file)} not found")
-        osm_project_file = QgisProjectFile.objects.create(
-            file_name="RSA OSM Project File",
-            state=StateChoices.OTHER,
-        )
-
-        with project_storage.open(project_file) as f:
-            osm_project_file.file_object.save(basename(project_file), f, save=True)
-
         self.stdout.write("get osm project object...")
         osm_project = Project.objects.filter(project_name="RSA OSM").first()
         # auth_db = AuthDbFile.objects.filter(file_name="kartozagis_qgis").first()
@@ -303,7 +291,6 @@ class Command(BaseCommand):
                 project_name="RSA OSM",
                 state=StateChoices.ACTIVE,
                 max_area=400,  # 20x20 square kilometers
-                qgis_project_file=osm_project_file,
                 # config_auth=auth_db,
                 vendor_id=kartoza,
                 project_srs=crs9221,
@@ -364,5 +351,18 @@ class Command(BaseCommand):
 
             with project_storage.open(gpkg_file) as f:
                 gpkg_record.file_object.save(basename(gpkg_file), f, save=True)
+
+        self.stdout.write("create osm project file...")
+        project_file = "seed/rsa_osm.qgs"
+        if not project_storage.exists(project_file):
+            raise Exception(f"{project_storage.path(project_file)} not found")
+        osm_project_file = QgisProjectFile.objects.create(
+            file_name="RSA OSM Project File",
+            state=StateChoices.OTHER,
+            project_id=osm_project,
+        )
+
+        with project_storage.open(project_file) as f:
+            osm_project_file.file_object.save(basename(project_file), f, save=True)
 
         self.stdout.write("time to party...")
