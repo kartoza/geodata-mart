@@ -37,14 +37,13 @@ certificatesResolvers:
 http:
   routers:
     web-secure-router:
-      rule: "Host(`data.kartoza.com`) || Host(`data.kartoza.com`)"
+      rule: "Host(`data.kartoza.com`)"
       entryPoints:
         - web-secure
       middlewares:
         - csrf
       service: django
       tls:
-        # https://docs.traefik.io/master/routing/routers/#certresolver
         certResolver: letsencrypt
 
     flower-secure-router:
@@ -53,7 +52,22 @@ http:
         - flower
       service: flower
       tls:
-        # https://docs.traefik.io/master/routing/routers/#certresolver
+        certResolver: letsencrypt
+
+    minio-api-secure-router:
+      rule: "Host(`minio.data.kartoza.com`)"
+      entryPoints:
+        - minio-api
+      service: minio-api
+      tls:
+        certResolver: letsencrypt
+
+    minio-console-secure-router:
+      rule: "Host(`minio.data.kartoza.com`)"
+      entryPoints:
+        - minio-console
+      service: minio-console
+      tls:
         certResolver: letsencrypt
 
   middlewares:

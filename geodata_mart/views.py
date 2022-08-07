@@ -13,12 +13,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@login_required
 def geodata(request, path):
     if request.method == "GET":
         BASE_DIR = Path(settings.QGIS_DATA_ROOT)
         protected_paths = ["projects", "processing", "test"]
         protected_paths = [BASE_DIR / protected for protected in protected_paths]
+        public_paths = ["images", "__sized__"]
+        public_paths = [BASE_DIR / public for public in public_paths]
         filepath = BASE_DIR / Path(project_storage.path(unquote(path)))
         filename = filepath.name
 
@@ -30,7 +31,23 @@ def geodata(request, path):
         if is_protected and not request.user.is_staff:
             raise PermissionDenied()
 
-        if project_storage.exists(filepath):
+        is_public = False
+        for public in public_paths:
+            if public in filepath.parents:
+                is_public = True
+
+        if project_storage.exists(filepath) and request.user.is_authenticated:
+            result = project_storage.open(filepath, "rb")
+            mime_type, _ = mimetypes.guess_type(filepath)
+            if not mime_type:
+                mime_type = "text/plain"
+            response = HttpResponse(result, content_type=mime_type)
+            response["Content-Disposition"] = f"attachment; filename={filename}"
+            logger.info(f"{filename} downloaded by {request.user.id}")
+            return response
+        elif project_storage.exists(filepath) and not is_public:
+            raise PermissionDenied()
+        elif project_storage.exists(filepath):
             result = project_storage.open(filepath, "rb")
             mime_type, _ = mimetypes.guess_type(filepath)
             if not mime_type:
