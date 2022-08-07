@@ -4,6 +4,8 @@ Search, select, clip, and deliver spatial data sources.
 
 [https://data.kartoza.com](http://data.kartoza.com)
 
+![geodatamart-preview](geodatamart.gif)
+
 ## Run
 
 The development stack is managed with Docker Compose.
