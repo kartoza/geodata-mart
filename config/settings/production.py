@@ -9,30 +9,6 @@ from sentry_sdk.integrations.redis import RedisIntegration
 from .base import *  # noqa
 from .base import env
 
-
-import logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-        'mail_admins': {
-            'level': 'CRITICAL',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-}
-
-# DEBUG = True
-
-
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
@@ -189,10 +165,19 @@ LOGGING = {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-        }
+        },
+        'mail_admins': {
+            'level': 'CRITICAL',
+            "class": "django.utils.log.AdminEmailHandler",
+            "formatter": "verbose",
+        },
     },
     "root": {"level": "INFO", "handlers": ["console"]},
     "loggers": {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
         "django.db.backends": {
             "level": "ERROR",
             "handlers": ["console"],
