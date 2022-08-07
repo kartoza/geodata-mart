@@ -2,6 +2,10 @@
 
 Search, select, clip, and deliver spatial data sources.
 
+[https://data.kartoza.com](http://data.kartoza.com)
+
+![geodatamart-preview](geodatamart.gif)
+
 ## Run
 
 The development stack is managed with Docker Compose.
@@ -36,7 +40,21 @@ Using the docker extension with vscode along with the `docker.commands.attach` c
 
 ## Deploy
 
-Deployment is expected to be completed with Kubernetes.
+Deployment is done with docker compose (for now).
+
+Some notes/ caveats on the 0.1 release deployment:
+
+- run docker compose with root level perms: otherwise running and creating users on postgresql may fail
+- lowercase for postgresql user: if you generate a random username make sure everything is cast to lowercase
+- file permissions issues: celery workers need to be run as root (for now) due to the qgis config and local user config not being 100%. As a result, the geodata/ qgis directory needs to probably be owned by root and have 777 permissions, due to django etc running under the django user. This may also cause issues with data removal from the admin ui in django
+- cascading reference removal: many foreign key fields relate to managed file objects, which include lifecycle hooks for keeping the filesystem and the db models in some sort of sync. There's a bug there that causes an error on cascading, so the default for most fk in architecture/ conception phase was "do nothing". This is also used for accounts etc for which the lifecycle is not yet defined. This needs review and reevaluation, as for now even removing users may result in a meaningless "500/ Oops" error, because accounts and all other related items need to be removed first. Same goes for projects etc.
+- docker logging config: it's the default atm and will likely cause system bloat
+
+## Adding projects
+
+There's a bit of a serious bug with regard to adding new project and config items... When developing/ iterating over the schema structure and what fields or requirements needed to be put into the system, the fk field was defined on the project, and then that related to the managed file objects. When the change was implemented to use dynamic file paths based on project details, it became possible to associate a file with the project and when calling save() (as demonstrated in the seed operation) the file would be uploaded to the project path. This keeps relative paths intact and prevents collisions.
+
+The problem is that this is not exposed through the admin ui, as when uploading a config file it is not possible to specify the reverse relation to the project in order to get the dynamic file path. I thought there may be a clever hack but I haven't been able to find anything and it seems like a schema restructure is a better option, but it's a bit late in the day for that to enter the deployment, so new project definitions will have to be managed programmatically for the time being or have auxiliary files placed in the relevant geodata root directory.
 
 ## Development
 

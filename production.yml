@@ -72,47 +72,22 @@ services:
     image: redis:6
     container_name: redis
 
-    # can't replicate from named upstream
-  celeryworker-1:
-    <<: *django
-    image: celeryworker-1
-    container_name: celeryworker-1
+  celeryworker:
+    build:
+      context: .
+      dockerfile: ./docker/production/CeleryWorker
+    platform: linux/x86_64
     depends_on:
       - redis
       - postgres
     volumes:
       - ./geodata:/qgis:z
+    env_file:
+      - .env
     command: /start-celeryworker
-  celeryworker-2:
-    <<: *django
-    image: celeryworker-2
-    container_name: celeryworker-2
-    depends_on:
-      - redis
-      - postgres
-    volumes:
-      - ./geodata:/qgis:z
-    command: /start-celeryworker
-  celeryworker-3:
-    <<: *django
-    image: celeryworker-3
-    container_name: celeryworker-3
-    depends_on:
-      - redis
-      - postgres
-    volumes:
-      - ./geodata:/qgis:z
-    command: /start-celeryworker
-  celeryworker-4:
-    <<: *django
-    image: celeryworker-4
-    container_name: celeryworker-4
-    depends_on:
-      - redis
-      - postgres
-    volumes:
-      - ./geodata:/qgis:z
-    command: /start-celeryworker
+    deploy:
+      mode: replicated
+      replicas: 6
 
   celerybeat:
     <<: *django
