@@ -18,6 +18,9 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'mail_admins': {
+            'level': 'CRITICAL',
+        },
     },
     'loggers': {
         'django': {
