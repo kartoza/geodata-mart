@@ -20,11 +20,16 @@ services:
     container_name: django
     platform: linux/x86_64
     depends_on:
-      - postgres
-      - redis
-      - minio-init
-      - django-init
-      - mailhog
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      minio-init:
+        condition: service_started
+      django-init:
+        condition: service_started
+      mailhog:
+        condition: service_started
     volumes:
       - .:/app:z
       - ./geodata:/qgis:z
@@ -32,7 +37,7 @@ services:
       - .env
     ports:
       - "${DJANGO_PORT}:8000"
-      - 9999:9999
+      - "9999:9999"
     command: /start
 
   postgres:
@@ -46,7 +51,7 @@ services:
     #   - ${POSTGRES_PORT}:5432
     restart: on-failure
     healthcheck:
-      test: "exit 0"
+      test: "PGPASSWORD=${POSTGRES_PASS} pg_isready -h 127.0.0.1 -U ${POSTGRES_USER} -d ${POSTGRES_PASS}"
 
   dbbackups:
     image: kartoza/pg-backup:${POSTGRES_MAJOR_VERSION}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_RELEASE}
@@ -154,7 +159,8 @@ services:
         /usr/bin/mc policy set download gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME};
         exit 0
     depends_on:
-      - minio
+      minio:
+        condition: service_started
 
   django-init:
     <<: *django
@@ -170,14 +176,19 @@ services:
         set -o errexit; set -o nounset;
         export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_SERVICE_PORT}/${POSTGRES_DB}";
         export CELERY_BROKER_URL="${REDIS_URL}";
+        sleep 45;
         python /app/manage.py makemigrations;
         python /app/manage.py migrate;
         python /app/manage.py createsuperuser --noinput --skip-checks;
         python /app/manage.py seed;
         exit 0;
     depends_on:
-      - postgres
-      - redis
-      - minio-init
-      - mailhog
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      mailhog:
+        condition: service_started
+      minio-init:
+        condition: service_started
     ports: []

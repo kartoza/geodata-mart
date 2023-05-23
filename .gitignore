@@ -4,7 +4,7 @@
 *.ignore
 *.sqlite*
 *.db*
-
+*.idea/*
 # geodata
 # maintain directory structure, but exclude contents
 # note that models, scripts, and test data are explicitly added to prevent pollution, remembering
