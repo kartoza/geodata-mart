@@ -13,6 +13,7 @@ The development stack is managed with Docker Compose.
 Spin up development environment
 
 ```bash
+cp .env.example .env
 docker compose up -d --build
 ```
 
