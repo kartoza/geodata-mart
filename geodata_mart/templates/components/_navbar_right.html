@@ -1,14 +1,6 @@
 {% load static i18n compress %}
 {% url 'maps:results' as results_url %}
 <ul class="navbar-nav ml-auto">
-  <li class="nav-item mx-2">
-    <button id="toggle-darkmode-btn" x-data @click="$store.darkMode.toggle()" class="btn btn-dark nav-link"
-      title="{% translate "Toggle Dark Mode" %}">
-      <i class="bi bi-lightbulb-fill nav-link" alt="{% translate "dark mode" %}" width="32" height="32"></i>
-    </button>
-  </li>
-
-
 
 
   {% if request.user.is_authenticated %}
