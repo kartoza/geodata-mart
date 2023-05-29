@@ -3,6 +3,10 @@
 set -o errexit
 set -o nounset
 
-
+LOCKFILE=/app/.entrypoint.lock
+while [ ! -f ${LOCKFILE} ]
+do
+  sleep 2
+done
 rm -f './celerybeat.pid'
 celery -A config.celery_app beat -l INFO
