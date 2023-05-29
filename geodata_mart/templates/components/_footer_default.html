@@ -1,8 +1,179 @@
 {% load i18n %}
-<footer class="text-muted py-5">
-  <div class="container flex">
-    <div class="d-flex justify-content-center">
-      <p class="mb-1">{% translate "Geodata Mart is developed by" %} <a href="https://kartoza.com">Kartoza</a>.</p>
+{% url 'gallery' as gallery_url %}
+{% url 'vendors:contact' as contact_url %}
+{% url 'about' as about_url %}
+{% url 'account_login' as login_url %}
+{% url 'account_signup' as register_url %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<style media="screen">
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #fcfcfc;
+        font-family: sans-serif;
+    }
+
+    html, body {
+        height: 100%;
+    }
+
+    .container {
+        min-height: 100%;
+        position: relative;
+    }
+
+    footer {
+        position: fixed;
+        left: 0;
+        bottom: 0 !important;
+        width: 100%;
+        background: #484444;
+        color: #fff;
+        padding-top: 0px; /* Adjust the top padding here */
+        padding-bottom: 0px; /* Adjust the bottom padding here */
+        z-index: 0; /* Move the footer to the background */
+    }
+
+    .footer-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .footer-content h3 {
+        font-size: 2.1rem;
+        font-weight: 500;
+        text-transform: capitalize;
+        line-height: 3rem;
+    }
+
+    .footer-content p {
+        max-width: 500px;
+        margin: 10px auto;
+        line-height: 28px;
+        font-size: 14px;
+        color: #cacdd2;
+    }
+
+    .socials {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 1rem 0 3rem 0;
+    }
+
+    .socials li {
+        margin: 0 10px;
+    }
+
+    .socials a {
+        text-decoration: none;
+        color: #fff;
+        border: 1.1px solid white;
+        padding: 5px;
+        border-radius: 50%;
+    }
+
+    .socials a i {
+        font-size: 1.1rem;
+        width: 20px;
+        transition: color .4s ease;
+    }
+
+    .socials a:hover i {
+        color: aqua;
+    }
+
+    .footer-bottom {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #000;
+        padding: 20px;
+        padding-top: 0px;
+        padding-bottom: 0px; /* Adjust the height here */
+        text-align: center;
+    }
+
+    .footer-bottom p {
+        float: right; /* Adjust the position of text here here */
+        font-size: 14px;
+        word-spacing: 2px;
+        text-transform: capitalize;
+    }
+
+    .footer-bottom p a {
+        color: #44bae8;
+        font-size: 16px;
+        text-decoration: none;
+    }
+
+    .footer-bottom span {
+        text-transform: uppercase;
+        opacity: .4;
+        font-weight: 200;
+    }
+
+    .footer-menu {
+        float: left;
+    }
+
+    .footer-menu ul {
+        display: flex;
+    }
+
+    .footer-menu ul li {
+        padding-right: 10px;
+        display: block;
+    }
+
+    .footer-menu ul li a {
+        color: #cfd2d6;
+        text-decoration: none;
+    }
+
+    .footer-menu ul li a:hover {
+        color: #27bcda;
+    }
+
+    @media (max-width: 500px) {
+        .footer-menu ul {
+            display: flex;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+    }
+</style>
+<footer class="text-secondary">
+    <div class="footer-content">
+        <h3>Spatial Data Downloader</h3>
+        <p>A platform for downloading spatial data that can be readily used for analysis in a GIS System, i.e <a href="https://qgis.org/en/site/">QGIS</a>. The service produces a <a href="https://www.geopackage.org/">geopackage</a> database that is clipped to a user's AOI (area of interest).</p>
+        <ul class="socials">
+            <li><a href="https://www.facebook.com/kartozaGIS/"><i class="fa fa-facebook"></i></a></li>
+            <li><a href="https://twitter.com/KartozaGeo"><i class="fa fa-twitter"></i></a></li>
+            <li><a href="https://www.youtube.com/@KartozaGeo"><i class="fa fa-youtube"></i></a></li>
+            <li><a href="https://www.linkedin.com/company/kartoza-pty-ltd"><i class="fa fa-linkedin-square"></i></a></li>
+            <li><a href="https://github.com/kartoza/"><i class="fa fa-github"></i></a></li>
+        </ul>
     </div>
-  </div>
+    <div class="footer-bottom">
+        <p>© {% now "Y" %} <a href="https://foo.com/">Kartoza</a></p>
+        <div class="footer-menu d-flex justify-content-start">
+            <ul class="f-menu">
+                <li><a href="{{ gallery_url }}">Home</a></li>
+                <li><a href="{{ about_url }}">About</a></li>
+                <li><a href="{{ contact_url }}">Contact</a></li>
+                <li><a href="{{ register_url }}">Register</a></li>
+                <li><a href="{{ login_url }}">Login</a></li>
+            </ul>
+        </div>
+    </div>
 </footer>
