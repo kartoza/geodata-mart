@@ -122,6 +122,8 @@ services:
     command: -c 'minio server /data --console-address ":9001"'
     volumes:
       - minio-data:/data
+    healthcheck:
+      test: "curl -I http://localhost:9000/minio/health/live"
 
 
 volumes:
