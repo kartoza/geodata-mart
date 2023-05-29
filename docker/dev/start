@@ -4,6 +4,21 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+LOCKFILE=/app/.entrypoint.lock
+
+if [[ ! -f ${LOCKFILE} ]]; then
+  python /app/manage.py makemigrations
+  python /app/manage.py migrate
+  python /app/manage.py createsuperuser --noinput --skip-checks
+  if [[ "${SAMPLE_PROJECTS}" =~ [Tt][Rr][Uu][Ee] ]]; then
+    python /app/manage.py seed
+  fi
+  #PGPASSWORD=${POSTGRES_PASS} psql ${POSTGRES_DB} -U ${POSTGRES_USER} -p 5432 -h postgres -c "CREATE TABLE status (id serial primary key, done timestamp);"
+  #PGPASSWORD=${POSTGRES_PASS} psql ${POSTGRES_DB} -U ${POSTGRES_USER} -p 5432 -h postgres -c "INSERT INTO status(done) values (now());"
+  touch ${LOCKFILE}
+fi
+
+
 python /app/manage.py collectstatic --noinput
 
 compress_enabled() {

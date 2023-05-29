@@ -1,9 +1,24 @@
 version: "3"
 
-volumes:
-  db-data: null
-  db-backups: null
-  minio-data: null
+# Common Django template for GeoNode and Celery services below
+x-common-django:
+  &default-common-django
+  image: ${COMPOSE_PROJECT_NAME}_django
+  restart: on-failure
+  env_file:
+    - .env
+  volumes:
+    - .:/app:z
+    - ./geodata:/qgis:z
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    minio-init:
+      condition: service_started
+    mailhog:
+      condition: service_started
 
 services:
   mailhog:
@@ -12,29 +27,13 @@ services:
     ports:
       - "${MAILHOG_PORT}:8025"
 
-  django: &django
+  django:
+    << : *default-common-django
     build:
       context: .
       dockerfile: ./docker/dev/Dockerfile
-    image: django
-    container_name: django
+    container_name: django4${COMPOSE_PROJECT_NAME}
     platform: linux/x86_64
-    depends_on:
-      postgres:
-        condition: service_started
-      redis:
-        condition: service_started
-      minio-init:
-        condition: service_started
-      django-init:
-        condition: service_started
-      mailhog:
-        condition: service_started
-    volumes:
-      - .:/app:z
-      - ./geodata:/qgis:z
-    env_file:
-      - .env
     ports:
       - "${DJANGO_PORT}:8000"
       - "9999:9999"
@@ -47,8 +46,8 @@ services:
       - db-backups:/backups
     env_file:
       - .env
-    # ports:
-    #   - ${POSTGRES_PORT}:5432
+    ports:
+      - "5432"
     restart: on-failure
     healthcheck:
       test: "PGPASSWORD=${POSTGRES_PASS} pg_isready -h 127.0.0.1 -U ${POSTGRES_USER} -d ${POSTGRES_PASS}"
@@ -74,40 +73,32 @@ services:
   redis:
     image: redis:6
     container_name: redis
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
 
   celeryworker:
-    <<: *django
-    image: celeryworker
-    container_name: celeryworker
-    depends_on:
-      - redis
-      - postgres
-      - mailhog
+    << : *default-common-django
+    image: ${COMPOSE_PROJECT_NAME}_django
+    container_name: celeryworker${COMPOSE_PROJECT_NAME}
     ports: []
-    volumes:
-      - ./geodata:/qgis:z
     command: /start-celeryworker
-    # deploy:
-    #   mode: replicated
-    #   replicas: 2
+
 
   celerybeat:
-    <<: *django
-    image: celerybeat
-    container_name: celerybeat
-    depends_on:
-      - redis
-      - postgres
-      - mailhog
-      - django
+    << : *default-common-django
+    image: ${COMPOSE_PROJECT_NAME}_django
+    container_name: celerybeat${COMPOSE_PROJECT_NAME}
     ports: []
     command: /start-celerybeat
     restart: unless-stopped
 
   flower:
-    <<: *django
-    image: flower
-    container_name: flower
+    <<: *default-common-django
+    image: ${COMPOSE_PROJECT_NAME}_django
+    container_name: flower${COMPOSE_PROJECT_NAME}
     depends_on:
       - celerybeat
     ports:
@@ -126,6 +117,8 @@ services:
     ports:
       - "${MINIO_API_PORT}:9000"
       - "${MINIO_CONSOLE_PORT}:9001"
+    healthcheck:
+      test: "curl -I http://localhost:9000/minio/health/live"
 
   docs:
     image: docs
@@ -148,47 +141,17 @@ services:
   minio-init:
     container_name: minio-init
     image: quay.io/minio/mc
-    entrypoint: /bin/bash
-    command:
-      - -c
-      - >
-        set -o errexit; set -o nounset;
-        /usr/bin/mc config host add gdm ${DJANGO_AWS_S3_CUSTOM_DOMAIN}
-        ${DJANGO_AWS_ACCESS_KEY_ID} ${DJANGO_AWS_SECRET_ACCESS_KEY};
-        /usr/bin/mc mb gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME};
-        /usr/bin/mc policy set download gdm/${DJANGO_AWS_STORAGE_BUCKET_NAME};
-        exit 0
+    volumes:
+      - ./docker/production/minio-init.sh:/data/minio-init.sh
+    entrypoint: [ "/bin/sh", "-c", "/data/minio-init.sh" ]
+    env_file:
+      - .env
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
 
-  django-init:
-    <<: *django
-    container_name: django-init
-    image: django-init
-    entrypoint: /bin/bash
-    environment:
-      CELERY_BROKER_URL: ${REDIS_URL}"
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_SERVICE_PORT}/${POSTGRES_DB}
-    command:
-      - -c
-      - >
-        set -o errexit; set -o nounset;
-        export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_SERVICE_PORT}/${POSTGRES_DB}";
-        export CELERY_BROKER_URL="${REDIS_URL}";
-        sleep 45;
-        python /app/manage.py makemigrations;
-        python /app/manage.py migrate;
-        python /app/manage.py createsuperuser --noinput --skip-checks;
-        python /app/manage.py seed;
-        exit 0;
-    depends_on:
-      postgres:
-        condition: service_started
-      redis:
-        condition: service_started
-      mailhog:
-        condition: service_started
-      minio-init:
-        condition: service_started
-    ports: []
+
+volumes:
+  db-data: null
+  db-backups: null
+  minio-data: null

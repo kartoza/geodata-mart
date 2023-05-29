@@ -3,6 +3,11 @@
 set -o errexit
 set -o nounset
 
+LOCKFILE=/app/.entrypoint.lock
+while [ ! -f ${LOCKFILE} ]
+do
+  sleep 2
+done
 
 celery \
     -A config.celery_app \

@@ -3,5 +3,10 @@
 set -o errexit
 set -o nounset
 
+LOCKFILE=/app/.entrypoint.lock
+while [ ! -f ${LOCKFILE} ]
+do
+  sleep 2
+done
 
 watchgod celery.__main__.main --args -A config.celery_app worker -l INFO --pool=solo
