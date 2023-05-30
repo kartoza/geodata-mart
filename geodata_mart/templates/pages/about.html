@@ -8,24 +8,19 @@
       <div>
         {% blocktranslate %}
         <p class="lead text-muted">
-          The GeoData Mart is a marketplace platform for discovering and retrieving spatial datasets for a particular
+          The Geospatial Data Downloader is a marketplace platform for discovering and retrieving spatial datasets for a particular
           region of interest.
         </p>
         <p class="lead text-muted">
-          It is completely Open Source and available <a href="https://github.com/kartoza/geodata-mart">on GitHub</a>.
+          It is completely Open Source and available on <a href="https://github.com/kartoza/geodata-mart">GitHub</a>.
         </p>
         <p class="lead text-muted">
           It allows users to select, clip, and ship collections of geodata quickly and conveniently, providing a single
           zipped geopackage output that includes a QGIS project which is ready to use immediately.
         </p>
-        <p class="lead text-muted">
-          <strong>
-            Please note that this platform is currently in the very early (experimental) stages of development.
-          </strong>
-        </p>
         <p>If you are looking for alternative data sources, you can review (or contribute) to the list of publicly
-          available data sets for your region of interest from <a
-            href="https://github.com/kartoza/awesome-geodata">Awesome GeoData</a> list.</p>
+          available data sets for your region of interest. The list of data currently curated is available on <a
+            href="https://github.com/kartoza/awesome-geodata">Kartoza GeoData</a> list.</p>
         {% endblocktranslate %}
       </div>
       {% if not request.user.is_authenticated %}
