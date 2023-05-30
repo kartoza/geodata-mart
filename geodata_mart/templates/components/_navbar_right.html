@@ -1,35 +1,6 @@
 {% load static i18n compress %}
 {% url 'maps:results' as results_url %}
 <ul class="navbar-nav ml-auto">
-  <li class="nav-item mx-2">
-    <button id="toggle-darkmode-btn" x-data @click="$store.darkMode.toggle()" class="btn btn-dark nav-link"
-      title="{% translate "Toggle Dark Mode" %}">
-      <i class="bi bi-lightbulb-fill nav-link" alt="{% translate "dark mode" %}" width="32" height="32"></i>
-    </button>
-  </li>
-
-  <li id="language-selector" class="nav-item mx-2">
-    {% get_current_language as LANGUAGE_CODE %}
-    {% get_available_languages as LANGUAGES %}
-    {% get_language_info_list for LANGUAGES as languages %}
-    <div class="dropdown dropstart">
-      <button id="languageMenu" class="btn btn-dark nav-link" title="{% translate "Change Language" %}"
-        data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-translate nav-link" alt="{% translate "language" %}" width="32" height="32"></i>
-      </button>
-      <ul class="dropdown-menu text-small bg-dark" role="menu" aria-labelledby="languageMenu">
-        {% for language in languages %}
-        <li>
-          <a href="/{{ language.code }}{{ request.get_full_path|slice:'3:' }}"
-            class="dropdown-item nav-link {% if language.code == LANGUAGE_CODE %}active{% endif %}"
-            lang="{{ language.code }}">
-            {{ language.name|capfirst }}
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </li>
 
 
   {% if request.user.is_authenticated %}
