@@ -2,6 +2,29 @@
 {% load i18n maps_extras %}
 {% block extrahead %}
 <style>
+  .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-gap: 20px;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+  }
+
+  .column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background-color: #f1f1f1;
+      padding: 20px;
+      overflow-y: auto;
+  }
+  .long-text {
+      height: 70px;
+      overflow-y: scroll;
+  }
   .bd-gallery-img {
     font-size: 1.25rem;
     text-anchor: middle;
@@ -9,6 +32,11 @@
     -moz-user-select: none;
     user-select: none;
   }
+
+
+
+
+
 
   @media (min-width: 768px) {
     .bd-placeholder-img-lg {
@@ -21,7 +49,7 @@
 
 {% block content %}
 <main>
-  {% include "components/_authenticate.html" %}
+
 
   {% if not items and not search %}
   <section class="py-5 text-center container">
@@ -29,7 +57,7 @@
       <div class="col-lg-6 col-md-8 mx-auto">
         <h1 class="fw-light">Hello World!</h1>
         <p class="lead text-muted">
-          {% translate "This GeoData Mart instance has been set up but does not have any items to display" %}.
+          {% translate "This Geospatial Data Downloader has been set up but does not have any items to display" %}.
         </p>
         <p class="lead text-muted">
           {% translate "Please" %} {% translate "add content or contact a system administrator" %}.
@@ -53,7 +81,7 @@
   <div class="py-5">
     <div class="container">
 
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+      <div class="grid">
 
         {% for item in items %}
         {% if item.gdm_type == 'project' %}
@@ -71,21 +99,18 @@
                 <image x="0" y="0" width="100%" height="100%"
                 href="{{item.preview_image.thumbnail.400x400|urlencode}}">
                 </image>
-                <rect x="0" y="30%" width="100%" height="40%" fill="#000" fill-opacity="0.5"></rect>
-                <text x="50%" y="50%" fill="#eceeef" dy=".3em">{{ item.project_name }}</text>
                 {% endif %}
               </svg>
           </a>
-
           <div class="card-body">
-            <p class="card-text">{% if item.description %}{{ item.description }}{% endif %}</p>
+            <p class="long-text">{% if item.description %}{{ item.description }}{% endif %}</p>
             <div class="d-flex justify-content-between align-items-center">
               <div class="btn-group">
                 <a href="{% url 'maps:map' item.id %}">
                   <button type="button" class="btn btn-sm btn-outline-secondary">{% translate "Get Data" %}</button>
                 </a>
               </div>
-              <small class="text-muted">{{ item.vendor_id.name }}</small>
+              <a href="{% url 'maps:project-detail' item.id %}">{{ item.project_name }}</a>
             </div>
           </div>
         </div>
@@ -105,21 +130,19 @@
               <image x="0" y="0" width="100%" height="100%"
               href="{{item.preview_image.thumbnail.400x400|urlencode}}">
               </image>
-              <rect x="0" y="30%" width="100%" height="40%" fill="#000" fill-opacity="0.5"></rect>
-              <text x="50%" y="50%" fill="#eceeef" dy=".3em">{{ item.file_name }}</text>
               {% endif %}
             </svg>
         </a>
 
         <div class="card-body">
-          <p class="card-text">{% if item.description %}{{ item.description }}{% endif %}</p>
+          <p class="long-text">{% if item.description %}{{ item.description }}{% endif %}</p>
           <div class="d-flex justify-content-between align-items-center">
             <div class="btn-group">
               <a href="{{ item.file_object.url|urlencode }}">
                 <button type="button" class="btn btn-sm btn-outline-secondary">{% translate "Get Item" %}</button>
               </a>
             </div>
-            <small class="text-muted">{{ item.vendor_id.name }}</small>
+            <a href="{% url 'maps:project-detail' item.id %}">{{ item.file_name }}</a>
           </div>
         </div>
       </div>
