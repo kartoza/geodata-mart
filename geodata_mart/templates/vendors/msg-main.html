@@ -5,23 +5,11 @@
 
 {% block content %}
 <main>
-  {% include "components/_authenticate.html" %}
 
-  {% if not request.user.is_authenticated %}
-  <div class="py-5">
-    <div class="container">
-      <div class="row py-lg-5">
-        <div class="col-lg-6 col-md-8 mx-auto text-center">
-          <h1>{% translate "Please sign in to submit feedback" %}</h1>
-          <h6>{% translate "Unregistered users may email " %}<a href="mailto:info@kartoza.com">info@kartoza.com</a>
-          {% translate " with a motivation to request access to the platform." %}</h6>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
 
-  {% if request.user.is_authenticated %}
+
+
+
   <form id="msg-form" action="{% url 'vendors:msg' %}" method="post">{% csrf_token %}</form>
   <div class="py-5">
     <div class="container">
@@ -43,10 +31,9 @@
               <label for="msg-category" class="text-muted fs-6 p-2">{% translate "Category" %}</label>
               <select form="msg-form" id="msg-category" name="category" class="form-control w-100 pt-6">
                 <option value="enquiry" selected="true">{% translate "General Enquiry" %}</option>
-                <option value="kudos">{% translate "Kudos" %}</option>
                 <option value="bulk">{% translate "Bulk Data" %}</option>
                 <option value="data">{% translate "Data Request" %}</option>
-                <option value="error">{% translate "Error Report" %}</option>
+                <option value="error">{% translate "General Error Report" %}</option>
               </select>
             </div>
             <div class="w-100 py-1">
@@ -60,7 +47,7 @@
       </div>
     </div>
   </div>
-  {% endif %}
+
 
 </main>
 {% endblock content %}
