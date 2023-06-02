@@ -34,6 +34,7 @@ services:
       dockerfile: ./docker/dev/Dockerfile
     container_name: django4${COMPOSE_PROJECT_NAME}
     platform: linux/x86_64
+    restart: on-failure
     ports:
       - "${DJANGO_PORT}:8000"
       - "9999:9999"
@@ -78,12 +79,14 @@ services:
       interval: 1s
       timeout: 3s
       retries: 5
+    restart: on-failure
 
   celeryworker:
     << : *default-common-django
     image: ${COMPOSE_PROJECT_NAME}_django
     container_name: celeryworker${COMPOSE_PROJECT_NAME}
     ports: []
+    restart: on-failure
     command: /start-celeryworker
 
 
@@ -99,6 +102,7 @@ services:
     <<: *default-common-django
     image: ${COMPOSE_PROJECT_NAME}_django
     container_name: flower${COMPOSE_PROJECT_NAME}
+    restart: on-failure
     depends_on:
       - celerybeat
     ports:
@@ -119,6 +123,7 @@ services:
       - "${MINIO_CONSOLE_PORT}:9001"
     healthcheck:
       test: "curl -I http://localhost:9000/minio/health/live"
+    restart: on-failure
 
   docs:
     image: docs
@@ -135,6 +140,7 @@ services:
       - ./geodata_mart:/app/geodata_mart:z
     ports:
       - "${DOCS_PORT}:9000"
+    restart: on-failure
     command: /start-docs
 
   # Ops - Once off bootstrapping operations for system initialization
