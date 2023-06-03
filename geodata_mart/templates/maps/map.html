@@ -443,13 +443,15 @@
   let errorItems = new L.FeatureGroup().addTo(map)
 
   new L.Control.Zoom({
-    position: "bottomleft"
+    position: "topleft"
   }).addTo(map)
 
   // Initialize Leaflet Locate control
-  var locateControl = L.control.locate({ position: 'topleft', drawCircle: true, drawMarker: false });
+  var locateControl = L.control.locate({ position: 'topleft', drawCircle: true, drawMarker: false, strings: {
+      title: "Geolocate user location"
+    } });
   locateControl.addTo(map);
-  
+
 
   const layerController = L.control.layers(
     null,
@@ -457,7 +459,7 @@
       "Buffered Extent": annotationItems,
       "Extent Limit": errorItems,
     },
-    { position: 'bottomleft' }
+    { position: 'topright' }
   ).addTo(map)
 
   const geocoderControl = L.Control.geocoder({
