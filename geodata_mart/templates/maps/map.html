@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.css' %}" />
 <link rel="stylesheet" href="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.css' %}" />
 <link rel="stylesheet" href="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/leaflet-locate/L.Control.Locate.min.css' %}" />
 {% endcompress %}
 
 {% compress js %}
@@ -18,6 +19,7 @@
 <script src="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-locate/L.Control.Locate.min.js' %}"></script>
 <script src="{% static 'js/turf.min.js' %}"></script>
 {% endcompress %}
 
@@ -443,6 +445,11 @@
   new L.Control.Zoom({
     position: "bottomleft"
   }).addTo(map)
+
+  // Initialize Leaflet Locate control
+  var locateControl = L.control.locate({ position: 'topleft', drawCircle: true, drawMarker: false });
+  locateControl.addTo(map);
+  
 
   const layerController = L.control.layers(
     null,
