@@ -22,11 +22,54 @@
 {% endcompress %}
 
 <style>
+  /* Tooltip Styling */
+  .tooltip {
+    position: relative;
+    display: inline-block;
+  }
+
+  .tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* Adjustments for Bootstrap Tooltip */
+  .tooltip .tooltip-arrow {
+    display: none;
+  }
+
+  .tooltip .tooltip-inner {
+    background-color: transparent;
+    color: #fff;
+    padding: 0;
+    font-size: 14px;
+  }
   .map-page {
     height: 90vh;
     justify-content: center;
     align-items: center;
     overflow: auto;
+  }
+  .long-text {
+      height: 70px;
+      overflow-y: scroll;
   }
 
   .map-container {
@@ -118,15 +161,28 @@
           <template x-for="layer in $store.pageData.mapLayers" :key="layer.id">
             <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
               <label :for="layer.short_name">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                    :id="layer.short_name"
-                    :checked="$store.pageData.layerChecked(layer.id)"
-                    @click="$store.pageData.toggleLayer(layer.id)"
-                    />
-                  <label class="form-check-label" x-text="layer.layer_name"></label>
+                <div class="accordion" id="collapsible-checkboxes">
+                <div class="accordion-item">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse-' + layer.id" aria-expanded="false" :aria-controls="'collapse-' + layer.id">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                          :id="layer.short_name"
+                          :checked="$store.pageData.layerChecked(layer.id)"
+                          @click="$store.pageData.toggleLayer(layer.id)"
+                          />
+                        <label class="form-check-label" :for="layer.short_name" x-text="layer.layer_name"></label>
+          <i class="bi bi-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="top" :title="'Click to read the layer abstract'"></i>
+                      </div>
+                    </button>
+                  </h2>
+                  <div :id="'collapse-' + layer.id" class="accordion-collapse collapse" :aria-labelledby="'collapse-' + layer.id" :data-bs-parent="'#collapsible-checkboxes'">
+                    <div class="accordion-body">
+                      <div class="mb-1 small" x-text="layer.abstract"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="mb-1 small" x-text="layer.abstract"></div>
+              </div>
               </label>
             </div>
           </template>
@@ -244,39 +300,6 @@
               </label>
             </div>
           </div>
-          <hr class="m-0 p-0">
-          <div class="p-2">
-            <div class="text-center w-100 text-muted">{% translate "Feedback" %}</div>
-            <input form="msg-form" type="hidden" id="msg-sender" name="sender" value="{{ request.user.id }}">
-            <input form="msg-form" type="hidden" id="msg-receiver" name="receiver" value="{{ project.vendor_id.id }}">
-            <input form="msg-form" type="hidden" id="msg-project" name="project" value="{{ project.id }}">
-            <div class="w-100 p-1">
-              <div class="w-100 py-1">
-                <input form="msg-form" type="text" id="msg-subject" name="subject"
-                  class="form-control w-100 p-1" placeholder="{% translate "Subject" %}">
-              </div>
-              <div class="w-100 py-1">
-                <textarea form="msg-form" type="textarea" id="msg-content" name="content"
-                  class="form-control w-100 p-1" placeholder="{% translate "Message" %}"></textarea>
-              </div>
-              <div class="w-100 py-1 form-floating">
-                <label for="msg-category" class="text-muted fs-6 p-2">{% translate "Category" %}</label>
-                <select form="msg-form" id="msg-category" name="category" class="form-control w-100 pt-6">
-                  <option value="enquiry" selected="true">{% translate "General Enquiry" %}</option>
-                  <option value="kudos">{% translate "Kudos" %}</option>
-                  <option value="bulk">{% translate "Bulk Data" %}</option>
-                  <option value="data">{% translate "Data Request" %}</option>
-                  <option value="error">{% translate "Error Report" %}</option>
-                </select>
-              </div>
-              <div class="w-100 py-1">
-                <button class="btn btn-primary rounded w-100" form="msg-form" type="submit">
-                  <i class="bi bi-envelope-fill"></i>
-                  {% translate "Send Message" %}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -339,7 +362,7 @@
   let coverage_geojson = '{{ coverage }}'
   coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
   let bounds = turf.bbox(JSON.parse(coverage_geojson))
-  
+
   let coverageLayer = new L.FeatureGroup().addTo(map)
   L.geoJson(JSON.parse(coverage_geojson), {
     onEachFeature: function (feature, layer) {
@@ -362,7 +385,7 @@
 
   let annotationItems = new L.FeatureGroup().addTo(map)
   let errorItems = new L.FeatureGroup().addTo(map)
-  
+
   new L.Control.Zoom({
     position: "bottomleft"
   }).addTo(map)
@@ -413,10 +436,10 @@
     [-34.35, 18.48],
     15
   )
-  
+
   let annotationItems = new L.FeatureGroup().addTo(map)
   let errorItems = new L.FeatureGroup().addTo(map)
-  
+
   new L.Control.Zoom({
     position: "bottomleft"
   }).addTo(map)
@@ -463,7 +486,7 @@
   new L.Control.Draw({
     position: "topleft",
     draw: {
-      polyline: true,
+      polyline: false,
       polygon: true,
       rectangle: true,
       circle: false,
@@ -523,7 +546,7 @@
           and then modifying the underlying data with external calls
           will not update the dom components directly. Resetting the
           underlying data elements for the getters seems to fix it.
-          
+
           https://github.com/alpinejs/alpine/discussions/2681 */
         const pageData = Alpine.store('pageData')
         //for (const key in pageData) {
@@ -602,7 +625,6 @@
           return false
         }
       },
-
       toggleBase(id) {
         if (this.baseChecked(id, this.checkedBases)) {
           this.checkedBases = this.checkedBases.filter(h => h !== id)
@@ -693,7 +715,7 @@
           let buffered_geom = this.getBufferedGeom()
           let buffered_area = turf.area(buffered_geom)
           buffered_area = buffered_area / 1000 / 1000
-      
+
           if (typeof buffered_area == 'undefined') {
             return true
           } else if (buffered_area > {{project.max_area}}) {
@@ -715,7 +737,7 @@
         let results = checkedLayerNames.toString()
         return results
       },
-      
+
       get getCheckedBaseNames() {
         let checkedBaseItems = this.baseLayers.filter((obj) => {
             return this.checkedBases.indexOf(obj.id) > -1;
@@ -726,7 +748,7 @@
           })
         return checkedBaseNames
       },
-      
+
       get getCheckedExcludedNames() {
         let checkedExcludeItems = this.excludedLayers.filter((obj) => {
             return this.checkedExcludes.indexOf(obj.id) > -1;
@@ -767,7 +789,7 @@
         }
         return JSON.stringify(params)
         },
-      
+
       get minimalBufferDist() {
         let buffer = 0.01
         if (this.buffer_distance > 0) {
@@ -812,7 +834,7 @@
           if (this.invalidExtents()) {
             // display max extent
             let max_extent = turf.envelope(turf.buffer(
-              turf.centroid(this.getBufferedGeom()), 
+              turf.centroid(this.getBufferedGeom()),
                 Math.sqrt({{ project.max_area }})/2,
                 {units: 'kilometers'}
               ))
@@ -874,6 +896,7 @@
 
   // make sure initial values are set right
   window.onload = function(){Alpine.store('refresh').refresh()}
+
 
 </script>
 
