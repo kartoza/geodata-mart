@@ -74,6 +74,11 @@
       overflow-y: scroll;
   }
 
+  .list-group-item:hover {
+    background-color: #ADD8E6FF; /* Change the background color on hover */
+    cursor: pointer; /* Change the cursor to indicate interactivity */
+  }
+
   .map-container {
     height: 80vh;
     justify-content: center;
@@ -189,7 +194,7 @@
           <div class="list-group">
             <!-- Buffer -->
             <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-buffer">
-              Point Buffer Configuration
+            <span class="me-2"><i class="bi bi-plus"></i></span> Point Buffer Configuration
             </a>
             <div id="collapse-buffer" class="collapse">
               <div class="list-group">
@@ -211,8 +216,9 @@
             </div>
             <!-- Coordinate Reference System -->
             <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-crs">
-              Coordinate Reference System
+              <span class="me-2"><i class="bi bi-plus"></i></span> Coordinate Reference System
             </a>
+
             <div id="collapse-crs" class="collapse">
               <div class="list-group">
                 <div class="w-100 p-2 form-floating">
@@ -249,7 +255,7 @@
             </div>
             <!-- Base Layers -->
             <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-base-layers">
-              Base Layers
+              <span class="me-2"><i class="bi bi-plus"></i></span> Base Layers
             </a>
             <div id="collapse-base-layers" class="collapse">
               <div class="list-group">
@@ -276,7 +282,7 @@
 
             <!-- Additional Layers -->
             <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-additional-layers">
-              Additional Layers
+              <span class="me-2"><i class="bi bi-plus"></i></span> Additional Layers
             </a>
             <div id="collapse-additional-layers" class="collapse">
               <div class="list-group">
@@ -303,7 +309,7 @@
 
             <!-- Mapping Modes -->
             <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-mapping-modes">
-              Mapping Modes
+              <span class="me-2"><i class="bi bi-plus"></i></span> Mapping Modes
             </a>
             <div id="collapse-mapping-modes" class="collapse">
               <div class="list-group">
