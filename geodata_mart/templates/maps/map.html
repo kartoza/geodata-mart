@@ -542,7 +542,52 @@
       L.Toolbar2.EditAction.Popup.Edit,
     ]
 
+  // Info button click event handler
+    var infoContent = `
+      <div class="info-popup">
+        <div class="info-content">
+          <h3>Clip and ship Quick Help</h3>
+          <p>Select a couple of map layers from the map tab.</p>
+          <p>From the settings tab, configure some defaults i.e buffer distance.</p>
+          <p>Select a drawing tool from the toolbar and start drawing on the map.</p>
+          <p>Use the edit tool to modify the drawn shapes.</p>
+          <p>Use the clip and ship to download the map data corresponding to your AOI.</p>
+          <p>Click the <i class="bi bi-info-circle-fill"></i> button again to close this information popup.</p>
+        </div>
+        <div class="close-button" onclick="map.closePopup();">
+          <i class="bi bi-x"></i>
+        </div>
+      </div>
+    `;
 
+    var infoButton = L.DomUtil.create('button', 'btn btn-info rounded-circle info-button');
+	infoButton.innerHTML = '<i class="bi bi-info"></i>';
+
+
+    L.DomEvent.on(infoButton, 'click', function () {
+      var infoPopup = L.popup({ maxWidth: 320, draggable: true, closeOnClick: false })
+        .setLatLng(map.getBounds().getCenter())
+        .setContent(infoContent)
+        .openOn(map);
+
+      L.DomUtil.addClass(infoButton, 'hidden');
+
+      // Add the draw controls to the map after info popup is closed
+      infoPopup.on('remove', function () {
+
+      });
+    });
+
+    L.DomEvent.disableClickPropagation(infoButton);
+
+    // Add the info button to the map
+    L.Control.Info = L.Control.extend({
+      onAdd: function () {
+        return infoButton;
+      },
+    });
+
+    new L.Control.Info({ position: 'bottomleft' }).addTo(map);
 
   new L.Control.Draw({
     position: "topleft",
