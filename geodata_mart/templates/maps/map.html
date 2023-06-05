@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.css' %}" />
 <link rel="stylesheet" href="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.css' %}" />
 <link rel="stylesheet" href="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/leaflet-locate/L.Control.Locate.min.css' %}" />
 {% endcompress %}
 
 {% compress js %}
@@ -18,15 +19,64 @@
 <script src="{% static 'leaflet/leaflet-toolbar/leaflet.toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-draw-toolbar/leaflet.draw-toolbar.js' %}"></script>
 <script src="{% static 'leaflet/leaflet-control-geocoder/Control.Geocoder.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-locate/L.Control.Locate.min.js' %}"></script>
 <script src="{% static 'js/turf.min.js' %}"></script>
 {% endcompress %}
 
 <style>
+  /* Tooltip Styling */
+  .tooltip {
+    position: relative;
+    display: inline-block;
+  }
+
+  .tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* Adjustments for Bootstrap Tooltip */
+  .tooltip .tooltip-arrow {
+    display: none;
+  }
+
+  .tooltip .tooltip-inner {
+    background-color: transparent;
+    color: #fff;
+    padding: 0;
+    font-size: 14px;
+  }
   .map-page {
     height: 90vh;
     justify-content: center;
     align-items: center;
     overflow: auto;
+  }
+  .long-text {
+      height: 70px;
+      overflow-y: scroll;
+  }
+
+  .list-group-item:hover {
+    background-color: #ADD8E6FF; /* Change the background color on hover */
+    cursor: pointer; /* Change the cursor to indicate interactivity */
   }
 
   .map-container {
@@ -94,10 +144,6 @@
           <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'settings' }"
             @click.prevent="$store.pageData.tab = 'settings'" href="#">{% translate "Settings" %}</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" :class="{ 'active': $store.pageData.tab === 'more' }"
-            @click.prevent="$store.pageData.tab = 'more'" href="#">{% translate "More" %}</a>
-        </li>
       </ul>
       <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
         <div class="d-flex flex-column">
@@ -118,167 +164,189 @@
           <template x-for="layer in $store.pageData.mapLayers" :key="layer.id">
             <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
               <label :for="layer.short_name">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                    :id="layer.short_name"
-                    :checked="$store.pageData.layerChecked(layer.id)"
-                    @click="$store.pageData.toggleLayer(layer.id)"
-                    />
-                  <label class="form-check-label" x-text="layer.layer_name"></label>
+                <div class="accordion" id="collapsible-checkboxes">
+                <div class="accordion-item">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse-' + layer.id" aria-expanded="false" :aria-controls="'collapse-' + layer.id">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                          :id="layer.short_name"
+                          :checked="$store.pageData.layerChecked(layer.id)"
+                          @click="$store.pageData.toggleLayer(layer.id)"
+                          />
+                        <label class="form-check-label" :for="layer.short_name" x-text="layer.layer_name"></label>
+          <i class="bi bi-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="top" :title="'Click to read the layer abstract'"></i>
+                      </div>
+                    </button>
+                  </h2>
+                  <div :id="'collapse-' + layer.id" class="accordion-collapse collapse" :aria-labelledby="'collapse-' + layer.id" :data-bs-parent="'#collapsible-checkboxes'">
+                    <div class="accordion-body">
+                      <div class="mb-1 small" x-text="layer.abstract"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="mb-1 small" x-text="layer.abstract"></div>
+              </div>
               </label>
             </div>
           </template>
         </div>
         <div x-show="$store.pageData.tab === 'settings'">
-          <div class="d-flex flex-row text-muted">
-            <div class="w-100">
-              <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
-              <input class="form-range mr-2 px-2" type="range" min="{{ project.buffer_min }}" max="{{ project.buffer_max }}"
-                step="{{ project.buffer_step }}" id="clipBuffer" x-model="$store.pageData.buffer_distance" aria-label="Clip buffer"
-                x-init="$watch('$store.pageData.buffer_distance', value => $store.pageData.reDraw())" />
-              <label for="clipBuffer" class="col-form-label px-2">
-                <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
-                    data-bs-target="#bufferInfoModal">
-                    <i class="bi bi-info rounded-circle"></i>
-                  </button> {% translate "Clipping Buffer (km)" %}</span>
-              </label>
-            </div>
-          </div>
-          <hr class="m-0 p-0">
-          <div class="w-100 p-2 form-floating">
-            <label for="srs-p-category" class="text-muted fs-6 p-2">{% translate "Project SRS" %}</label>
-            <select id="srs-p-category" name="category" class="form-control w-100 pt-6"
-            x-model="$store.pageData.project_srs">
-            {% if  project.project_srs %}
-            <option value="">None</option>
-            <option value="{{ project.project_srs.idstring }}" selected>{% translate "Default" %} ({{ project.project_srs.idstring }})</option>
-            {% else %}
-            <option value="" selected>None</option>
-            {% endif %}
-            <template x-for="srs in $store.pageData.srs_list" :key="srs.id">
-              <option :value="srs.name" x-text="srs.name"></option>
-            </template>
-            </select>
-          </div>
-          <hr class="m-0 p-0">
-          <div class="w-100 p-2 form-floating">
-            <label for="srs-l-category" class="text-muted fs-6 p-2">{% translate "Layer SRS" %}</label>
-            <select id="srs-l-category" name="category" class="form-control w-100 pt-6"
-            x-model="$store.pageData.layer_srs">
-            {% if  project.layer_srs %}
-            <option value="">None</option>
-            <option value="{{ project.layer_srs.idstring }}" selected>{% translate "Default" %} ({{ project.layer_srs.idstring }})</option>
-            {% else %}
-            <option value="" selected>None</option>
-            {% endif %}
-            <template x-for="srs in $store.pageData.srs_list" :key="srs.id">
-              <option :value="srs.name" x-text="srs.name"></option>
-            </template>
-            </select>
-          </div>
-          <hr class="m-0 p-0">
-          {% if base_layers|length > 0 %}
-          <div class="text-center w-100 text-muted">{% translate "Base Layers" %}</div>
-          <template x-for="layer in $store.pageData.baseLayers" :key="layer.id">
-            <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
-              <label :for="layer.short_name">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                    :id="layer.short_name"
-                    :checked="$store.pageData.baseChecked(layer.id)"
-                    @click="$store.pageData.toggleBase(layer.id)"
-                    />
-                  <label class="form-check-label" x-text="layer.layer_name"></label>
+          <div class="list-group">
+            <!-- Buffer -->
+            <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-buffer">
+            <span class="me-2"><i class="bi bi-plus"></i></span> Point Buffer Configuration
+            </a>
+            <div id="collapse-buffer" class="collapse">
+              <div class="list-group">
+                <div class="d-flex flex-row text-muted">
+                  <div class="w-100">
+                    <div class="text-center w-100 text-muted fs-4" x-text="$store.pageData.buffer_distance"></div>
+                    <input class="form-range mr-2 px-2" type="range" min="{{ project.buffer_min }}" max="{{ project.buffer_max }}"
+                      step="{{ project.buffer_step }}" id="clipBuffer" x-model="$store.pageData.buffer_distance"
+                      aria-label="Clip buffer" x-init="$watch('$store.pageData.buffer_distance', value => $store.pageData.reDraw())" />
+                    <label for="clipBuffer" class="col-form-label px-2">
+                      <span><button type="button" class="btn btn-primary btn-sm rounded-circle mr-2" data-bs-toggle="modal"
+                          data-bs-target="#bufferInfoModal">
+                          <i class="bi bi-info rounded-circle"></i>
+                        </button> {% translate "Clipping Buffer (km)" %}</span>
+                    </label>
+                  </div>
                 </div>
-                <div class="mb-1 small" x-text="layer.abstract"></div>
-              </label>
+              </div>
             </div>
-          </template>
-          {% endif %}
-          {% if excluded_layers|length > 0 %}
-          <div class="text-center w-100 text-muted">{% translate "Additional Layers" %}</div>
-          <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
-            <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
-              <label :for="layer.short_name">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" :name="layer.short_name"
-                    :id="layer.short_name"
-                    :checked="$store.pageData.excludeChecked(layer.id)"
-                    @click="$store.pageData.toggleExclude(layer.id)"
-                    />
-                  <label class="form-check-label" x-text="layer.layer_name"></label>
+            <!-- Coordinate Reference System -->
+            <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-crs">
+              <span class="me-2"><i class="bi bi-plus"></i></span> Coordinate Reference System
+            </a>
+
+            <div id="collapse-crs" class="collapse">
+              <div class="list-group">
+                <div class="w-100 p-2 form-floating">
+                  <label for="srs-p-category" class="text-muted fs-6 p-2">{% translate "Project SRS" %}</label>
+                  <select id="srs-p-category" name="category" class="form-control w-100 pt-6"
+                  x-model="$store.pageData.project_srs">
+                  {% if  project.project_srs %}
+                  <option value="">None</option>
+                  <option value="{{ project.project_srs.idstring }}" selected>{% translate "Default" %} ({{ project.project_srs.idstring }})</option>
+                  {% else %}
+                  <option value="" selected>None</option>
+                  {% endif %}
+                  <template x-for="srs in $store.pageData.srs_list" :key="srs.id">
+                    <option :value="srs.name" x-text="srs.name"></option>
+                  </template>
+                  </select>
                 </div>
-                <div class="mb-1 small" x-text="layer.abstract"></div>
-              </label>
+                <div class="w-100 p-2 form-floating">
+                  <label for="srs-l-category" class="text-muted fs-6 p-2">{% translate "Layer SRS" %}</label>
+                  <select id="srs-l-category" name="category" class="form-control w-100 pt-6"
+                  x-model="$store.pageData.layer_srs">
+                  {% if  project.layer_srs %}
+                  <option value="">None</option>
+                  <option value="{{ project.layer_srs.idstring }}" selected>{% translate "Default" %} ({{ project.layer_srs.idstring }})</option>
+                  {% else %}
+                  <option value="" selected>None</option>
+                  {% endif %}
+                  <template x-for="srs in $store.pageData.srs_list" :key="srs.id">
+                    <option :value="srs.name" x-text="srs.name"></option>
+                  </template>
+                  </select>
+                </div>
+              </div>
             </div>
-          </template>
-          {% endif %}
-        </div>
-        <div x-show="$store.pageData.tab === 'more'">
-          <div class="text-center w-100 text-muted">{% translate "Mapping Mode" %}</div>
-          <div class="p-2">
-            <div class="form-check">
-              <input class="form-check-input" type="radio" id="mode-bounds" name="bounds" checked>
-              <label class="form-check-label" for="mode-bounds">
-                {% translate "User Defined Bounds" %}
-              </label>
+            <!-- Base Layers -->
+            <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-base-layers">
+              <span class="me-2"><i class="bi bi-plus"></i></span> Base Layers
+            </a>
+            <div id="collapse-base-layers" class="collapse">
+              <div class="list-group">
+                {% if base_layers|length > 0 %}
+                <template x-for="layer in $store.pageData.baseLayers" :key="layer.id">
+                  <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+                    <label :for="layer.short_name">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                          :id="layer.short_name"
+                          :checked="$store.pageData.baseChecked(layer.id)"
+                          @click="$store.pageData.toggleBase(layer.id)"
+                          />
+                        <label class="form-check-label" x-text="layer.layer_name"></label>
+                      </div>
+                      <div class="mb-1 small" x-text="layer.abstract"></div>
+                    </label>
+                  </div>
+                </template>
+                {% endif %}
+                <!-- Base Layers settings goes here -->
+              </div>
             </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" id="mode-upload" name="upload" disabled>
-              <label class="form-check-label" for="mode-upload">
-                {% translate "User Data Upload" %}
-              </label>
+
+            <!-- Additional Layers -->
+            <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-additional-layers">
+              <span class="me-2"><i class="bi bi-plus"></i></span> Additional Layers
+            </a>
+            <div id="collapse-additional-layers" class="collapse">
+              <div class="list-group">
+                {% if excluded_layers|length > 0 %}
+                <template x-for="layer in $store.pageData.excludedLayers" :key="layer.id">
+                  <div class="list-group-item list-group-item-action mx-0 py-3 lh-tight row justify-content-between">
+                    <label :for="layer.short_name">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" :name="layer.short_name"
+                          :id="layer.short_name"
+                          :checked="$store.pageData.excludeChecked(layer.id)"
+                          @click="$store.pageData.toggleExclude(layer.id)"
+                          />
+                        <label class="form-check-label" x-text="layer.layer_name"></label>
+                      </div>
+                      <div class="mb-1 small" x-text="layer.abstract"></div>
+                    </label>
+                  </div>
+                </template>
+                {% endif %}
+                <!-- Additional Layers settings goes here -->
+              </div>
             </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" id="mode-freedraw" name="freedraw" disabled>
-              <label class="form-check-label" for="mode-freedraw">
-                {% translate "Freedraw Geometry" %}
-              </label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" id="mode-aoi" name="aoi" disabled>
-              <label class="form-check-label" for="mode-aoi">
-                {% translate "Area of Interest" %}
-              </label>
+
+            <!-- Mapping Modes -->
+            <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#collapse-mapping-modes">
+              <span class="me-2"><i class="bi bi-plus"></i></span> Mapping Modes
+            </a>
+            <div id="collapse-mapping-modes" class="collapse">
+              <div class="list-group">
+                <div class="p-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" id="mode-bounds" name="bounds" checked>
+                    <label class="form-check-label" for="mode-bounds">
+                      {% translate "User Defined Bounds" %}
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" id="mode-upload" name="upload" disabled>
+                    <label class="form-check-label" for="mode-upload">
+                      {% translate "User Data Upload" %}
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" id="mode-freedraw" name="freedraw" disabled>
+                    <label class="form-check-label" for="mode-freedraw">
+                      {% translate "Freedraw Geometry" %}
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" id="mode-aoi" name="aoi" disabled>
+                    <label class="form-check-label" for="mode-aoi">
+                      {% translate "Area of Interest" %}
+                    </label>
+                  </div>
+                </div>
+              </div>
+                <!-- Mapping Modes settings goes here -->
+              </div>
             </div>
           </div>
-          <hr class="m-0 p-0">
-          <div class="p-2">
-            <div class="text-center w-100 text-muted">{% translate "Feedback" %}</div>
-            <input form="msg-form" type="hidden" id="msg-sender" name="sender" value="{{ request.user.id }}">
-            <input form="msg-form" type="hidden" id="msg-receiver" name="receiver" value="{{ project.vendor_id.id }}">
-            <input form="msg-form" type="hidden" id="msg-project" name="project" value="{{ project.id }}">
-            <div class="w-100 p-1">
-              <div class="w-100 py-1">
-                <input form="msg-form" type="text" id="msg-subject" name="subject"
-                  class="form-control w-100 p-1" placeholder="{% translate "Subject" %}">
-              </div>
-              <div class="w-100 py-1">
-                <textarea form="msg-form" type="textarea" id="msg-content" name="content"
-                  class="form-control w-100 p-1" placeholder="{% translate "Message" %}"></textarea>
-              </div>
-              <div class="w-100 py-1 form-floating">
-                <label for="msg-category" class="text-muted fs-6 p-2">{% translate "Category" %}</label>
-                <select form="msg-form" id="msg-category" name="category" class="form-control w-100 pt-6">
-                  <option value="enquiry" selected="true">{% translate "General Enquiry" %}</option>
-                  <option value="kudos">{% translate "Kudos" %}</option>
-                  <option value="bulk">{% translate "Bulk Data" %}</option>
-                  <option value="data">{% translate "Data Request" %}</option>
-                  <option value="error">{% translate "Error Report" %}</option>
-                </select>
-              </div>
-              <div class="w-100 py-1">
-                <button class="btn btn-primary rounded w-100" form="msg-form" type="submit">
-                  <i class="bi bi-envelope-fill"></i>
-                  {% translate "Send Message" %}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      <!-- Groups end here -->
+
     </div>
     <div class="d-flex flex-column align-items-stretch flex-shrink-0 col-9">
       <main role="main" class="container" style="width: 100%; height: 100%">
@@ -339,7 +407,7 @@
   let coverage_geojson = '{{ coverage }}'
   coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
   let bounds = turf.bbox(JSON.parse(coverage_geojson))
-  
+
   let coverageLayer = new L.FeatureGroup().addTo(map)
   L.geoJson(JSON.parse(coverage_geojson), {
     onEachFeature: function (feature, layer) {
@@ -362,7 +430,7 @@
 
   let annotationItems = new L.FeatureGroup().addTo(map)
   let errorItems = new L.FeatureGroup().addTo(map)
-  
+
   new L.Control.Zoom({
     position: "bottomleft"
   }).addTo(map)
@@ -413,21 +481,39 @@
     [-34.35, 18.48],
     15
   )
-  
+
   let annotationItems = new L.FeatureGroup().addTo(map)
   let errorItems = new L.FeatureGroup().addTo(map)
-  
+
   new L.Control.Zoom({
-    position: "bottomleft"
+    position: "topleft"
   }).addTo(map)
 
+  // Initialize Leaflet Locate control
+  var locateControl = L.control.locate({ position: 'topleft', drawCircle: true, drawMarker: false, strings: {
+      title: "Geolocate user location"
+    } });
+  locateControl.addTo(map);
+
+  var osm_basemap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+  });
+  osm_basemap.addTo(map);
+
+  var base_map_3 = L.tileLayer('http://c.aerial.openstreetmap.org.za/ngi-aerial/{z}/{x}/{y}.jpg', {
+      attribution: 'Data from <a href="http://www.ngi.gov.za/">NGI</a>; tiles from <a href="http://aerial.openstreetmap.org.za">OSM</a>, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+      maxZoom: 22,
+      opacity: 0.75
+  });
+
+  var baseMaps = {'OpenStreetMap': osm_basemap, 'NGI Orthophoto': base_map_3};
+
+  var map_overlays = {'Buffered Extent': annotationItems, 'Extent Limit': errorItems};
+
   const layerController = L.control.layers(
-    null,
-    {
-      "Buffered Extent": annotationItems,
-      "Extent Limit": errorItems,
-    },
-    { position: 'bottomleft' }
+    baseMaps, map_overlays,
+
+    { position: 'topright' }
   ).addTo(map)
 
   const geocoderControl = L.Control.geocoder({
@@ -456,14 +542,59 @@
       L.Toolbar2.EditAction.Popup.Edit,
     ]
 
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
-  }).addTo(map)
+  // Info button click event handler
+    var infoContent = `
+      <div class="info-popup">
+        <div class="info-content">
+          <h3>Quick Guide</h3>
+          <ol>
+          <li>Select a couple of map layers from the <b>Map tab</b>.</li>
+          <li>From the <b>Settings tab</b>, configure some defaults i.e buffer distance.</li>
+          <li>Select a drawing tool from the toolbar and draw your AOI.</li>
+          <li>Use the edit tool to modify the drawn shapes.</li>
+          <li>Use the clip and ship to download the map data corresponding to your AOI.</li>
+          </ol>
+          <p> For more information about usage, you can view the <a href="https://youtu.be/SD3IF7xkeJU">training video</a></p>
+        </div>
+        <div class="close-button" onclick="map.closePopup();">
+          <i class="bi bi-x"></i>
+        </div>
+      </div>
+    `;
+
+    var infoButton = L.DomUtil.create('button', 'btn btn-info rounded-circle info-button');
+	infoButton.innerHTML = '<i class="bi bi-info"></i>';
+
+
+    L.DomEvent.on(infoButton, 'click', function () {
+      var infoPopup = L.popup({ maxWidth: 320, draggable: true, closeOnClick: false })
+        .setLatLng(map.getBounds().getCenter())
+        .setContent(infoContent)
+        .openOn(map);
+
+      L.DomUtil.addClass(infoButton, 'hidden');
+
+      // Add the draw controls to the map after info popup is closed
+      infoPopup.on('remove', function () {
+
+      });
+    });
+
+    L.DomEvent.disableClickPropagation(infoButton);
+
+    // Add the info button to the map
+    L.Control.Info = L.Control.extend({
+      onAdd: function () {
+        return infoButton;
+      },
+    });
+
+    new L.Control.Info({ position: 'bottomleft' }).addTo(map);
 
   new L.Control.Draw({
     position: "topleft",
     draw: {
-      polyline: true,
+      polyline: false,
       polygon: true,
       rectangle: true,
       circle: false,
@@ -523,7 +654,7 @@
           and then modifying the underlying data with external calls
           will not update the dom components directly. Resetting the
           underlying data elements for the getters seems to fix it.
-          
+
           https://github.com/alpinejs/alpine/discussions/2681 */
         const pageData = Alpine.store('pageData')
         //for (const key in pageData) {
@@ -547,7 +678,7 @@
       tab: 'layers',
       user_id: {{ request.user.id }},
       project_id: {{ project.id }},
-      comment: 'Generated by GeoData Mart Map Tool',
+      comment: 'Generated by Geospatial Data Downloader Map Tool',
       mode:'user',
       modes: ['user', 'feature', 'layer'],
       project_srs: {% if  project.project_srs %}'{{ project.project_srs.idstring }}'{% else %}''{% endif %},
@@ -602,7 +733,6 @@
           return false
         }
       },
-
       toggleBase(id) {
         if (this.baseChecked(id, this.checkedBases)) {
           this.checkedBases = this.checkedBases.filter(h => h !== id)
@@ -693,7 +823,7 @@
           let buffered_geom = this.getBufferedGeom()
           let buffered_area = turf.area(buffered_geom)
           buffered_area = buffered_area / 1000 / 1000
-      
+
           if (typeof buffered_area == 'undefined') {
             return true
           } else if (buffered_area > {{project.max_area}}) {
@@ -715,7 +845,7 @@
         let results = checkedLayerNames.toString()
         return results
       },
-      
+
       get getCheckedBaseNames() {
         let checkedBaseItems = this.baseLayers.filter((obj) => {
             return this.checkedBases.indexOf(obj.id) > -1;
@@ -726,7 +856,7 @@
           })
         return checkedBaseNames
       },
-      
+
       get getCheckedExcludedNames() {
         let checkedExcludeItems = this.excludedLayers.filter((obj) => {
             return this.checkedExcludes.indexOf(obj.id) > -1;
@@ -767,7 +897,7 @@
         }
         return JSON.stringify(params)
         },
-      
+
       get minimalBufferDist() {
         let buffer = 0.01
         if (this.buffer_distance > 0) {
@@ -812,7 +942,7 @@
           if (this.invalidExtents()) {
             // display max extent
             let max_extent = turf.envelope(turf.buffer(
-              turf.centroid(this.getBufferedGeom()), 
+              turf.centroid(this.getBufferedGeom()),
                 Math.sqrt({{ project.max_area }})/2,
                 {units: 'kilometers'}
               ))
@@ -874,6 +1004,7 @@
 
   // make sure initial values are set right
   window.onload = function(){Alpine.store('refresh').refresh()}
+
 
 </script>
 
