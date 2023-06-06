@@ -11,7 +11,7 @@
     <div class="container">
       <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto">
-          <legend>{{ job.job_id }}</legend>
+          <legend><h3><span style="color: #ADD8E6FF; "> Clip & Ship Resources </span></h3></legend>
           {% for field in form %}
           {% comment %}
           UNSPECIFIED = 0, _("Unspecified")
@@ -30,20 +30,21 @@
           {% elif field.name == "state" and field.value > 3 %}
           <p>{% translate "This Job has already been processed" %}</p>
           {% elif field.name == "state" %}
-          <div>Map Layers:<br>{{parameters.LAYERS|getCsvStringAsList}}</div>
-          <div>Additional Layers:<br>{{parameters.EXCLUDES|getCsvStringAsList}}</div>
+            <div><b>Map Layers:</b><br>{{parameters.LAYERS|getCsvStringAsList}}</div>
+            <div><b>Additional Layers:</b><br>{{parameters.EXCLUDES|getCsvStringAsList}}</div>
           {% comment %} <div>Clipping Bounds:<br>{{parameters.CLIP_GEOM|getLeafletClipPreview}}</div> {% endcomment %}
           {% comment %} <div>Comment:<br>{{parameters.OUTPUT_CRS}}</div> {% endcomment %}
           {% comment %} <div>Comment:<br>{{parameters.PROJECT_CRS}}</div> {% endcomment %}
           {% comment %} <div>Comment:<br>{{parameters.COMMENT}}</div> {% endcomment %}
           <div class="container">
             <div class="row align-items-center justify-content-between">
+              <button form="job-form" class="btn btn-success ml-0 mr-2 my-2 p-4 w-100" type="submit"
+                name="submit">{% translate 'Process' %}</button>
               <a href="{% url 'maps:cancel_job' job.job_id %}">
                 <button class="btn btn-secondary ml-0 mr-2 my-2 p-4 w-100" type="button"
                   name="cancel">{% translate 'Cancel' %}</button>
               </a>
-              <button form="job-form" class="btn btn-success ml-0 mr-2 my-2 p-4 w-100" type="submit"
-                name="submit">{% translate 'Process' %}</button>
+
             </div>
           </div>
 

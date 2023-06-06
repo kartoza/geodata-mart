@@ -13,7 +13,6 @@
       <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto text-center">
           <h1>{% translate "Job Details" %}</h1>
-          <h3>{{ job.job_id }}</h3>
           {% if job.state == 1 %}
           <h4 class="text-muted">{% translate "This Job has been cancelled" %}</h4>
           {% else %}
@@ -36,7 +35,6 @@
       <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto text-center">
           <h1>{% translate "Job Details" %}</h1>
-          <h3>{{ job.job_id }}</h3>
           {% comment %}
           UNSPECIFIED = 0, _("Unspecified")
           ABANDONED = 1, _("Abandoned")
@@ -73,7 +71,7 @@
           {% endif %}
           {% else %}
           {% for task in job.tasks %}
-          <p class="text-muted">{% translate "Task ID: " %}{{ task }}</p>
+
           <div class="container">
             <div id="task-result-{{ forloop.counter }}"></div>
           </div>
