@@ -19,6 +19,8 @@ x-common-django:
       condition: service_started
     mailhog:
       condition: service_started
+    qgis:
+      condition: service_healthy
 
 services:
   mailhog:
@@ -52,6 +54,36 @@ services:
     restart: on-failure
     healthcheck:
       test: "PGPASSWORD=${POSTGRES_PASS} pg_isready -h 127.0.0.1 -U ${POSTGRES_USER} -d ${POSTGRES_PASS}"
+
+  qgis:
+    image: 3liz/qgis-map-server:3.28
+    environment:
+      - QGSRV_SERVER_WORKERS=6
+      - QGSRV_LOGGING_LEVEL=DEBUG
+      - QGSRV_CACHE_ROOTDIR=/qgis
+      - QGSRV_CACHE_SIZE=100
+      - QGSRV_SERVER_TIMEOUT=300
+      - QGSRV_LANDING_PAGE=yes
+      - QGSRV_CACHE_STRICT_CHECK=no
+      #- QGSRV_CACHE_DEFAULT_HANDLER=filesystem
+      - QGSRV_API_ENABLED_LANDING_PAGE=yes
+      - QGIS_SERVER_TRUST_LAYER_METADATA=yes
+      - QGIS_SERVER_PARALLEL_RENDERING=1
+      - QGIS_SERVER_MAX_THREADS=-1
+      - QGIS_SERVER_LANDING_PAGE_PROJECTS_DIRECTORIES=/qgis
+      - QGIS_SERVER_IGNORE_BAD_LAYERS=1
+      - QGIS_SERVER_DISABLE_GETPRINT=false
+      - QGIS_PROJECT_FILE=
+      - PGSERVICEFILE=/qgis/seed/pg_service.conf
+    volumes:
+      - ./geodata:/qgis
+    ports:
+      - "8080"
+    healthcheck:
+      test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null  http://localhost:8080/ows/?map=seed/ngi.qgs&SERVICE=WMS&REQUEST=GetCapabilities"
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
 
   dbbackups:
     image: kartoza/pg-backup:${POSTGRES_MAJOR_VERSION}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_RELEASE}
