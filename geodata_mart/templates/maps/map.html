@@ -87,7 +87,6 @@
     align-items: center;
     overflow: auto;
   }
-
   #map {
     margin: 0;
     height: 100%;
@@ -544,7 +543,10 @@
     { position: 'topright' }
   ).addTo(map)
 
+
+
   const geocoderControl = L.Control.geocoder({
+    placeholder: 'Search Place names e.g Cape Town',
     defaultMarkGeocode: false
   })
   .on('markgeocode', function (e) {
@@ -562,7 +564,6 @@
     map.fitBounds(poly.getBounds());
   })
   .addTo(map);
-
   {% endif %}
 
   let drawnItems = new L.FeatureGroup().addTo(map),
