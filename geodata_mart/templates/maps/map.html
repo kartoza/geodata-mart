@@ -504,6 +504,7 @@
 
   let osm_basemap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+    maxZoom: 20
   });
   osm_basemap.addTo(map);
 
@@ -517,7 +518,7 @@
   const qgis_project = '{{ project.project_name }}'.toLowerCase() + '.qgs'
   let current_checked_layer = null;
   let current_check_layer_id = null;
-    
+
   let empty_basemap = L.tileLayer();
 
   let map_index_layer = L.tileLayer.wms( 'https://maps.kartoza.com/geoserver/ows', {
@@ -533,7 +534,7 @@
         });
 
 
-  var baseMaps = {'OpenStreetMap': osm_basemap, 'NGI Orthophoto': base_map_3, 'Empty Basemap': empty_basemap };
+  var baseMaps = {'OpenStreetMap': osm_basemap, 'NGI Orthophoto': base_map_3 };
 
   var map_overlays = {'Index 1in50K': map_index_layer,'Buffered Extent': annotationItems, 'Extent Limit': errorItems};
 
