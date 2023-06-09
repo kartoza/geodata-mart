@@ -514,7 +514,13 @@
   });
 
   const map_base_url = "http://minigauss:49154"
-  const qgis_project = '{{ project.project_name }}'.toLowerCase() + '.qgs'
+  if ('{{ project.project_name }}'.includes(' ')) {
+    qgis_project_value = '{{ project.project_name }}'.replace(/ /g, '_');
+  } else {
+    qgis_project_value = '{{ project.project_name }}'
+  }
+
+  const qgis_project = qgis_project_value.toLowerCase() + '.qgs'
   let current_checked_layer = null;
   let current_check_layer_id = null;
 
