@@ -79,6 +79,7 @@ services:
       - ./geodata:/qgis
     ports:
       - "8080"
+    restart: on-failure
     healthcheck:
       test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null  http://localhost:8080/ows/?map=seed/ngi.qgs&SERVICE=WMS&REQUEST=GetCapabilities"
       interval: 1m30s
