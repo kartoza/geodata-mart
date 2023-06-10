@@ -513,7 +513,7 @@
       opacity: 0.75
   });
 
-  const map_base_url = "https://data.kartoza.com/qgis"
+  const map_base_url = "http://minigauss:49154"
   if ('{{ project.project_name }}'.includes(' ')) {
     qgis_project_value = '{{ project.project_name }}'.replace(/ /g, '_');
   } else {
@@ -761,7 +761,7 @@
         }
         if (this.layerChecked(id, this.checkedLayers)) {
           this.checkedLayers = this.checkedLayers.filter(h => h !== id)
-          console.log(layerName);
+
         } else {
           current_checked_layer = L.tileLayer.wms( map_base_url + '/ows/?map=seed/' + qgis_project, {
           layers:  layerName,
@@ -775,7 +775,6 @@
         });
         current_checked_layer.addTo(map);
           this.checkedLayers.push(id);
-          console.log(layerName);
         }
 
         return layerName;
@@ -989,6 +988,7 @@
       },
 
       reDraw() {
+
         if (Object.keys(drawnItems._layers).length > 0) {
           errorItems.clearLayers()
           annotationItems.clearLayers()
@@ -998,6 +998,7 @@
           // use https://leafletjs.com/reference.html#path-bringtoback
           if (this.invalidExtents()) {
             // display max extent
+            console.log('({{ project.max_area }})');
             let max_extent = turf.envelope(turf.buffer(
               turf.centroid(this.getBufferedGeom()),
                 Math.sqrt({{ project.max_area }})/2,
