@@ -87,7 +87,6 @@
     align-items: center;
     overflow: auto;
   }
-
   #map {
     margin: 0;
     height: 100%;
@@ -169,14 +168,15 @@
                 <div class="accordion" id="collapsible-checkboxes">
                 <div class="accordion-item">
                   <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse-' + layer.id" aria-expanded="false" :aria-controls="'collapse-' + layer.id">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse-' + layer.id" aria-expanded="false" :aria-controls="'collapse-' + layer.id" >
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" :name="layer.short_name"
                           :id="layer.short_name"
                           :checked="$store.pageData.layerChecked(layer.id)"
-                          @click="$store.pageData.toggleLayer(layer.id)"
-                          />
-                        <label class="form-check-label" :for="layer.short_name" x-text="layer.layer_name"></label>
+                          @click="let clickedLayerName = $store.pageData.toggleLayer($event, layer.id)"
+                          :data-layer-name="layer.short_name"
+                        />
+                        <label class="form-check-label" :for="layer.short_name" x-text="layer.layer_name" ></label>
           <i class="bi bi-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="top" :title="'Click to read the layer abstract'"></i>
                       </div>
                     </button>
@@ -498,20 +498,50 @@
     } });
   locateControl.addTo(map);
 
-  var osm_basemap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+
+
+
+  let osm_basemap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: 'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+    maxZoom: 20
   });
   osm_basemap.addTo(map);
 
-  var base_map_3 = L.tileLayer('http://c.aerial.openstreetmap.org.za/ngi-aerial/{z}/{x}/{y}.jpg', {
+  let base_map_3 = L.tileLayer('http://c.aerial.openstreetmap.org.za/ngi-aerial/{z}/{x}/{y}.jpg', {
       attribution: 'Data from <a href="http://www.ngi.gov.za/">NGI</a>; tiles from <a href="http://aerial.openstreetmap.org.za">OSM</a>, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
       maxZoom: 22,
       opacity: 0.75
   });
 
-  var baseMaps = {'OpenStreetMap': osm_basemap, 'NGI Orthophoto': base_map_3};
+  const map_base_url = "https://data.kartoza.com/qgis"
+  if ('{{ project.project_name }}'.includes(' ')) {
+    qgis_project_value = '{{ project.project_name }}'.replace(/ /g, '_');
+  } else {
+    qgis_project_value = '{{ project.project_name }}'
+  }
 
-  var map_overlays = {'Buffered Extent': annotationItems, 'Extent Limit': errorItems};
+  const qgis_project = qgis_project_value.toLowerCase() + '.qgs'
+  let current_checked_layer = null;
+  let current_check_layer_id = null;
+
+  let empty_basemap = L.tileLayer();
+
+  let map_index_layer = L.tileLayer.wms( 'https://maps.kartoza.com/geoserver/ows', {
+          layers:  'kartoza:map_index',
+          styles: 'kartoza:map_index_1in50k',
+          format: 'image/png',
+          uppercase: true,
+          transparent: true,
+          continuousWorld: true,
+          opacity: 1.0,
+          attribution: '',
+          maxZoom: 20,
+        });
+
+
+  var baseMaps = {'OpenStreetMap': osm_basemap, 'NGI Orthophoto': base_map_3 };
+
+  var map_overlays = {'Index 1in50K': map_index_layer,'Buffered Extent': annotationItems, 'Extent Limit': errorItems};
 
   const layerController = L.control.layers(
     baseMaps, map_overlays,
@@ -519,7 +549,10 @@
     { position: 'topright' }
   ).addTo(map)
 
+
+
   const geocoderControl = L.Control.geocoder({
+    placeholder: 'Search Place names e.g Cape Town',
     defaultMarkGeocode: false
   })
   .on('markgeocode', function (e) {
@@ -537,7 +570,6 @@
     map.fitBounds(poly.getBounds());
   })
   .addTo(map);
-
   {% endif %}
 
   let drawnItems = new L.FeatureGroup().addTo(map),
@@ -721,12 +753,31 @@
       ],
       buffer_distance: {{ project.buffer_default }},
 
-      toggleLayer(id) {
+      toggleLayer(event, id) {
+        const layerName = event.target.getAttribute('data-layer-name');
+        //
+        if (current_checked_layer){
+          current_checked_layer.remove()
+        }
         if (this.layerChecked(id, this.checkedLayers)) {
           this.checkedLayers = this.checkedLayers.filter(h => h !== id)
+
         } else {
-          this.checkedLayers.push(id)
+          current_checked_layer = L.tileLayer.wms( map_base_url + '/ows/?map=seed/' + qgis_project, {
+          layers:  layerName,
+          format: 'image/png',
+          uppercase: true,
+          transparent: true,
+          continuousWorld: true,
+          opacity: 1.0,
+          attribution: '',
+          maxZoom: 20,
+        });
+        current_checked_layer.addTo(map);
+          this.checkedLayers.push(id);
         }
+
+        return layerName;
       },
 
       layerChecked(id) {
@@ -937,6 +988,7 @@
       },
 
       reDraw() {
+
         if (Object.keys(drawnItems._layers).length > 0) {
           errorItems.clearLayers()
           annotationItems.clearLayers()
@@ -946,6 +998,7 @@
           // use https://leafletjs.com/reference.html#path-bringtoback
           if (this.invalidExtents()) {
             // display max extent
+            console.log('({{ project.max_area }})');
             let max_extent = turf.envelope(turf.buffer(
               turf.centroid(this.getBufferedGeom()),
                 Math.sqrt({{ project.max_area }})/2,
