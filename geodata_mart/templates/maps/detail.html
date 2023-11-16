@@ -70,13 +70,35 @@
             {% translate "View Map" %}
           </a>
           {% if coverage %}
-          <h4 class="d-flex justify-content-between align-items-center mb-3">
-            <span>{% translate "Coverage" %}</span>
-          </h4>
-          <div class="w-100 mx-auto justify-center align-center mb-3">
-            <div id="map" class="mx-auto justify-center align-center"></div>
-          </div>
+            <style>
+              /* Adjust the minimum height of the content area */
+              .content {
+                min-height: 600px; /* Adjust as needed */
+                position: relative;
+              }
+
+              /* Style the map container */
+              #map {
+                width: 100%;
+                height: 400px; /* Set an appropriate height for the map */
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: -1; /* Set the z-index to place it behind other elements */
+              }
+            </style>
+
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+              <span>{% translate "Coverage" %}</span>
+            </h4>
+
+            <div class="w-100 mx-auto justify-center align-center mb-3 content">
+              <div id="map" class="mx-auto justify-center align-center"></div>
+            </div>
           {% endif %}
+
           {% if base_layers|length > 0 %}
           <h4 class="d-flex justify-content-between align-items-center mb-3">
             <span class="text-muted">{% translate "Base Layers" %}</span>
