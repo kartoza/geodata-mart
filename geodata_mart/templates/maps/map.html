@@ -513,7 +513,7 @@
       opacity: 0.75
   });
 
-  const map_base_url = "https://data.kartoza.com/qgis"
+  const map_base_url = "http://qgis:8080"
   if ('{{ project.project_name }}'.includes(' ')) {
     qgis_project_value = '{{ project.project_name }}'.replace(/ /g, '_');
   } else {
@@ -542,6 +542,33 @@
   var baseMaps = {'OpenStreetMap': osm_basemap, 'NGI Orthophoto': base_map_3 };
 
   var map_overlays = {'Index 1in50K': map_index_layer,'Buffered Extent': annotationItems, 'Extent Limit': errorItems};
+
+  {% if coverage %}
+    let coverage_geojson = '{{ coverage }}'
+    coverage_geojson = coverage_geojson.replace(/&quot;/g, '"')
+    let bounds = turf.bbox(JSON.parse(coverage_geojson))
+
+    let coverageLayer = new L.FeatureGroup().addTo(map)
+    L.geoJson(JSON.parse(coverage_geojson), {
+      onEachFeature: function (feature, layer) {
+        layer.setStyle({
+          "color": "#0f0",
+          "weight": 2,
+          "opacity": 0.25,
+          "fillOpacity": 0.05,
+        })
+        coverageLayer.addLayer(layer)
+      }
+    })
+
+    map.fitBounds(
+      L.latLngBounds(
+        L.latLng(bounds[1], bounds[0]),
+        L.latLng(bounds[3], bounds[2])
+      )
+    )
+    map_overlays["Project Coverage"] = coverageLayer,
+  {% endif %}
 
   const layerController = L.control.layers(
     baseMaps, map_overlays,
