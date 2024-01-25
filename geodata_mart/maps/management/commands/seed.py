@@ -1,3 +1,4 @@
+import os
 from asyncore import file_dispatcher
 from django.core.management.base import BaseCommand
 from geodata_mart.users.models import User
@@ -19,55 +20,19 @@ from django.conf import settings
 from geodata_mart.vendors.models import Vendor
 from django.conf import settings
 from os.path import basename
+from qgis.core import *
+
+QgsApplication.setPrefixPath("/usr/bin/qgis", True)
+qgs = QgsApplication([], False)
+qgs.initQgis()
+project = QgsProject.instance()
 
 
 class Command(BaseCommand):
     help = "seed application"
 
-    def transformLabels(self, label):
-        mapping = {
-            # NGI stuff
-            "_exp": "",
-            "exp_": "",
-            "_exp_": "_",
-            "lclu_": "",
-            "landform_artific": "Artificial Landform",
-            "landform_natural": "Natural Landform",
-            "tran_": "Transport ",
-            "hydr_": "Hydrographic ",
-            "hyps_": "Hypsographic ",
-            "cult_": "Cultural ",
-            "linear": "Lines",
-            "point": "Points",
-            "areal": "Areas",
-            "educational": "Education",
-            # OSM Stuff
-            "_a_": " Areas",
-            "free_1": "",
-            "gis_osm": "",
-            "pofw": "Places of Worship",
-            "pois": "Places of Interest",
-            # character stuff
-            "_": " ",
-            "-": " ",
-            "  ": " ",  # replace any double spaces
-            "  ": " ",
-            "  ": " ",
-            "  ": " ",
-            "  ": " ",
-        }
-
-        for key, value in mapping.items():
-            label = label.replace(key, value)
-
-        label = label.title()
-        label = label.strip()
-
-        return label
-
     def handle(self, *args, **options):
         self.stdout.write("starting seed...")
-
         self.stdout.write("make default vendor account")
         kartoza = Vendor.objects.filter(name="Kartoza")
         if not kartoza:
@@ -84,10 +49,6 @@ class Command(BaseCommand):
         else:
             kartoza = kartoza.first()
 
-        # cleanup
-        # Project.objects.all().delete()
-        # QgisProjectFile.objects.all().delete()
-        # Layer.objects.all().delete()
 
         crs_list = ["4326", "3587", "9221"]
         for crs in crs_list:
@@ -101,19 +62,15 @@ class Command(BaseCommand):
         crs3587 = SpatialReferenceSystem.objects.get(short_name="3587")
         crs9221 = SpatialReferenceSystem.objects.get(short_name="9221")
 
-        # self.stdout.write("load auth database...")
-        # db_file = "seed/kartozagis_qgis.db"
-        # if not project_storage.exists(db_file):
-        #     raise Exception(f"{project_storage.path(db_file)} not found")
-        # db_record = AuthDbFile.objects.create(
-        #     file_name="kartozagis_qgis",
-        #     secret=settings.QGISAUTHDBSEEDPW,
-        # )
-
-        # with project_storage.open(db_file) as f:
-        #     db_record.file_object.save(basename(db_file), f, save=True)
-
         self.stdout.write("get default project object...")
+        qgis_projects_path = '/app/geodata/projects/Kartoza'
+        for root, dir_names, file_name_base in os.walk(qgis_projects_path):
+            for filename in file_name_base:
+                ext = os.path.splitext(filename)[1].lower()
+                if ext in '.qgz, .qgs':
+                    file_base = os.path.splitext(filename)[0]
+                    full_path = os.path.join(root, file_base) + ext
+
         ngi_project = Project.objects.filter(project_name="NGI").first()
         # auth_db = AuthDbFile.objects.filter(file_name="kartozagis_qgis").first()
         if not ngi_project:
@@ -130,52 +87,16 @@ class Command(BaseCommand):
             )
 
             self.stdout.write("add project layers...")
+            project.read('/app/geodata/projects/Kartoza/NGI/ngi.qgs')
+            layers_info = [
+                (layer.name(), layer.abstract() if layer.abstract() and layer.abstract().strip() else layer.name()) for
+                layer in QgsProject.instance().mapLayers().values() if layer.type() == QgsMapLayerType.VectorLayer]
+            layers = {name: name for name, _ in layers_info}
             # make sure transformLabels is configured properly
-            layers = {
-                "cult_barriers_exp": "cult_barriers_exp",
-                "cult_educational_exp_areal": "cult_educational_exp_areal",
-                "cult_educational_exp_linear": "cult_educational_exp_linear",
-                "cult_educational_exp_point": "Educational Institutions, including Schools and Universities, from preschool to tertiary institutions.",
-                "cult_industrial_exp_areal": "cult_industrial_exp_areal",
-                "cult_industrial_exp_linear": "cult_industrial_exp_linear",
-                "cult_industrial_exp_point": "cult_industrial_exp_point",
-                "cult_public_exp_areal": "cult_public_exp_areal",
-                "cult_public_exp_linear": "cult_public_exp_linear",
-                "cult_public_exp_point": "cult_public_exp_point",
-                "cult_recreational_exp_areal": "cult_recreational_exp_areal",
-                "cult_recreational_exp_linear": "cult_recreational_exp_linear",
-                "cult_recreational_exp_point": "cult_recreational_exp_point",
-                "cult_utilities_exp_linear": "cult_utilities_exp_linear",
-                "cult_utilities_exp_point": "cult_utilities_exp_point",
-                "hydr_areas_exp": "hydr_areas_exp",
-                "hydr_coastal_areas_exp_areal": "hydr_coastal_areas_exp_areal",
-                "hydr_coastal_lines_exp": "hydr_coastal_lines_exp",
-                "hydr_lines_exp": "hydr_lines_exp",
-                "hydr_points_exp": "hydr_points_exp",
-                "hyps_elevation_lines_exp": "hyps_elevation_lines_exp",
-                "hyps_elevation_points_exp": "hyps_elevation_points_exp",
-                "lclu_landcover_exp": "Land Cover, including barren land, cultivated land, and other landcover types.",
-                "lclu_landuse_exp": "Land Use, including residential regions, orchards & vineyards, and other physical land use types.",
-                "phys_landform_artific_exp_areal": "phys_landform_artific_exp_areal",
-                "phys_landform_artific_exp_linear": "phys_landform_artific_exp_linear",
-                "phys_landform_artific_exp_point": "phys_landform_artific_exp_point",
-                "phys_landform_natural_exp_areal": "phys_landform_natural_exp_areal",
-                "phys_landform_natural_exp_linear": "phys_landform_natural_exp_linear",
-                "phys_landform_natural_exp_point": "phys_landform_natural_exp_point",
-                "tran_crossings_exp_linear": "tran_crossings_exp_linear",
-                "tran_crossings_exp_point": "tran_crossings_exp_point",
-                "tran_facilities_exp_areal": "tran_facilities_exp_areal",
-                "tran_facilities_exp_linear": "tran_facilities_exp_linear",
-                "tran_facilities_exp_point": "tran_facilities_exp_point",
-                "tran_line_others_exp": "tran_line_others_exp",
-                "tran_railway_lines_exp": "tran_railway_lines_exp",
-                "roads": "National Road Network, including National, Provincial, District, and Local roads and paths.",
-            }
-
             for key, value in layers.items():
                 Layer.objects.create(
                     short_name=key,
-                    layer_name=self.transformLabels(key),
+                    layer_name=key,
                     abstract=value,
                     project_id=ngi_project,
                     lyr_class=Layer.LayerClass.STANDARD,
@@ -269,10 +190,10 @@ class Command(BaseCommand):
             vendor_id=kartoza,
             kudos="Charlie, Natural Earth Data",
             description=("Simple global base map made from high level data ")
-            + ("from the Natural Earth data collection. Includes a QGIS project ")
-            + (
-                "and source data in Geopackage Format and includes dark and light themes."
-            ),
+                        + ("from the Natural Earth data collection. Includes a QGIS project ")
+                        + (
+                            "and source data in Geopackage Format and includes dark and light themes."
+                        ),
         )
 
         with project_storage.open(data_file) as f:
