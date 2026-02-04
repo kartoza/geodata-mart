@@ -555,8 +555,6 @@ docker compose exec postgres psql -U <POSTGRES_USER> -d <POSTGRES_DB> -c "SELECT
 
 ## Deployment
 
-## Deployment
-
 Deployment is done with docker compose (for production) using the `production.yml` file.
 
 ### Production Notes
