@@ -6,5 +6,5 @@ setup(
     packages=find_packages(include=[".*"]),
     install_requires=[],
     extras_require={"dev": ["black", "python-dotenv", "pytest", "mypy"]},
-    python_requires="~=3.8",
+    python_requires="~=3.11",
 )
